@@ -4,14 +4,16 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  projectId: 'studio-7582576382-59101',
-  appId: '1:802761149326:web:5aaa5efffb9deda21f32df',
-  storageBucket: 'studio-7582576382-59101.firebasestorage.app',
-  apiKey: 'AIzaSyDnnoESnM2oIEd-B43Od4ODfhoaaBJZaiQ',
-  authDomain: 'studio-7582576382-59101.firebaseapp.com',
-  messagingSenderId: '802761149326',
+  apiKey: "AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs",
+  authDomain: "careerlens-1.firebaseapp.com",
+  projectId: "careerlens-1",
+  storageBucket: "careerlens-1.firebasestorage.app",
+  messagingSenderId: "202306950137",
+  appId: "1:202306950137:web:ed4e91e619dd4cc7dde328",
+  measurementId: "G-WEF48JHJF9"
 };
 
 // Initialize Firebase
@@ -19,5 +21,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app);
+const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-export { app, auth, db, functions };
+
+export { app, auth, db, functions, analytics };
