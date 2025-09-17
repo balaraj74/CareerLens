@@ -1,83 +1,58 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const fetch = require("node-fetch"); // or axios
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 admin.initializeApp();
-const db = admin.firestore();
 
-exports.generateCareerPlan = functions.https.onCall(async (data, context) => {
+// Access your API key as an environment variable
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+exports.getCareerRecommendations = functions.https.onCall(async (data, context) => {
   // Auth check
-  if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated.');
+  }
 
-  const userId = context.auth.uid;
-  const roleIds = data.roleIds || []; // optional filter
+  const { profile } = data;
+
+  if (!profile) {
+    throw new functions.https.HttpsError('invalid-argument', 'The function must be called with a "profile" argument.');
+  }
+
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+  const prompt = `
+    You are CareerLens, an AI career advisor.
+    User Profile: ${typeof profile === 'object' ? JSON.stringify(profile) : profile}
+    Task: Recommend top 3 career paths. For each path, provide:
+    1. A "career" title.
+    2. A "reason" for why it’s a good fit.
+    3. A list of "missingSkills" (as a string, comma separated).
+    4. A "learningPlan" (as a string with newlines).
+    5. A list of "resources" (as a string with newlines).
+    Return a single JSON object with a key "careerRecommendations" which is an array of these objects.
+    Example item: { "career": "Cloud Engineer", "reason": "...", "missingSkills": "Terraform, Ansible", "learningPlan": "...", "resources": "..." }
+    Return valid JSON only.
+  `;
+
   try {
-    // Load user profile
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) throw new Error('User profile not found.');
-
-    const userProfile = userDoc.data();
-
-    // Load roles
-    let rolesSnapshot;
-    if (roleIds.length) {
-      const rolePromises = roleIds.map(id => db.collection('roles').doc(id).get());
-      const roleDocs = await Promise.all(rolePromises);
-      var roles = roleDocs.filter(r => r.exists).map(r => ({ id: r.id, ...r.data() }));
-    } else {
-      rolesSnapshot = await db.collection('roles').limit(10).get();
-      var roles = rolesSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
-
-    // Load prompt template
-    const promptDoc = await db.collection('prompts').doc('careerAdvisor').get();
-    const promptTemplate = promptDoc.exists ? promptDoc.data().userTemplate : null;
-    const systemPrompt = promptDoc.exists ? promptDoc.data().system : null;
-
-    // Prepare prompt (simple templating)
-    const payloadPrompt = promptTemplate
-      .replace('{{userProfile}}', JSON.stringify(userProfile))
-      .replace('{{roles}}', JSON.stringify(roles));
-
-    // Call LLM (example generic)
-    const LLM_API_URL = "https://api.your-llm.com/v1/complete";
-    const LLM_API_KEY = functions.config().llm.key;
-
-    const llmResp = await fetch(LLM_API_URL, {
-      method: "POST",
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LLM_API_KEY}`
-      },
-      body: JSON.stringify({
-        system: systemPrompt,
-        prompt: payloadPrompt,
-        max_tokens: 900
-      })
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    // Clean the text to ensure it's valid JSON
+    const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsedResult = JSON.parse(cleanedText);
+    
+    // Store in Firestore
+    const db = admin.firestore();
+    await db.collection('recommendations').add({
+      userId: context.auth.uid,
+      recommendations: parsedResult.careerRecommendations,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    if (!llmResp.ok) {
-      const text = await llmResp.text();
-      throw new Error(`LLM Error: ${text}`);
-    }
-    const llmJson = await llmResp.json();
-    // adapt reading result to provider's shape
-    const generated = llmJson.output || llmJson.choices?.[0]?.text || JSON.stringify(llmJson);
-
-    // Persist plan
-    const planRef = db.collection('plans').doc();
-    const planData = {
-      userId,
-      rolesRecommended: roles.map(r => ({ id: r.id, title: r.title })),
-      generatedText: generated,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      status: 'generated'
-    };
-    await planRef.set(planData);
-
-    return { planId: planRef.id, plan: planData };
-  } catch (err) {
-    console.error(err);
-    throw new functions.https.HttpsError('internal', err.message);
+    return parsedResult;
+  } catch (error) {
+    console.error("Error generating content or parsing JSON:", error);
+    throw new functions.https.HttpsError('internal', 'Failed to generate AI recommendations.');
   }
 });

@@ -11,32 +11,23 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const GenerateCareerRecommendationsInputSchema = z.object({
-  userProfile: z
+export const GenerateCareerRecommendationsInputSchema = z.object({
+  profile: z
     .string()
     .describe('A detailed description of the user profile, including education, experience, skills, and interests.'),
-  preferences: z
-    .string()
-    .describe('The user preferences for a job, including desired salary, location, and company culture.'),
 });
 export type GenerateCareerRecommendationsInput = z.infer<typeof GenerateCareerRecommendationsInputSchema>;
 
-const GenerateCareerRecommendationsOutputSchema = z.object({
-  careerRecommendations: z
-    .array(z.string())
-    .describe('A list of career recommendations based on the user profile and preferences.'),
-  reasons: z
-    .array(z.string())
-    .describe('Reasons for each career recommendation, explaining why it is a good fit for the user.'),
-  missingSkills: z
-    .array(z.string())
-    .describe('A list of skills that the user is missing for each recommended career.'),
-  learningPlan: z
-    .array(z.string())
-    .describe('A personalized learning plan for the user to acquire the missing skills, including a timeline and resources.'),
-  resources: z
-    .array(z.string())
-    .describe('A list of relevant resources for the user to learn more about the recommended careers and acquire the missing skills.'),
+const CareerRecommendationSchema = z.object({
+  career: z.string().describe('The title of the career path.'),
+  reason: z.string().describe('Why this career is a good fit for the user.'),
+  missingSkills: z.string().describe('A comma-separated list of skills the user needs to acquire.'),
+  learningPlan: z.string().describe('A 3-month learning roadmap.'),
+  resources: z.string().describe('A list of suggested free and paid resources.'),
+});
+
+export const GenerateCareerRecommendationsOutputSchema = z.object({
+  careerRecommendations: z.array(CareerRecommendationSchema).describe('A list of top 3 career recommendations.'),
 });
 export type GenerateCareerRecommendationsOutput = z.infer<typeof GenerateCareerRecommendationsOutputSchema>;
 
@@ -48,12 +39,16 @@ const prompt = ai.definePrompt({
   name: 'generateCareerRecommendationsPrompt',
   input: {schema: GenerateCareerRecommendationsInputSchema},
   output: {schema: GenerateCareerRecommendationsOutputSchema},
-  prompt: `You are a career advisor, and generate career recommendations for users based on their profile and preferences.
-
-  Based on the user profile and preferences provided, generate a list of career recommendations, reasons for the recommendations, identified missing skills, a personalized learning plan, and relevant resources.
-
-  User Profile: {{{userProfile}}}
-  Preferences: {{{preferences}}}
+  prompt: `
+    You are CareerLens, an AI career advisor.
+    User Profile: {{{profile}}}
+    Task: Recommend top 3 career paths with:
+    1. A "career" title.
+    2. A "reason" for why it’s a good fit.
+    3. A list of "missingSkills" (as a string, comma separated).
+    4. A "learningPlan" (as a string with newlines for formatting).
+    5. A list of "resources" (as a string with newlines for formatting).
+    Return a single JSON object with a key "careerRecommendations" which is an array of these objects.
   `,
 });
 
