@@ -34,6 +34,7 @@ const prompt = ai.definePrompt({
     5. A list of "resources" (as a string with newlines for formatting).
     Return a single JSON object with a key "careerRecommendations" which is an array of these objects.
   `,
+  model: 'googleai/gemini-1.5-flash',
 });
 
 const generateCareerRecommendationsFlow = ai.defineFlow(
