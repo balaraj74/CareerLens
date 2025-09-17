@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import type { GenerateCareerRecommendationsOutput } from '@/ai/flows/generate-career-recommendations';
+import type { GenerateCareerRecommendationsOutput } from '@/ai/schemas/career-recommendations';
 
 
 const formSchema = z.object({

@@ -9,7 +9,7 @@ import { createPersonalizedRoadmap } from '@/ai/flows/create-personalized-roadma
 import { generateResumeFromJson } from '@/ai/flows/generate-resume-from-json';
 import { generateInterviewQuestions } from '@/ai/flows/generate-interview-questions';
 
-import type { GenerateCareerRecommendationsOutput } from '@/ai/flows/generate-career-recommendations';
+import type { GenerateCareerRecommendationsOutput } from '@/ai/schemas/career-recommendations';
 import type { SkillGapAnalysisInput } from '@/ai/flows/perform-skill-gap-analysis';
 import type { CreatePersonalizedRoadmapInput } from '@/ai/flows/create-personalized-roadmap';
 import type { GenerateResumeFromJsonInput } from '@/ai/flows/generate-resume-from-json';
