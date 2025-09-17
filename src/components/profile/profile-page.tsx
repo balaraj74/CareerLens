@@ -23,7 +23,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 
 export function ProfilePage() {
   const form = useForm<UserProfile>({
@@ -59,7 +60,18 @@ export function ProfilePage() {
     name: 'skills',
   });
 
+   const {
+    fields: interestFields,
+    append: appendInterest,
+    remove: removeInterest,
+  } = useFieldArray({
+    control: form.control,
+    name: 'interests',
+  });
+
   function onSubmit(data: UserProfile) {
+    // Here you would typically save the data to your backend/database.
+    // For this example, we'll just log it.
     console.log(data);
     alert('Profile saved! Check the console for the data.');
   }
@@ -81,17 +93,17 @@ export function ProfilePage() {
           <Tabs defaultValue="personal" className="w-full">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-4">
               <TabsTrigger value="personal">Personal</TabsTrigger>
-              <TabsTrigger value="summary">Summary</TabsTrigger>
               <TabsTrigger value="experience">Experience</TabsTrigger>
               <TabsTrigger value="education">Education</TabsTrigger>
               <TabsTrigger value="skills">Skills</TabsTrigger>
+              <TabsTrigger value="interests">Interests</TabsTrigger>
             </TabsList>
             
             <TabsContent value="personal">
               <Card>
                 <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>Update your personal details here.</CardDescription>
+                  <CardTitle>Personal & Preferences</CardTitle>
+                  <CardDescription>Update your personal details and job preferences.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -107,8 +119,7 @@ export function ProfilePage() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <FormField
+                  <FormField
                       control={form.control}
                       name="email"
                       render={({ field }) => (
@@ -123,27 +134,12 @@ export function ProfilePage() {
                     />
                     <FormField
                       control={form.control}
-                      name="phone"
+                      name="preferences.location"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone</FormLabel>
+                          <FormLabel>Preferred Location</FormLabel>
                           <FormControl>
-                            <Input placeholder="(123) 456-7890" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                   <div className="grid md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="linkedin"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>LinkedIn</FormLabel>
-                          <FormControl>
-                            <Input placeholder="linkedin.com/in/johndoe" {...field} />
+                            <Input placeholder="e.g., San Francisco, CA or Remote" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -151,44 +147,23 @@ export function ProfilePage() {
                     />
                     <FormField
                       control={form.control}
-                      name="github"
+                      name="preferences.remote"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>GitHub</FormLabel>
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel>Open to Remote</FormLabel>
+                            <FormDescription>
+                              Are you willing to work remotely?
+                            </FormDescription>
+                          </div>
                           <FormControl>
-                            <Input placeholder="github.com/johndoe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="summary">
-              <Card>
-                <CardHeader>
-                    <CardTitle>Professional Summary</CardTitle>
-                    <CardDescription>A brief overview of your career.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <FormField
-                    control={form.control}
-                    name="summary"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormControl>
-                            <Textarea
-                            placeholder="A highly motivated and results-oriented software engineer with..."
-                            className="min-h-[150px]"
-                            {...field}
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
                             />
-                        </FormControl>
-                        <FormMessage />
+                          </FormControl>
                         </FormItem>
-                    )}
+                      )}
                     />
                 </CardContent>
               </Card>
@@ -215,44 +190,22 @@ export function ProfilePage() {
                             <div className="grid md:grid-cols-2 gap-4 mb-4">
                                 <FormField
                                     control={form.control}
-                                    name={`experience.${index}.title`}
+                                    name={`experience.${index}.role`}
                                     render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Job Title</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormLabel>Role</FormLabel>
+                                        <FormControl><Input {...field} placeholder="e.g. Software Engineer" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                     )}
                                 />
                                 <FormField
                                     control={form.control}
-                                    name={`experience.${index}.company`}
+                                    name={`experience.${index}.years`}
                                     render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Company</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name={`experience.${index}.startDate`}
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Start Date</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name={`experience.${index}.endDate`}
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>End Date</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormLabel>Years</FormLabel>
+                                        <FormControl><Input {...field} placeholder="e.g. 5" type="number" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                     )}
@@ -260,18 +213,18 @@ export function ProfilePage() {
                             </div>
                             <FormField
                                 control={form.control}
-                                name={`experience.${index}.description`}
+                                name={`experience.${index}.skills`}
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl><Textarea {...field} /></FormControl>
+                                    <FormLabel>Skills Used (comma-separated)</FormLabel>
+                                    <FormControl><Input {...field} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} placeholder="React, Node.js, Python" /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                                 )}
                             />
                         </div>
                     ))}
-                    <Button type="button" variant="outline" onClick={() => appendExperience({ title: '', company: '', startDate: '', endDate: '', description: '' })}>
+                    <Button type="button" variant="outline" onClick={() => appendExperience({ role: '', years: '', skills: [] })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Experience
                     </Button>
                 </CardContent>
@@ -296,66 +249,44 @@ export function ProfilePage() {
                             >
                                 <Trash2 className="h-4 w-4" />
                             </Button>
-                            <div className="grid md:grid-cols-2 gap-4 mb-4">
-                                <FormField
-                                    control={form.control}
-                                    name={`education.${index}.institution`}
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Institution</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
+                            <div className="grid md:grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
                                     name={`education.${index}.degree`}
                                     render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Degree/Field of Study</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormLabel>Degree</FormLabel>
+                                        <FormControl><Input {...field} placeholder="e.g. Bachelor of Science" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                     )}
                                 />
                                 <FormField
                                     control={form.control}
-                                    name={`education.${index}.startDate`}
+                                    name={`education.${index}.field`}
                                     render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Start Date</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormLabel>Field of Study</FormLabel>
+                                        <FormControl><Input {...field} placeholder="e.g. Computer Science" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                     )}
                                 />
-                                <FormField
+                                 <FormField
                                     control={form.control}
-                                    name={`education.${index}.endDate`}
+                                    name={`education.${index}.year`}
                                     render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>End Date</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormLabel>Year of Graduation</FormLabel>
+                                        <FormControl><Input {...field} placeholder="e.g. 2022" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                     )}
                                 />
                             </div>
-                            <FormField
-                                control={form.control}
-                                name={`education.${index}.description`}
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Description (Optional)</FormLabel>
-                                    <FormControl><Textarea {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
                         </div>
                     ))}
-                    <Button type="button" variant="outline" onClick={() => appendEducation({ institution: '', degree: '', startDate: '', endDate: '', description: '' })}>
+                    <Button type="button" variant="outline" onClick={() => appendEducation({ degree: '', field: '', year: '' })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Education
                     </Button>
                 </CardContent>
@@ -369,37 +300,81 @@ export function ProfilePage() {
                     <CardDescription>List your technical and soft skills.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {skillFields.map((field, index) => (
-                             <FormField
-                                key={field.id}
+                     {skillFields.map((field, index) => (
+                        <div key={field.id} className="p-4 border rounded-lg relative">
+                             <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
+                                onClick={() => removeSkill(index)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <div className="grid md:grid-cols-2 gap-4">
+                               <FormField
                                 control={form.control}
-                                name={`skills.${index}.value`}
+                                name={`skills.${index}.name`}
                                 render={({ field }) => (
                                 <FormItem>
-                                    <div className="flex items-center gap-2">
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-muted-foreground hover:text-destructive shrink-0"
-                                            onClick={() => removeSkill(index)}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                                    <FormLabel>Skill</FormLabel>
+                                    <FormControl><Input {...field} placeholder="e.g. TypeScript" /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                                 )}
                             />
-                        ))}
-                    </div>
-                    <Button type="button" variant="outline" onClick={() => appendSkill({ value: '' })}>
+                             <FormField
+                                control={form.control}
+                                name={`skills.${index}.level`}
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Proficiency</FormLabel>
+                                    <FormControl><Input {...field} placeholder="e.g. Expert" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            </div>
+                        </div>
+                    ))}
+                    <Button type="button" variant="outline" onClick={() => appendSkill({ name: '', level: '' })}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Skill
                     </Button>
                 </CardContent>
               </Card>
+            </TabsContent>
+            
+            <TabsContent value="interests">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Interests</CardTitle>
+                        <CardDescription>What are you passionate about?</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <FormField
+                            control={form.control}
+                            name="interests"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Interests (comma-separated)</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        placeholder="AI, Design, Startups" 
+                                        onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} 
+                                        value={Array.isArray(field.value) ? field.value.join(', ') : ''}
+                                    />
+                                </FormControl>
+                                 <div className="pt-2">
+                                    {Array.isArray(field.value) && field.value.map((interest, index) => (
+                                        interest && <Badge key={index} variant="secondary" className="mr-1 mb-1">{interest}</Badge>
+                                    ))}
+                                 </div>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                 </Card>
             </TabsContent>
 
           </Tabs>

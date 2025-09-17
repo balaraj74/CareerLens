@@ -1,35 +1,33 @@
 import { z } from 'zod';
 
 export const experienceSchema = z.object({
-  title: z.string().min(1, 'Job title is required.'),
-  company: z.string().min(1, 'Company name is required.'),
-  startDate: z.string().min(1, 'Start date is required.'),
-  endDate: z.string(),
-  description: z.string(),
+  role: z.string().min(1, 'Role is required.'),
+  years: z.string().min(1, 'Years of experience is required.'),
+  skills: z.array(z.string()),
 });
 
 export const educationSchema = z.object({
-  institution: z.string().min(1, 'Institution is required.'),
   degree: z.string().min(1, 'Degree is required.'),
-  startDate: z.string().min(1, 'Start date is required.'),
-  endDate: z.string(),
-  description: z.string().optional(),
+  field: z.string().min(1, 'Field of study is required.'),
+  year: z.string().min(4, 'Year must be a valid year.'),
 });
 
 export const skillSchema = z.object({
-  value: z.string().min(1, 'Skill cannot be empty.'),
+  name: z.string().min(1, 'Skill name cannot be empty.'),
+  level: z.string().min(1, 'Skill level cannot be empty'),
 });
 
 export const userProfileSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   email: z.string().email('Invalid email address.'),
-  phone: z.string().min(1, 'Phone number is required.'),
-  linkedin: z.string().url().or(z.literal('')),
-  github: z.string().url().or(z.literal('')),
-  summary: z.string().min(10, 'Summary should be at least 10 characters.'),
-  experience: z.array(experienceSchema),
   education: z.array(educationSchema),
+  experience: z.array(experienceSchema),
   skills: z.array(skillSchema),
+  interests: z.array(z.string()),
+  preferences: z.object({
+    location: z.string(),
+    remote: z.boolean(),
+  }),
 });
 
 export type UserProfile = z.infer<typeof userProfileSchema>;

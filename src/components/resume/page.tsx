@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { defaultProfileData } from '@/lib/data';
 import { ResumePreview } from './resume-preview';
 import type { GenerateResumeFromJsonOutput } from '@/ai/flows/generate-resume-from-json';
+import type { UserProfile } from '@/lib/types';
 
 
 export function ResumePage() {
@@ -20,12 +21,43 @@ export function ResumePage() {
         setIsLoading(true);
         setResumeData(null);
         
-        const input = {
-            ...defaultProfileData,
-            skills: defaultProfileData.skills.map(s => s.value),
-        }
+        // This is a placeholder for fetching the real user profile.
+        // In a real app, you would fetch this from your state management or an API.
+        const userProfile: UserProfile = {
+            name: "Alex Doe",
+            email: "alex.doe@example.com",
+            preferences: { location: "San Francisco, CA", remote: true },
+            education: [{ degree: "B.Sc. Computer Science", field: "Computer Science", year: "2020" }],
+            experience: [{ role: "Software Engineer", years: "3", skills: ["React", "Node.js"] }],
+            skills: [{ name: "TypeScript", level: "Expert" }],
+            interests: ["AI", "Design"],
+        };
 
-        const response = await getResumeJson(input);
+        const inputForAI = {
+            name: userProfile.name,
+            email: userProfile.email,
+            phone: "(123) 456-7890", // phone is not in the new schema, adding placeholder
+            linkedin: "linkedin.com/in/alexdoe", // not in schema
+            github: "github.com/alexdoe", // not in schema
+            summary: "A passionate software engineer with 3 years of experience.", // not in schema
+            experience: userProfile.experience.map(exp => ({
+                title: exp.role,
+                company: 'A Great Company', // not in schema
+                startDate: '2021', // not in schema
+                endDate: 'Present',
+                description: `Worked as a ${exp.role} for ${exp.years} years, using skills like ${exp.skills.join(', ')}.`,
+            })),
+            education: userProfile.education.map(edu => ({
+                institution: 'A Great University', // not in schema
+                degree: `${edu.degree} in ${edu.field}`,
+                startDate: '2016',
+                endDate: edu.year,
+                description: '',
+            })),
+            skills: userProfile.skills.map(skill => `${skill.name} (${skill.level})`),
+        };
+
+        const response = await getResumeJson(inputForAI);
         setIsLoading(false);
 
         if (response.success && response.data?.resumeJson) {
