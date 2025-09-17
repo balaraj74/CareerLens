@@ -54,7 +54,7 @@ const prompt = ai.definePrompt({
 User Profile:
 {{json input}}
 
-Ensure the output is valid JSON. Do not include any surrounding text, only the JSON.
+The output must be a single JSON object with a key "resumeJson" which is a string of the resume data. Do not include any surrounding text, only the JSON.
 `, config: {
     safetySettings: [
       {
