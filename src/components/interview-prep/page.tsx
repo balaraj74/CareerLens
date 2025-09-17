@@ -149,4 +149,3 @@ function QuestionList({ questions }: { questions: NonNullable<GenerateInterviewQ
         </Accordion>
     );
 }
-
