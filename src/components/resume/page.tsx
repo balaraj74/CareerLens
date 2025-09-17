@@ -26,10 +26,10 @@ export function ResumePage() {
         const userProfile: UserProfile = {
             name: "Alex Doe",
             email: "alex.doe@example.com",
-            preferences: { location: "San Francisco, CA", remote: true },
+            preferences: { location: "San Francisco, CA", remote: true, industries: ["Tech"] },
             education: [{ degree: "B.Sc. Computer Science", field: "Computer Science", year: "2020" }],
-            experience: [{ role: "Software Engineer", years: "3", skills: ["React", "Node.js"] }],
-            skills: [{ name: "TypeScript", level: "Expert" }],
+            experience: [{ role: "Software Engineer", company: "TechCorp", years: "3", skills: ["React", "Node.js"] }],
+            skills: [{ name: "TypeScript", proficiency: "Expert" }],
             interests: ["AI", "Design"],
         };
 
@@ -42,7 +42,7 @@ export function ResumePage() {
             summary: "A passionate software engineer with 3 years of experience.", // not in schema
             experience: userProfile.experience.map(exp => ({
                 title: exp.role,
-                company: 'A Great Company', // not in schema
+                company: exp.company,
                 startDate: '2021', // not in schema
                 endDate: 'Present',
                 description: `Worked as a ${exp.role} for ${exp.years} years, using skills like ${exp.skills.join(', ')}.`,
@@ -54,7 +54,7 @@ export function ResumePage() {
                 endDate: edu.year,
                 description: '',
             })),
-            skills: userProfile.skills.map(skill => `${skill.name} (${skill.level})`),
+            skills: userProfile.skills.map(skill => `${skill.name} (${skill.proficiency})`),
         };
 
         const response = await getResumeJson(inputForAI);

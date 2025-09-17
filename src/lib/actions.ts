@@ -2,6 +2,9 @@
 
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
+import { db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+
 
 import { generateCareerRecommendations as genkitGenerateCareerRecommendations } from '@/ai/flows/generate-career-recommendations';
 import { performSkillGapAnalysis } from '@/ai/flows/perform-skill-gap-analysis';
@@ -14,6 +17,7 @@ import type { SkillGapAnalysisInput, SkillGapAnalysisOutput } from '@/ai/flows/p
 import type { CreatePersonalizedRoadmapInput, CreatePersonalizedRoadmapOutput } from '@/ai/flows/create-personalized-roadmap';
 import type { GenerateResumeFromJsonInput, GenerateResumeFromJsonOutput } from '@/ai/flows/generate-resume-from-json';
 import type { GenerateInterviewQuestionsInput, GenerateInterviewQuestionsOutput } from '@/ai/flows/generate-interview-questions';
+import type { UserProfile } from '@/lib/types';
 
 
 export async function getCareerRecommendations(
@@ -69,5 +73,23 @@ export async function getInterviewQuestions(
   } catch (error: any) {
     console.error(error);
     return { success: false, error: error.message || 'Failed to generate questions.' };
+  }
+}
+
+export async function saveUserProfile(
+  profileData: UserProfile
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // In a real app, you'd get the userId from the authenticated session
+    const userId = 'guest-user'; 
+    const userDocRef = doc(db, 'users', userId);
+    await setDoc(userDocRef, {
+      ...profileData,
+      updatedAt: new Date().toISOString(),
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error saving profile:', error);
+    return { success: false, error: 'Failed to save user profile.' };
   }
 }

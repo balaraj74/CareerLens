@@ -1,7 +1,7 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { PlusCircle, Trash2, ArrowLeft, ArrowRight, User, BookOpen, Briefcase, Star, MapPin } from 'lucide-react';
+import { PlusCircle, Trash2, ArrowLeft, ArrowRight, User, BookOpen, Briefcase, Star, MapPin, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 import {
@@ -9,6 +9,8 @@ import {
   type UserProfile,
 } from '@/lib/types';
 import { defaultProfileData } from '@/lib/data';
+import { saveUserProfile } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +37,9 @@ const steps = [
 ];
 
 export function ProfilePage() {
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<UserProfile>({
     resolver: zodResolver(userProfileSchema),
@@ -70,9 +74,23 @@ export function ProfilePage() {
     name: 'skills',
   });
 
-  function onSubmit(data: UserProfile) {
-    console.log(data);
-    alert('Onboarding complete! Check the console for the data.');
+  async function onSubmit(data: UserProfile) {
+    setIsSubmitting(true);
+    const response = await saveUserProfile(data);
+    setIsSubmitting(false);
+
+    if (response.success) {
+      toast({
+        title: "Profile Saved!",
+        description: "Your profile has been successfully saved.",
+      });
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Error",
+        description: response.error,
+      });
+    }
   }
 
   const handleNext = () => {
@@ -152,7 +170,7 @@ export function ProfilePage() {
                                         <FormField control={form.control} name={`experience.${index}.years`} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Years</FormLabel>
-                                                <FormControl><Input {...field} placeholder="e.g. 5" type="number" /></FormControl>
+                                                <FormControl><Input {...field} placeholder="e.g. 5" /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}/>
@@ -294,8 +312,15 @@ export function ProfilePage() {
                         Next <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                 ) : (
-                    <Button type="submit">
-                        Finish & Save Profile
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Finish & Save Profile"
+                        )}
                     </Button>
                 )}
             </div>
