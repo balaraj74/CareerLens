@@ -65,13 +65,13 @@ export function Nav({ handleLogout, isLoggingOut, user }: NavProps) {
     );
   }
 
-  // 💻 Desktop Right Sidebar
+  // 💻 Desktop Left Sidebar
   return (
     <motion.div
-      initial={{ x: 100 }}
+      initial={{ x: -100 }}
       animate={{ x: 0 }}
       transition={{ type: "spring", stiffness: 100, damping: 20 }}
-      className="fixed right-0 top-0 h-full w-56 bg-card backdrop-blur-xl border-l border-white/10 shadow-xl flex flex-col p-4"
+      className="fixed left-0 top-0 h-full w-56 bg-card backdrop-blur-xl border-r border-white/10 shadow-xl flex flex-col p-4"
     >
       <div className="flex flex-col items-center text-center py-4 mb-4">
         <Avatar className="h-16 w-16 mb-3 border-4 border-primary/50">

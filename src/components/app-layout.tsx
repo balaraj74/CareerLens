@@ -49,11 +49,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <div className={!isMobile ? 'pl-56' : ''}>
       <Nav handleLogout={handleLogout} isLoggingOut={isLoggingOut} user={user} />
-      <main className={`flex-1 overflow-auto ${!isMobile ? 'mr-[224px]' : 'pb-28'}`}>
+      <main className={`flex-1 overflow-auto ${isMobile ? 'pb-28' : ''}`}>
         {children}
       </main>
-    </>
+    </div>
   );
 }
