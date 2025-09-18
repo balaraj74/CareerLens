@@ -52,7 +52,7 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert resume writer. You will receive user profile information and generate a clean, professional resume in JSON format. Ensure the JSON is valid and includes all provided information.
 
 User Profile:
-{{json input}}
+{{{input}}}
 
 The output must be a single JSON object with a key "resumeJson" which is a string of the resume data. Do not include any surrounding text, only the JSON.
 `, config: {
@@ -84,7 +84,7 @@ const generateResumeFromJsonFlow = ai.defineFlow(
     outputSchema: GenerateResumeFromJsonOutputSchema,
   },
   async input => {
-    const {output} = await prompt({input});
+    const {output} = await prompt(input);
     // Attempt to parse the JSON to ensure it's valid
     try {
       JSON.parse(output!.resumeJson);
