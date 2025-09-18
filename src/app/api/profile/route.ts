@@ -2,13 +2,14 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 
-// Helper function to handle errors
+// Helper function to handle errors consistently.
 const handleError = (message: string, status: number) => {
-  console.error(message);
+  console.error(`API Error: ${message}`);
   return NextResponse.json({ error: message }, { status });
 };
 
 export async function GET(request: Request) {
+  // **Defensive Check**: Ensure adminDb was initialized before using it.
   if (!adminDb) {
     return handleError('Firebase Admin SDK not initialized.', 500);
   }
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    // **Defensive Check**: Ensure adminDb was initialized before using it.
     if (!adminDb) {
         return handleError('Firebase Admin SDK not initialized.', 500);
     }
