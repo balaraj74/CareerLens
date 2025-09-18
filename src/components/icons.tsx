@@ -8,9 +8,18 @@ export function Logo() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-8 w-8 text-primary"
+      className="h-8 w-8 text-primary animate-pulse"
     >
-      <circle cx="12" cy="12" r="4" />
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="12" cy="12" r="4" style={{ filter: "url(#glow)" }} />
       <path d="M12 2v2" />
       <path d="M12 20v2" />
       <path d="m4.93 4.93 1.41 1.41" />

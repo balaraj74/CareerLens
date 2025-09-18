@@ -7,15 +7,8 @@ import {
   MessageSquare,
   User,
   ArrowRight,
+  BrainCircuit
 } from 'lucide-react';
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 const features = [
@@ -63,17 +56,17 @@ const features = [
 
 export default function DashboardPage() {
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="grid gap-1">
-          <h1 className="font-headline text-3xl font-bold tracking-tight">
+        <div className="grid gap-2">
+          <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight text-glow">
             Welcome to CareerLens
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-lg text-muted-foreground">
             Your personal AI-powered career co-pilot.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/20 transition-shadow">
           <Link href="/profile">
             Complete Your Profile <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
@@ -83,19 +76,19 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {features.map((feature) => (
           <Link href={feature.link} key={feature.title} className="group">
-            <Card className="flex flex-col h-full transition-all duration-300 ease-in-out hover:border-primary/80 hover:shadow-lg hover:-translate-y-1">
-              <CardHeader className="flex-row items-start gap-4 space-y-0">
-                <div className="flex items-center justify-center bg-primary/10 rounded-lg p-3">
+            <div className="glass-card flex flex-col h-full rounded-2xl transition-all duration-300 ease-in-out hover:border-primary/80 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1">
+              <div className="p-6 flex-row items-start gap-4 space-y-0">
+                <div className="flex items-center justify-center bg-primary/10 rounded-xl p-4 w-16 h-16 mb-4 animate-pulse-slow">
                   {feature.icon}
                 </div>
                 <div className="grid gap-1">
-                  <CardTitle>{feature.title}</CardTitle>
+                  <h3 className="text-xl font-semibold font-headline">{feature.title}</h3>
                 </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <CardDescription>{feature.description}</CardDescription>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="p-6 pt-0 flex-grow">
+                <p className="text-muted-foreground">{feature.description}</p>
+              </div>
+            </div>
           </Link>
         ))}
       </div>

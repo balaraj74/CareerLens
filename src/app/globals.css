@@ -4,71 +4,79 @@
 
 @layer base {
   :root {
-    --background: 204 100% 97.5%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 204 80% 69%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 257 100% 75%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 204 80% 69%;
-    --radius: 0.5rem;
-    --chart-1: 204 80% 69%;
-    --chart-2: 257 100% 75%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Futuristic Dark Theme */
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 98%; /* slate-50 */
+
+    --card: 222 47% 11%; /* slate-900 */
+    --card-foreground: 210 40% 98%; /* slate-50 */
     
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 204 80% 69%;
-    --sidebar-primary-foreground: 222.2 84% 4.9%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 204 80% 69%;
+    --popover: 224 71% 4%; /* gray-950 */
+    --popover-foreground: 210 40% 98%; /* slate-50 */
+
+    --primary: 217 91% 60%; /* blue-500 */
+    --primary-foreground: 210 40% 98%; /* slate-50 */
+
+    --secondary: 215 28% 17%; /* slate-800 */
+    --secondary-foreground: 210 40% 98%; /* slate-50 */
+    
+    --muted: 215 28% 17%; /* slate-800 */
+    --muted-foreground: 215 20% 65%; /* slate-400 */
+
+    --accent: 262 84% 59%; /* violet-600 */
+    --accent-foreground: 210 40% 98%; /* slate-50 */
+
+    --destructive: 0 72% 51%; /* red-600 */
+    --destructive-foreground: 210 40% 98%; /* slate-50 */
+
+    --border: 215 28% 17%; /* slate-800 */
+    --input: 215 28% 17%; /* slate-800 */
+    --ring: 217 91% 60%; /* blue-500 */
+
+    --radius: 0.75rem;
+
+    /* Charts & Gradients */
+    --chart-1: 217 91% 60%; /* blue-500 */
+    --chart-2: 262 84% 59%; /* violet-600 */
+    --chart-3: 188 85% 42%; /* cyan-500 */
+    --chart-4: 168 85% 42%;
+    --chart-5: 300 85% 42%;
+    
+    /* Glassmorphism Effect */
+    --glass-bg: rgba(30, 41, 59, 0.5); /* slate-800 with 50% opacity */
+    --glass-blur: blur(12px);
+    --glass-border: rgba(59, 130, 246, 0.2); /* blue-500 with 20% opacity */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Same as root for a forced dark theme */
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+
+    --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+
+    --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
-    --primary: 204 80% 69%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 215 28% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 257 100% 75%;
+
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 262 84% 59%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 204 80% 69%;
-    
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 204 80% 69%;
-    --sidebar-primary-foreground: 222.2 84% 4.9%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 204 80% 69%;
+
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -78,5 +86,19 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background-color: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 8px hsl(var(--primary) / 0.5), 0 0 20px hsl(var(--primary) / 0.2);
   }
 }

@@ -1,5 +1,3 @@
-
-
 'use client';
 import { usePathname } from 'next/navigation';
 import './globals.css';
@@ -27,14 +25,15 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased" suppressHydrationWarning>
+      <body className="font-body antialiased bg-background" suppressHydrationWarning>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-background via-background to-slate-900/50 -z-10" />
         <AuthProvider>
             {isAuthPage ? (
-            <div className="flex min-h-screen items-center justify-center bg-background">{children}</div>
+            <div className="flex min-h-screen items-center justify-center">{children}</div>
             ) : (
             <AppLayout>{children}</AppLayout>
             )}
