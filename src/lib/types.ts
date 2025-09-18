@@ -11,6 +11,8 @@ export const educationSchema = z.object({
   degree: z.string().min(1, 'Degree is required.'),
   field: z.string().min(1, 'Field of study is required.'),
   year: z.string().min(4, 'Year must be a valid year.'),
+  institution: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export const skillSchema = z.object({
@@ -21,6 +23,10 @@ export const skillSchema = z.object({
 export const userProfileSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   email: z.string().email('Invalid email address.'),
+  phone: z.string().optional(),
+  linkedin: z.string().optional(),
+  github: z.string().optional(),
+  summary: z.string().optional(),
   education: z.array(educationSchema),
   experience: z.array(experienceSchema),
   skills: z.array(skillSchema),
