@@ -40,7 +40,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const createUserDocument = async (user: User) => {
     const userDocRef = doc(db, 'users', user.uid);
-    await setDoc(userDocRef, {
+    // This write operation is now fire-and-forget from the perspective of the user's login flow.
+    setDoc(userDocRef, {
       uid: user.uid,
       email: user.email,
       displayName: user.displayName,
@@ -51,7 +52,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, pass: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-    await createUserDocument(userCredential.user);
+    // Not awaiting this allows the UI to proceed without waiting for the DB write.
+    createUserDocument(userCredential.user);
     return userCredential;
   };
 
@@ -62,7 +64,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const googleSignIn = async () => {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
-      await createUserDocument(userCredential.user);
+      // Not awaiting this allows the UI to proceed without waiting for the DB write.
+      createUserDocument(userCredential.user);
       return userCredential;
   }
 
