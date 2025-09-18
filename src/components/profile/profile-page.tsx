@@ -188,7 +188,7 @@ export function ProfilePage() {
                                     <FormField control={form.control} name={`experience.${index}.skills`} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Skills Used (comma-separated)</FormLabel>
-                                            <FormControl><Input {...field} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} placeholder="React, Node.js, Python" /></FormControl>
+                                            <FormControl><Input {...field} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} value={Array.isArray(field.value) ? field.value.join(', ') : ''} placeholder="React, Node.js, Python" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
