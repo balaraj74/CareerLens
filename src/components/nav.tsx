@@ -47,26 +47,30 @@ export function Nav({ handleLogout, isLoggingOut, user }: NavProps) {
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
-        transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between 
-                   w-[90%] max-w-md px-2 py-3 rounded-2xl 
-                   bg-white/5 backdrop-blur-xl border border-white/20 shadow-lg"
+        transition={{ type: "spring", stiffness: 120, damping: 20 }}
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 
+               flex items-center justify-center 
+               w-full max-w-md px-4 py-2
+               rounded-2xl bg-white/10 backdrop-blur-xl 
+               border border-white/20 shadow-lg"
       >
-        {navItems.map((item) => (
-          <Link href={item.href} key={item.label} className="flex-1">
-            <button
-              className={cn(
-                'flex flex-col items-center justify-center w-full py-1 text-white rounded-lg transition-colors',
-                pathname === item.href
-                  ? 'bg-primary/20 text-primary'
-                  : 'hover:text-primary hover:bg-white/5'
-              )}
-            >
-              {item.icon}
-              <span className="text-[10px] mt-1">{item.label}</span>
-            </button>
-          </Link>
-        ))}
+        <div className="flex w-full justify-evenly">
+          {navItems.map((item) => (
+            <Link href={item.href} key={item.label} className="flex-1">
+              <button
+                className={cn(
+                  "flex flex-col items-center justify-center h-14 w-full rounded-lg text-white transition-colors",
+                  pathname === item.href
+                    ? "bg-primary/20 text-primary"
+                    : "hover:text-primary hover:bg-white/5"
+                )}
+              >
+                {item.icon}
+                <span className="text-xs mt-1">{item.label}</span>
+              </button>
+            </Link>
+          ))}
+        </div>
       </motion.div>
     );
   }
