@@ -84,7 +84,8 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (!user) {
-        // Still loading user or user not logged in
+        // Still loading user or user not logged in.
+        // We will wait until the user object is available.
         return;
     }
 
@@ -127,7 +128,7 @@ export function ProfilePage() {
     };
 
     loadProfile();
-  }, [user]);
+  }, [user, form, toast]);
 
 
   const {
@@ -198,7 +199,7 @@ export function ProfilePage() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  if (isLoading) {
+  if (isLoading && !form.formState.isDirty) {
     return (
         <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
              <div className="mb-8">
@@ -456,3 +457,5 @@ export function ProfilePage() {
     </div>
   );
 }
+
+    
