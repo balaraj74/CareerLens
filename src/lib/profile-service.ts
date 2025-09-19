@@ -1,13 +1,14 @@
-
-'use client';
-
+import { db } from "./firebaseClient";
+import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import type { UserProfile } from './types';
-import type { User } from 'firebase/auth';
+
 
 /**
- * Fetches a user's profile from Firestore via the API route.
+ * Fetches a user's profile from Firestore.
+ * If the profile doesn't exist, it returns a default empty profile object.
+ * This prevents "NOT_FOUND" errors on the client.
  * @param userId - The ID of the user.
- * @returns An object with success status, data, and an optional error message.
+ * @returns A promise that resolves to the user's profile data.
  */
 export async function fetchProfile(
   userId: string
@@ -16,29 +17,38 @@ export async function fetchProfile(
     return { success: false, error: 'User ID is required.' };
   }
   try {
-    const res = await fetch(`/api/profile?uid=${userId}`);
-    const data = await res.json();
+    const docRef = doc(db, "users", userId);
+    const docSnap = await getDoc(docRef);
 
-    if (!res.ok) {
-      // Pass the specific error from the API route back to the caller
-      throw new Error(data.error || 'Failed to fetch profile');
+    if (!docSnap.exists()) {
+        // Return a default, empty profile if one doesn't exist.
+        // This is not an error state.
+        return { success: true, data: null };
     }
     
-    // The API route returns timestamps as strings, so we need to convert them back to Date objects.
-    if (data.dob) {
-      data.dob = new Date(data.dob);
+    const data = docSnap.data() as any;
+
+    // Convert Firestore Timestamps to JS Date objects
+    if (data.dob && data.dob instanceof Timestamp) {
+      data.dob = data.dob.toDate();
+    }
+    if (data.createdAt && data.createdAt instanceof Timestamp) {
+      data.createdAt = data.createdAt.toDate().toISOString();
+    }
+     if (data.updatedAt && data.updatedAt instanceof Timestamp) {
+      data.updatedAt = data.updatedAt.toDate().toISOString();
     }
 
     return { success: true, data: data as UserProfile };
   } catch (err: any) {
-    console.error('Error fetching profile via API:', err);
-    // Return the specific error message from the catch block
-    return { success: false, error: err.message || 'Failed to retrieve profile data from the server.' };
+    console.error('Error fetching profile from Firestore:', err);
+    return { success: false, error: 'Failed to retrieve profile data.' };
   }
 }
 
 /**
- * Creates or updates a user's profile in Firestore via the API route.
+ * Creates or updates a user's profile in Firestore.
+ * Uses setDoc with { merge: true } to seamlessly handle both cases.
  * @param userId - The ID of the user.
  * @param data - The user profile data to save.
  * @returns An object with success status and an optional error message.
@@ -51,20 +61,28 @@ export async function saveProfile(
     return { success: false, error: 'User ID is required to save the profile.' };
   }
   try {
-    const res = await fetch('/api/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid: userId, profileData: data }),
-    });
+    const docRef = doc(db, "users", userId);
+    
+    // Create a copy to avoid mutating the original data
+    const dataToSave: any = { ...data };
 
-    const responseData = await res.json();
-    if (!res.ok) {
-      throw new Error(responseData.error || 'Failed to save profile');
+    // Convert JS Date back to Firestore Timestamp before saving
+    if (dataToSave.dob && dataToSave.dob instanceof Date) {
+        dataToSave.dob = Timestamp.fromDate(dataToSave.dob);
+    }
+    
+    // Add/update timestamps
+    const docSnap = await getDoc(docRef);
+    dataToSave.updatedAt = Timestamp.now();
+    if (!docSnap.exists()) {
+        dataToSave.createdAt = Timestamp.now();
     }
 
+
+    await setDoc(docRef, dataToSave, { merge: true });
     return { success: true };
   } catch (err: any) {
-    console.error('Error saving profile via API:', err);
-    return { success: false, error: 'Failed to save profile changes to the server.' };
+    console.error('Error saving profile to Firestore:', err);
+    return { success: false, error: 'Failed to save profile changes.' };
   }
 }

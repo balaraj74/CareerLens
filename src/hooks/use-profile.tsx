@@ -36,28 +36,24 @@ export const ProfileProvider = ({ children }: { children: React.ReactNode }) => 
     }
     
     setLoading(true);
-    try {
-      const { data: userProfile, error } = await fetchProfile(user.uid);
-      if (error) {
-        throw new Error(error);
-      }
-      setProfile(userProfile);
-    } catch (error: any) {
-      console.error("Failed to load profile:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to load profile",
-        description: error.message || "Could not fetch your profile data.",
-      });
-      // Set to null on error to avoid using stale data.
-      setProfile(null);
-    } finally {
-      setLoading(false);
+    const { data: userProfile, error } = await fetchProfile(user.uid);
+    
+    if (error) {
+        toast({
+            variant: "destructive",
+            title: "Failed to load profile",
+            description: error,
+        });
+        setProfile(null);
+    } else {
+        setProfile(userProfile);
     }
+    setLoading(false);
+
   }, [user, toast]);
 
   useEffect(() => {
-    // Only run loadProfile if auth is resolved and we have a user.
+    // Only run loadProfile if auth is resolved.
     if (!authLoading) {
       loadProfile();
     }

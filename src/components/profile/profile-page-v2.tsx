@@ -23,7 +23,7 @@ import {
   X,
   CalendarIcon,
 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
@@ -84,45 +84,46 @@ export function ProfilePageV2() {
     mode: 'onChange',
   });
 
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    const loadProfile = async () => {
-      setIsLoading(true);
-      const { data, error } = await fetchProfile(user.uid);
-
-      if (error) {
+  const loadProfile = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    const { data, error } = await fetchProfile(user.uid);
+    
+    if (error) {
         toast({
-          variant: 'destructive',
-          title: 'Failed to load profile',
-          description: error,
+            variant: 'destructive',
+            title: 'Failed to load profile',
+            description: error,
         });
+        // On error, reset with default data but pre-fill from auth
         form.reset({
-          ...defaultProfileData,
-          name: user.displayName || '',
-          email: user.email || '',
-          photoURL: user.photoURL || '',
+            ...defaultProfileData,
+            name: user.displayName || '',
+            email: user.email || '',
+            photoURL: user.photoURL || '',
         });
-      } else {
+    } else {
         const existingData = data || {};
+        // Merge fetched data with defaults and auth data
         const mergedData = {
-          ...defaultProfileData,
-          ...existingData,
-          name: existingData.name || user.displayName || '',
-          email: existingData.email || user.email || '',
-          photoURL: existingData.photoURL || user.photoURL || '',
-          dob: existingData.dob ? new Date(existingData.dob) : undefined, 
+            ...defaultProfileData,
+            ...existingData,
+            name: existingData.name || user.displayName || '',
+            email: existingData.email || user.email || '',
+            photoURL: existingData.photoURL || user.photoURL || '',
+            dob: existingData.dob ? new Date(existingData.dob) : undefined,
         };
         form.reset(mergedData);
         setPreviewImage(mergedData.photoURL || null);
-      }
-      setIsLoading(false);
-    };
-
-    loadProfile();
+    }
+    setIsLoading(false);
   }, [user, form, toast]);
+
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   const {
     fields: experienceFields,
@@ -178,6 +179,7 @@ export function ProfilePageV2() {
         title: 'Profile Saved! ✅',
         description: 'Your information has been successfully updated.',
       });
+      loadProfile(); // Reload profile to get latest server-side timestamps
     } else {
       toast({
         variant: 'destructive',
