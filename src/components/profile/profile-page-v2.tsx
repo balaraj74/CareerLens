@@ -199,6 +199,14 @@ export function ProfilePageV2() {
     }
   }
 
+  if (isLoading && !user) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
   if (isLoading) {
     return (
       <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
