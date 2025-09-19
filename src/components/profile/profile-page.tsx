@@ -202,7 +202,7 @@ export function ProfilePage() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  if (isLoading && !form.formState.isDirty) {
+  if (isLoading) {
     return (
         <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
              <div className="mb-8">

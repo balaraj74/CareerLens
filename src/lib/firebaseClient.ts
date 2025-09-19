@@ -1,9 +1,11 @@
+
 // src/lib/firebaseClient.ts
 import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
+// Your web app's Firebase configuration from the user
 const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs",
   authDomain: "careerlens-1.firebaseapp.com",
@@ -14,12 +16,13 @@ const firebaseConfig: FirebaseOptions = {
   measurementId: "G-WEF48JHJF9"
 };
 
+// Initialize Firebase for SSR and prevent re-initialization on the client
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Initialize Analytics only if it's supported on the client
+// Initialize Analytics only if it's supported on the client-side
 let analytics: any = null;
 if (typeof window !== 'undefined') {
     isSupported().then(yes => {
