@@ -2,8 +2,11 @@
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { PlusCircle, Trash2, ArrowLeft, ArrowRight, User, BookOpen, Briefcase, Star, MapPin, Loader2, Bot, School, Building, Sparkles } from 'lucide-react';
+import { PlusCircle, Trash2, ArrowLeft, ArrowRight, User, School, Briefcase, Sparkles, MapPin, Loader2, Bot } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebaseClient';
+
 
 import {
   userProfileSchema,
@@ -39,41 +42,25 @@ const steps = [
 ];
 
 
-// This function now handles fetching the profile from our new API route
-async function fetchProfile(userId: string): Promise<{ success: boolean; data?: UserProfile, error?: string}> {
+async function fetchProfile(userId: string): Promise<{ success: boolean; data?: UserProfile | null, error?: string}> {
     try {
-        const res = await fetch(`/api/profile?userId=${userId}`);
-        if (!res.ok) {
-            const err = await res.json();
-            // This error comes directly from the server's response
-            throw new Error(err.error || 'Failed to fetch profile');
+        const ref = doc(db, "users", userId);
+        const snapshot = await getDoc(ref);
+        if (snapshot.exists()) {
+            return { success: true, data: snapshot.data() as UserProfile };
         }
-        
-        const data = await res.json();
-        return { success: true, data };
-
+        return { success: true, data: null }; // Not an error, just no data
     } catch (err: any) {
         console.error("fetchProfile error:", err.message);
         return { success: false, error: err.message };
     }
 }
 
-// This function now handles saving the profile via our new API route
 async function saveProfile(userId: string, data: UserProfile): Promise<{ success: boolean; error?: string}> {
      try {
-        const res = await fetch('/api/profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, ...data }),
-        });
-
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || 'Failed to save profile');
-        }
-
+        const ref = doc(db, "users", userId);
+        await setDoc(ref, data, { merge: true });
         return { success: true };
-
     } catch (err: any) {
         console.error("saveProfile error:", err.message);
         return { success: false, error: err.message };
@@ -103,7 +90,7 @@ export function ProfilePage() {
         
         if (data) {
             form.reset(data); // Populate the form with fetched data
-        } else if (error && error.includes('not found')) {
+        } else if (!data && !error) {
             // New user, just use default values and set basic info
             form.setValue('name', user.displayName || '');
             form.setValue('email', user.email || '');

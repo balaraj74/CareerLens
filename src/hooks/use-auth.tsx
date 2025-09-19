@@ -12,7 +12,7 @@ import {
   User,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebaseClient';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
