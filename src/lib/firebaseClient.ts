@@ -1,7 +1,7 @@
 // src/lib/firebaseClient.ts
 import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Your web app's Firebase configuration from the user
@@ -18,8 +18,13 @@ const firebaseConfig: FirebaseOptions = {
 // Initialize Firebase for SSR and prevent re-initialization on the client
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
+// Force long-polling to avoid WebSocket issues in some environments (e.g., Cloud Workstations)
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED
+});
+
 const auth = getAuth(app);
-const db = getFirestore(app);
 
 // Initialize Analytics only if it's supported on the client-side
 let analytics: any = null;
