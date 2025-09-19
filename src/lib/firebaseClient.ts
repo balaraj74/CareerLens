@@ -14,10 +14,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Check if all required config values are present
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.error("Firebase config is not set. Please check your .env file and ensure all NEXT_PUBLIC_FIREBASE_ variables are set.");
+}
+
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-const analytics = isSupported().then(yes => yes ? getAnalytics(app) : null);
+
+// Initialize Analytics only if it's supported
+const analytics = isSupported().then(yes => (yes ? getAnalytics(app) : null));
 
 export { app, analytics };
