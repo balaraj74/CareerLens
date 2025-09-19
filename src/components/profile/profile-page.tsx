@@ -38,10 +38,10 @@ const steps = [
 
 export function ProfilePage() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   const form = useForm<UserProfile>({
     resolver: zodResolver(userProfileSchema),
@@ -50,13 +50,13 @@ export function ProfilePage() {
   });
 
   useEffect(() => {
-    // Wait until the user object is available from the auth context.
-    if (!user) {
+    // Only proceed when authentication is resolved and we have a user object.
+    if (authLoading || !user) {
       return;
     }
 
     const loadProfile = async () => {
-      setIsLoading(true);
+      setIsProfileLoading(true);
       const { data, error } = await fetchProfile(user.uid);
       
       if (error) {
@@ -88,11 +88,11 @@ export function ProfilePage() {
           });
         }
       }
-      setIsLoading(false);
+      setIsProfileLoading(false);
     };
 
     loadProfile();
-  }, [user, form, toast]);
+  }, [user, authLoading, form, toast]);
 
 
   const {
@@ -163,7 +163,7 @@ export function ProfilePage() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  if (isLoading) {
+  if (authLoading || isProfileLoading) {
     return (
         <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
              <div className="mb-8">
@@ -175,10 +175,8 @@ export function ProfilePage() {
             </div>
             <Card className="glass-card rounded-2xl">
                 <CardHeader><Skeleton className="h-14 w-3/4" /></CardHeader>
-                <CardContent className="space-y-6">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-2/3" />
+                <CardContent className="space-y-6 flex items-center justify-center min-h-[300px]">
+                   <Loader2 className="w-12 h-12 text-primary animate-spin" />
                 </CardContent>
             </Card>
         </div>
