@@ -1,10 +1,12 @@
+
 import { db } from "./firebaseClient";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import type { UserProfile } from './types';
+import { defaultProfileData } from "./data";
 
 
 /**
- * Fetches a user's profile from Firestore.
+ * Fetches a user's profile from Firestore using the client-side SDK.
  * If the profile doesn't exist, it returns a default empty profile object.
  * This prevents "NOT_FOUND" errors on the client.
  * @param userId - The ID of the user.
@@ -23,7 +25,7 @@ export async function fetchProfile(
     if (!docSnap.exists()) {
         // Return a default, empty profile if one doesn't exist.
         // This is not an error state.
-        return { success: true, data: null };
+        return { success: true, data: defaultProfileData };
     }
     
     const data = docSnap.data() as any;
@@ -42,12 +44,13 @@ export async function fetchProfile(
     return { success: true, data: data as UserProfile };
   } catch (err: any) {
     console.error('Error fetching profile from Firestore:', err);
-    return { success: false, error: 'Failed to retrieve profile data.' };
+    // Return default data as a fallback on error to prevent crashes
+    return { success: false, data: defaultProfileData, error: 'Failed to retrieve profile data.' };
   }
 }
 
 /**
- * Creates or updates a user's profile in Firestore.
+ * Creates or updates a user's profile in Firestore using the client-side SDK.
  * Uses setDoc with { merge: true } to seamlessly handle both cases.
  * @param userId - The ID of the user.
  * @param data - The user profile data to save.
@@ -72,12 +75,12 @@ export async function saveProfile(
     }
     
     // Add/update timestamps
-    const docSnap = await getDoc(docRef);
     dataToSave.updatedAt = Timestamp.now();
+    
+    const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) {
         dataToSave.createdAt = Timestamp.now();
     }
-
 
     await setDoc(docRef, dataToSave, { merge: true });
     return { success: true };
@@ -86,3 +89,4 @@ export async function saveProfile(
     return { success: false, error: 'Failed to save profile changes.' };
   }
 }
+

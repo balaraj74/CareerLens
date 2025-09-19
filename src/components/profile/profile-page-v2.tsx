@@ -96,27 +96,22 @@ export function ProfilePageV2() {
             title: 'Failed to load profile',
             description: error,
         });
-        // On error, reset with default data but pre-fill from auth
-        form.reset({
-            ...defaultProfileData,
-            name: user.displayName || '',
-            email: user.email || '',
-            photoURL: user.photoURL || '',
-        });
-    } else {
-        const existingData = data || {};
-        // Merge fetched data with defaults and auth data
-        const mergedData = {
-            ...defaultProfileData,
-            ...existingData,
-            name: existingData.name || user.displayName || '',
-            email: existingData.email || user.email || '',
-            photoURL: existingData.photoURL || user.photoURL || '',
-            dob: existingData.dob ? new Date(existingData.dob) : undefined,
-        };
-        form.reset(mergedData);
-        setPreviewImage(mergedData.photoURL || null);
     }
+    
+    const profileData = data || defaultProfileData;
+
+    // Merge fetched data with defaults and auth data
+    const mergedData = {
+        ...defaultProfileData,
+        ...profileData,
+        name: profileData.name || user.displayName || '',
+        email: profileData.email || user.email || '',
+        photoURL: profileData.photoURL || user.photoURL || '',
+        dob: profileData.dob ? new Date(profileData.dob) : undefined,
+    };
+    form.reset(mergedData);
+    setPreviewImage(mergedData.photoURL || null);
+
     setIsLoading(false);
   }, [user, form, toast]);
 

@@ -1,3 +1,4 @@
+
 // src/lib/firebaseClient.ts
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
@@ -8,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs",
   authDomain: "careerlens-1.firebaseapp.com",
   projectId: "careerlens-1",
-  storageBucket: "careerlens-1.firebasestorage.app",
+  storageBucket: "careerlens-1.appspot.com",
   messagingSenderId: "202306950137",
   appId: "1:202306950137:web:ed4e91e619dd4cc7dde328",
   measurementId: "G-WEF48JHJF9"
@@ -36,3 +37,4 @@ try {
 auth = getAuth(app);
 
 export { app, auth, db };
+

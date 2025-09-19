@@ -24,14 +24,7 @@ if (!admin.apps.length) {
       console.error("Firebase Admin initialization error from service account object:", error);
     }
   } else {
-    // This path is for local development or environments where the separate env vars are not set.
-    // It will likely fail in a deployed environment if not configured, which is expected.
-    console.warn("One or more Firebase Admin environment variables are missing. Attempting to initialize with default credentials.");
-    try {
-        admin.initializeApp();
-    } catch(e) {
-        console.error("Fallback Firebase Admin initialization failed:", e);
-    }
+      console.error("Firebase Admin initialization failed: One or more required environment variables (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are missing.");
   }
 }
 
