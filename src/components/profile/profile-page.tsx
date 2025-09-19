@@ -4,16 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { PlusCircle, Trash2, ArrowLeft, ArrowRight, User, School, Briefcase, Sparkles, MapPin, Loader2, Bot } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-import {
-  userProfileSchema,
-  type UserProfile,
-} from '@/lib/types';
+import { userProfileSchema, type UserProfile } from '@/lib/types';
 import { defaultProfileData } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { db } from '@/lib/firebaseClient';
+import { fetchProfile, saveProfile } from '@/lib/profile-service';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -39,38 +35,6 @@ const steps = [
     { id: 'skills', title: 'Skills & Expertise', icon: <Sparkles className="w-6 h-6" />, description: "What are you good at?" },
     { id: 'interests', title: 'Career Goals', icon: <MapPin className="w-6 h-6" />, description: "What are your aspirations?" },
 ];
-
-
-async function fetchProfile(userId: string): Promise<{ success: boolean; data?: UserProfile | null, error?: string}> {
-    try {
-        const userDocRef = doc(db, 'users', userId);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-            const data = userDoc.data() as UserProfile;
-            return { success: true, data };
-        } else {
-            // This is not an error, it just means the user is new.
-            return { success: true, data: null };
-        }
-    } catch (err: any) {
-        console.error("fetchProfile error:", err.message);
-        return { success: false, error: err.message };
-    }
-}
-
-async function saveProfile(userId: string, data: UserProfile): Promise<{ success: boolean; error?: string}> {
-     try {
-        const userDocRef = doc(db, 'users', userId);
-        // Use setDoc with merge:true to create or update the document.
-        await setDoc(userDocRef, data, { merge: true });
-        return { success: true };
-    } catch (err: any) {
-        console.error("saveProfile error:", err.message);
-        return { success: false, error: err.message };
-    }
-}
-
 
 export function ProfilePage() {
   const { toast } = useToast();
@@ -108,24 +72,21 @@ export function ProfilePage() {
                 name: user.displayName || '',
                 email: user.email || '',
             });
-        } else if (data) {
-            // Existing user, populate form with fetched data but ensure email and name are from auth
-            form.reset({
-                ...data,
-                name: user.displayName || data.name || '',
-                email: user.email || data.email || '',
-            });
         } else {
-            // New user (data is null), use default values and set basic info
-            form.reset({
+            const existingData = data || {};
+            const mergedData = {
                 ...defaultProfileData,
-                name: user.displayName || '',
-                email: user.email || '',
-            });
-            toast({
-              title: "Welcome!",
-              description: "Let's set up your profile to get started.",
-            })
+                ...existingData,
+                name: existingData.name || user.displayName || '',
+                email: existingData.email || user.email || '',
+            };
+            form.reset(mergedData);
+            if (!data) {
+                 toast({
+                  title: "Welcome!",
+                  description: "Let's set up your profile to get started.",
+                });
+            }
         }
         setIsLoading(false);
     };
@@ -333,7 +294,7 @@ export function ProfilePage() {
                                     </div>
                                 </div>
                             ))}
-                            <Button type="button" variant="outline" onClick={() => appendEducation({ degree: '', field: '', year: '' })}><PlusCircle className="mr-2 h-4 w-4" /> Add Education</Button>
+                            <Button type="button" variant="outline" onClick={() => appendEducation({ degree: '', field: '', institution: '', year: '' })}><PlusCircle className="mr-2 h-4 w-4" /> Add Education</Button>
                         </div>
                     )}
                      {currentStep === 3 && (
@@ -400,7 +361,7 @@ export function ProfilePage() {
                                             <Input 
                                                 placeholder="e.g. SaaS, Fintech, Healthcare"
                                                 onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} 
-                                                value={Array.isArray(field.value) ? field.value.join(', ') : ''}
+                                                value={field.value?.join(', ') || ''}
                                             />
                                         </FormControl>
                                         <div className="pt-2">
