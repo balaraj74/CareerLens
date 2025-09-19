@@ -2,36 +2,25 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import {
-  PlusCircle,
-  Trash2,
-  User,
-  School,
-  Briefcase,
-  Sparkles,
-  MapPin,
   Loader2,
-  Bot,
+  User,
   Linkedin,
   Github,
   Mail,
   Phone,
-  Cake,
-  Binary,
-  Upload,
+  Sparkles,
   X,
-  CalendarIcon,
+  PlusCircle,
 } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 import { userProfileSchema, type UserProfile } from '@/lib/types';
-import { defaultProfileData } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { fetchProfile, saveProfile } from '@/lib/profile-service';
+import { saveProfile, fetchProfile } from '@/lib/profile-service';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -53,105 +42,69 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '../ui/skeleton';
-import { cn } from '@/lib/utils';
 
 export function ProfilePageV2() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('profile');
+  const [isFetching, setIsFetching] = useState(true);
   const [newSkill, setNewSkill] = useState('');
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<UserProfile>({
     resolver: zodResolver(userProfileSchema),
-    defaultValues: defaultProfileData,
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      bio: '',
+      linkedin: '',
+      github: '',
+      skills: [],
+    },
     mode: 'onChange',
   });
-
-  const loadProfile = useCallback(async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    const { data, error } = await fetchProfile(user.uid);
-    
-    if (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Failed to load profile',
-            description: error,
-        });
-    }
-    
-    const profileData = data || defaultProfileData;
-
-    // Merge fetched data with defaults and auth data
-    const mergedData = {
-        ...defaultProfileData,
-        ...profileData,
-        name: profileData.name || user.displayName || '',
-        email: profileData.email || user.email || '',
-        photoURL: profileData.photoURL || user.photoURL || '',
-        dob: profileData.dob ? new Date(profileData.dob) : undefined,
-    };
-    form.reset(mergedData);
-    setPreviewImage(mergedData.photoURL || null);
-
-    setIsLoading(false);
-  }, [user, form, toast]);
-
-
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
-
-  const {
-    fields: experienceFields,
-    append: appendExperience,
-    remove: removeExperience,
-  } = useFieldArray({ control: form.control, name: 'experience' });
-
-  const {
-    fields: educationFields,
-    append: appendEducation,
-    remove: removeEducation,
-  } = useFieldArray({ control: form.control, name: 'education' });
 
   const { fields: skillFields, append: appendSkill, remove: removeSkill } = useFieldArray({
     control: form.control,
     name: 'skills',
   });
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
-        form.setValue('photoURL', reader.result as string, { shouldValidate: true });
-      };
-      reader.readAsDataURL(file);
+  useEffect(() => {
+    if (user) {
+      setIsFetching(true);
+      fetchProfile(user.uid).then(({ data: profileData, success, error }) => {
+        if (success && profileData) {
+            form.reset({
+                name: profileData.name || user.displayName || '',
+                email: user.email || '',
+                phone: profileData.phone || '',
+                bio: profileData.bio || '',
+                linkedin: profileData.linkedin || '',
+                github: profileData.github || '',
+                skills: profileData.skills || [],
+            });
+        } else if (error) {
+            toast({ variant: 'destructive', title: 'Could not load profile', description: 'Using default values.' });
+            form.reset({ email: user.email || '' });
+        } else {
+             // New user, just set email
+            form.reset({ email: user.email || '' });
+        }
+        setIsFetching(false);
+      });
+    } else if (!authLoading) {
+      setIsFetching(false); // Not logged in, stop fetching
     }
-  };
+  }, [user, authLoading, form, toast]);
 
   const handleAddSkill = () => {
     if (newSkill.trim()) {
-      appendSkill({ name: newSkill.trim(), proficiency: 'Intermediate' });
+      // Avoid adding duplicate skills
+      if (!skillFields.some(field => field.name.toLowerCase() === newSkill.trim().toLowerCase())) {
+        appendSkill({ name: newSkill.trim() });
+      }
       setNewSkill('');
     }
   };
@@ -160,13 +113,19 @@ export function ProfilePageV2() {
     if (!user) {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: 'Authentication Error',
         description: 'You must be logged in to save your profile.',
       });
       return;
     }
     setIsSubmitting(true);
-    const { success, error } = await saveProfile(user.uid, data);
+    
+    const profileData = {
+      ...data,
+      email: user.email, // Ensure email from auth is saved
+    };
+
+    const { success, error } = await saveProfile(user.uid, profileData);
     setIsSubmitting(false);
 
     if (success) {
@@ -174,381 +133,181 @@ export function ProfilePageV2() {
         title: 'Profile Saved! ✅',
         description: 'Your information has been successfully updated.',
       });
-      loadProfile(); // Reload profile to get latest server-side timestamps
     } else {
       toast({
         variant: 'destructive',
         title: 'Save Failed ❌',
-        description: error,
+        description: error || 'An unknown error occurred.',
       });
     }
   }
-
-  if (isLoading && !user) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
   
-  if (isLoading) {
+  if (authLoading || isFetching) {
     return (
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8">
-        <Skeleton className="h-12 w-1/3" />
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-6">
-              <Skeleton className="h-24 w-24 rounded-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-6 w-64" />
-              </div>
-            </div>
-            <div className="mt-8">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full mt-4" />
-              <Skeleton className="h-10 w-full mt-4" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+       <div className="p-4 md:p-8 max-w-2xl mx-auto">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <Card className="glass-card w-full">
+                <CardHeader>
+                    <Skeleton className="h-8 w-48"/>
+                    <Skeleton className="h-4 w-64 mt-2"/>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2"><Skeleton className="h-4 w-24"/><Skeleton className="h-10 w-full"/></div>
+                    <div className="space-y-2"><Skeleton className="h-4 w-24"/><Skeleton className="h-10 w-full"/></div>
+                    <div className="space-y-2"><Skeleton className="h-4 w-24"/><Skeleton className="h-10 w-full"/></div>
+                    <div className="space-y-2"><Skeleton className="h-4 w-24"/><Skeleton className="h-20 w-full"/></div>
+                </CardContent>
+                 <CardFooter className="justify-end">
+                    <Skeleton className="h-10 w-32"/>
+                </CardFooter>
+            </Card>
+        </motion.div>
+       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold font-headline text-glow">Your Profile</h1>
-        <p className="text-muted-foreground">Keep your professional details up-to-date.</p>
-      </div>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex items-center space-x-6 mb-8">
-              <div className="relative group">
-                <Avatar className="h-24 w-24 border-4 border-primary/30 group-hover:border-primary/80 transition-all">
-                  <AvatarImage src={previewImage || undefined} alt={form.getValues('name')} />
-                  <AvatarFallback className="text-3xl">
-                    {form
-                      .getValues('name')
-                      ?.split(' ')
-                      .map((n) => n[0])
-                      .join('') || <User />}
-                  </AvatarFallback>
-                </Avatar>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  className="absolute bottom-0 right-0 rounded-full h-8 w-8"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                </Button>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">{form.getValues('name')}</h2>
-                <p className="text-muted-foreground">{form.getValues('email')}</p>
-                <TabsList className="mt-4">
-                  <TabsTrigger value="profile">
-                    <User className="mr-2" />
-                    Profile
-                  </TabsTrigger>
-                  <TabsTrigger value="experience">
-                    <Briefcase className="mr-2" />
-                    Experience & Skills
-                  </TabsTrigger>
-                  <TabsTrigger value="goals">
-                    <MapPin className="mr-2" />
-                    Goals
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            </div>
-
-            <Card className="glass-card">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -10, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <TabsContent value="profile" forceMount className={activeTab === 'profile' ? 'block' : 'hidden'}>
-                    <CardHeader>
-                      <CardTitle>Personal Information</CardTitle>
-                      <CardDescription>
-                        This information will be used to personalize your career recommendations.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Full Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Ada Lovelace" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email</FormLabel>
-                              <FormControl>
-                                <Input placeholder="ada@futureofcode.com" {...field} readOnly />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Phone Number</FormLabel>
-                              <FormControl>
-                                <Input placeholder="+1 (123) 456-7890" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="dob"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel>Date of birth</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant={'outline'}
-                                      className={cn(
-                                        'pl-3 text-left font-normal',
-                                        !field.value && 'text-muted-foreground'
-                                      )}
-                                    >
-                                      {field.value ? (
-                                        format(field.value, 'PPP')
-                                      ) : (
-                                        <span>Pick a date</span>
-                                      )}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) =>
-                                      date > new Date() || date < new Date('1900-01-01')
-                                    }
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="gender"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Gender</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select your gender" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="male">Male</SelectItem>
-                                  <SelectItem value="female">Female</SelectItem>
-                                  <SelectItem value="non-binary">Non-binary</SelectItem>
-                                  <SelectItem value="other">Other</SelectItem>
-                                  <SelectItem value="prefer-not-to-say">
-                                    Prefer not to say
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name="summary"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Professional Summary</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="A brief 2-3 sentence summary of your career and skills."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </TabsContent>
-                  <TabsContent value="experience" forceMount className={activeTab === 'experience' ? 'block' : 'hidden'}>
-                     <CardHeader>
-                        <CardTitle>Experience & Skills</CardTitle>
-                        <CardDescription>Detail your professional journey and expertise.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-8">
-                        <div>
-                          <h3 className="text-lg font-medium mb-4">Work Experience</h3>
-                          <div className="space-y-4">
-                            {experienceFields.map((field, index) => (
-                              <div key={field.id} className="p-4 border rounded-lg relative space-y-2 bg-background/30">
-                                <div className="grid md:grid-cols-2 gap-4">
-                                  <FormField control={form.control} name={`experience.${index}.role`} render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><FormControl><Input {...field} placeholder="Software Engineer" /></FormControl><FormMessage /></FormItem>)}/>
-                                  <FormField control={form.control} name={`experience.${index}.company`} render={({ field }) => (<FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} placeholder="TechCorp" /></FormControl><FormMessage /></FormItem>)}/>
-                                  <FormField control={form.control} name={`experience.${index}.years`} render={({ field }) => (<FormItem><FormLabel>Duration</FormLabel><FormControl><Input {...field} placeholder="e.g., 2 years" /></FormControl><FormMessage /></FormItem>)}/>
-                                </div>
-                                <FormField control={form.control} name={`experience.${index}.description`} render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} placeholder="Describe your responsibilities and achievements." /></FormControl><FormMessage /></FormItem>)}/>
-                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeExperience(index)}><Trash2 className="h-4 w-4" /></Button>
-                              </div>
-                            ))}
-                             <Button type="button" variant="outline" onClick={() => appendExperience({ role: '', company: '', years: '', description: '', skills: [] })}><PlusCircle className="mr-2 h-4 w-4" /> Add Experience</Button>
-                          </div>
-                        </div>
-                         <div>
-                          <h3 className="text-lg font-medium mb-4">Education</h3>
-                          <div className="space-y-4">
-                            {educationFields.map((field, index) => (
-                              <div key={field.id} className="p-4 border rounded-lg relative space-y-2 bg-background/30">
-                                <div className="grid md:grid-cols-2 gap-4">
-                                  <FormField control={form.control} name={`education.${index}.degree`} render={({ field }) => (<FormItem><FormLabel>Degree</FormLabel><FormControl><Input {...field} placeholder="Bachelor of Science" /></FormControl><FormMessage /></FormItem>)}/>
-                                  <FormField control={form.control} name={`education.${index}.field`} render={({ field }) => (<FormItem><FormLabel>Field of Study</FormLabel><FormControl><Input {...field} placeholder="Computer Science" /></FormControl><FormMessage /></FormItem>)}/>
-                                  <FormField control={form.control} name={`education.${index}.institution`} render={({ field }) => (<FormItem><FormLabel>Institution</FormLabel><FormControl><Input {...field} placeholder="University of Innovation" /></FormControl><FormMessage /></FormItem>)}/>
-                                  <FormField control={form.control} name={`education.${index}.year`} render={({ field }) => (<FormItem><FormLabel>Year of Completion</FormLabel><FormControl><Input {...field} placeholder="2022" /></FormControl><FormMessage /></FormItem>)}/>
-                                </div>
-                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeEducation(index)}><Trash2 className="h-4 w-4" /></Button>
-                              </div>
-                            ))}
-                            <Button type="button" variant="outline" onClick={() => appendEducation({ degree: '', field: '', institution: '', year: '' })}><PlusCircle className="mr-2 h-4 w-4" /> Add Education</Button>
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-medium mb-4">Skills</h3>
-                            <div className="flex gap-2 mb-4">
-                              <Input
-                                placeholder="Add a new skill"
-                                value={newSkill}
-                                onChange={(e) => setNewSkill(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSkill(); }}}
-                              />
-                              <Button type="button" onClick={handleAddSkill}><PlusCircle className="mr-2"/> Add</Button>
+    <div className="p-4 md:p-8 max-w-2xl mx-auto">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <Card className="glass-card w-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-2xl font-headline text-glow">
+                  <User/> Your Professional Profile
+                </CardTitle>
+                <CardDescription>
+                  This information helps us tailor your career recommendations. Keep it up-to-date!
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                 <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ada Lovelace" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
+                                <Input placeholder="ada@futureofcode.com" {...field} readOnly className="pl-10 bg-muted/50 cursor-not-allowed"/>
                             </div>
-                           <div className="flex flex-wrap gap-2">
-                              {skillFields.map((field, index) => (
-                                <Badge key={field.id} variant="secondary" className="text-base py-1 px-3">
-                                  {field.name}
-                                  <button type="button" onClick={() => removeSkill(index)} className="ml-2 rounded-full hover:bg-destructive/50 p-0.5"><X className="h-3 w-3"/></button>
-                                </Badge>
-                              ))}
-                           </div>
-                        </div>
-                      </CardContent>
-                  </TabsContent>
-                  <TabsContent value="goals" forceMount className={activeTab === 'goals' ? 'block' : 'hidden'}>
-                     <CardHeader>
-                        <CardTitle>Career Goals & Links</CardTitle>
-                        <CardDescription>Help us understand your ambitions and find you online.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                         <FormField
-                            control={form.control}
-                            name="careerGoals"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Career Goals</FormLabel>
-                                <FormControl>
-                                  <Textarea placeholder="What are your short-term and long-term career aspirations? What kind of role or industry are you targeting?" {...field} rows={5}/>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                         <FormField
-                            control={form.control}
-                            name="linkedin"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>LinkedIn Profile</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                     <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
-                                     <Input placeholder="https://linkedin.com/in/..." {...field} className="pl-10"/>
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                           <FormField
-                            control={form.control}
-                            name="github"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>GitHub/Portfolio Link</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Github className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
-                                    <Input placeholder="https://github.com/..." {...field} className="pl-10"/>
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                      </CardContent>
-                  </TabsContent>
-                </motion.div>
-              </AnimatePresence>
-               <CardFooter className="justify-end">
-                <Button type="submit" disabled={isSubmitting} className="bg-gradient-to-r from-primary to-accent">
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                 <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                             <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
+                                <Input placeholder="(123) 456-7890" {...field} className="pl-10"/>
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Short Bio</FormLabel>
+                        <FormControl>
+                            <Textarea placeholder="A brief summary of your career and skills (max 200 chars)." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                <FormField
+                    control={form.control}
+                    name="linkedin"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>LinkedIn URL</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
+                                <Input placeholder="https://linkedin.com/in/..." {...field} className="pl-10"/>
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                <FormField
+                    control={form.control}
+                    name="github"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>GitHub URL</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <Github className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
+                                <Input placeholder="https://github.com/..." {...field} className="pl-10"/>
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+
+                <div>
+                    <FormLabel>Skills</FormLabel>
+                    <div className="flex gap-2 my-2">
+                        <Input
+                        placeholder="Add a new skill (e.g., React)"
+                        value={newSkill}
+                        onChange={(e) => setNewSkill(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSkill(); }}}
+                        />
+                        <Button type="button" variant="outline" onClick={handleAddSkill}><PlusCircle/> Add</Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {skillFields.map((field, index) => (
+                        <Badge key={field.id} variant="secondary" className="text-base py-1 px-3 animate-in fade-in-0 zoom-in-95">
+                            {field.name}
+                            <button type="button" onClick={() => removeSkill(index)} className="ml-2 rounded-full hover:bg-destructive/50 p-0.5"><X className="h-3 w-3"/></button>
+                        </Badge>
+                        ))}
+                    </div>
+                    <FormMessage>{form.formState.errors.skills?.message}</FormMessage>
+                </div>
+
+              </CardContent>
+              <CardFooter className="justify-end">
+                <Button type="submit" disabled={isSubmitting} className="bg-gradient-to-r from-primary to-accent min-w-[120px]">
                   {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    'Save Changes'
+                    <> <Sparkles className="mr-2"/> Save Profile </>
                   )}
                 </Button>
               </CardFooter>
             </Card>
-          </Tabs>
-        </form>
-      </Form>
+            </form>
+        </Form>
+      </motion.div>
     </div>
   );
 }
