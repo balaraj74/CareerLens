@@ -19,6 +19,7 @@ const firebaseConfig: FirebaseOptions = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Force long-polling to avoid WebSocket issues in some environments (e.g., Cloud Workstations)
+// This is the key fix for the "client is offline" error.
 const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
   cacheSizeBytes: CACHE_SIZE_UNLIMITED

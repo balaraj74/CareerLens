@@ -84,7 +84,13 @@ export function ProfilePageV2() {
   });
 
   useEffect(() => {
-    if (!user) return;
+    // This check is critical. Do not attempt to load a profile until the user object is confirmed to exist.
+    // This prevents the race condition that causes the "client is offline" error.
+    if (!user) {
+      // If there's no user, we either wait or show a login prompt.
+      // For now, we just won't do anything, and the loading state will persist.
+      return;
+    }
 
     const loadProfile = async () => {
       setIsLoading(true);
@@ -96,6 +102,7 @@ export function ProfilePageV2() {
           title: 'Failed to load profile',
           description: error,
         });
+        // Reset with authenticated user's details even if profile fetch fails
         form.reset({
           ...defaultProfileData,
           name: user.displayName || '',
@@ -103,15 +110,18 @@ export function ProfilePageV2() {
           photoURL: user.photoURL || '',
         });
       } else if (data) {
+        // Profile exists, populate the form
         form.reset({
           ...data,
           name: data.name || user.displayName || '',
           email: data.email || user.email || '',
           photoURL: data.photoURL || user.photoURL || '',
-          dob: data.dob ? new Date(data.dob) : undefined,
+          // Ensure dob is a Date object if it exists
+          dob: data.dob ? new Date(data.dob) : undefined, 
         });
         setPreviewImage(data.photoURL || user.photoURL || null);
       } else {
+        // New user, no profile yet. Pre-fill with auth data.
         form.reset({
           ...defaultProfileData,
           name: user.displayName || '',
