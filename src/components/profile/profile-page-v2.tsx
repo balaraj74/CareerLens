@@ -85,11 +85,7 @@ export function ProfilePageV2() {
   });
 
   useEffect(() => {
-    // This check is critical. Do not attempt to load a profile until the user object is confirmed to exist.
-    // This prevents the race condition that causes the "client is offline" error.
     if (!user) {
-      // If there's no user, we either wait or show a login prompt.
-      // For now, we just won't do anything, and the loading state will persist.
       return;
     }
 
@@ -103,35 +99,24 @@ export function ProfilePageV2() {
           title: 'Failed to load profile',
           description: error,
         });
-        // Reset with authenticated user's details even if profile fetch fails
         form.reset({
           ...defaultProfileData,
           name: user.displayName || '',
           email: user.email || '',
           photoURL: user.photoURL || '',
         });
-      } else if (data) {
-        // Profile exists, populate the form
-        // Ensure all fields have a default value to prevent uncontrolled -> controlled error
-        form.reset({
-          ...defaultProfileData, // Start with defaults
-          ...data, // Override with fetched data
-          name: data.name || user.displayName || '',
-          email: data.email || user.email || '',
-          photoURL: data.photoURL || user.photoURL || '',
-          // Ensure dob is a Date object if it exists
-          dob: data.dob ? new Date(data.dob) : undefined, 
-        });
-        setPreviewImage(data.photoURL || user.photoURL || null);
       } else {
-        // New user, no profile yet. Pre-fill with auth data.
-        form.reset({
+        const existingData = data || {};
+        const mergedData = {
           ...defaultProfileData,
-          name: user.displayName || '',
-          email: user.email || '',
-          photoURL: user.photoURL || '',
-        });
-        setPreviewImage(user.photoURL || null);
+          ...existingData,
+          name: existingData.name || user.displayName || '',
+          email: existingData.email || user.email || '',
+          photoURL: existingData.photoURL || user.photoURL || '',
+          dob: existingData.dob ? new Date(existingData.dob) : undefined, 
+        };
+        form.reset(mergedData);
+        setPreviewImage(mergedData.photoURL || null);
       }
       setIsLoading(false);
     };
