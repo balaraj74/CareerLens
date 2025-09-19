@@ -26,11 +26,14 @@ export async function GET(request: Request) {
     const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
+      // It's not an error if the profile doesn't exist, it might be a new user.
+      // The client should handle this case.
       return handleError('User profile not found.', 404);
     }
 
     return NextResponse.json(userDoc.data());
   } catch (error: any) {
+    // This will catch other errors, like permission issues.
     return handleError(error.message || 'Failed to fetch user profile.', 500);
   }
 }
@@ -50,6 +53,7 @@ export async function POST(request: Request) {
         }
 
         const userDocRef = adminDb.collection('users').doc(userId);
+        // Use set with merge:true to create or update the document.
         await userDocRef.set({
             ...profileData,
             updatedAt: new Date().toISOString(),
