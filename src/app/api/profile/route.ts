@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebaseAdmin';
 
 // Helper function to handle errors consistently.
 const handleError = (message: string, status: number) => {
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     if (!userDoc.exists) {
       // It's not an error if the profile doesn't exist, it might be a new user.
       // The client should handle this case.
-      return handleError('User profile not found.', 404);
+      return NextResponse.json(null);
     }
 
     return NextResponse.json(userDoc.data());

@@ -4,9 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { PlusCircle, Trash2, ArrowLeft, ArrowRight, User, School, Briefcase, Sparkles, MapPin, Loader2, Bot } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebaseClient';
-
 
 import {
   userProfileSchema,
@@ -44,12 +41,13 @@ const steps = [
 
 async function fetchProfile(userId: string): Promise<{ success: boolean; data?: UserProfile | null, error?: string}> {
     try {
-        const ref = doc(db, "users", userId);
-        const snapshot = await getDoc(ref);
-        if (snapshot.exists()) {
-            return { success: true, data: snapshot.data() as UserProfile };
+        const response = await fetch(`/api/profile?userId=${userId}`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Failed to fetch profile: ${response.statusText}`);
         }
-        return { success: true, data: null }; // Not an error, just no data
+        const data = await response.json();
+        return { success: true, data };
     } catch (err: any) {
         console.error("fetchProfile error:", err.message);
         return { success: false, error: err.message };
@@ -58,8 +56,15 @@ async function fetchProfile(userId: string): Promise<{ success: boolean; data?: 
 
 async function saveProfile(userId: string, data: UserProfile): Promise<{ success: boolean; error?: string}> {
      try {
-        const ref = doc(db, "users", userId);
-        await setDoc(ref, data, { merge: true });
+        const response = await fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, ...data }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Failed to save profile: ${response.statusText}`);
+        }
         return { success: true };
     } catch (err: any) {
         console.error("saveProfile error:", err.message);
@@ -88,9 +93,15 @@ export function ProfilePage() {
         setIsLoading(true);
         const { data, error } = await fetchProfile(user.uid);
         
-        if (data) {
+        if (error) {
+             toast({
+                variant: "destructive",
+                title: "Failed to load profile",
+                description: error,
+            });
+        } else if (data) {
             form.reset(data); // Populate the form with fetched data
-        } else if (!data && !error) {
+        } else {
             // New user, just use default values and set basic info
             form.setValue('name', user.displayName || '');
             form.setValue('email', user.email || '');
@@ -98,13 +109,6 @@ export function ProfilePage() {
               title: "Welcome!",
               description: "Let's set up your profile to get started.",
             })
-        }
-        else if (error) {
-            toast({
-                variant: "destructive",
-                title: "Failed to load profile",
-                description: error,
-            });
         }
         setIsLoading(false);
     };
