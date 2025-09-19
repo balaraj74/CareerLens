@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
     if (!userDoc.exists) {
       // It's not an error if the profile doesn't exist, it might be a new user.
-      // The client should handle this case.
+      // The client should handle this case by receiving null.
       return NextResponse.json(null);
     }
 

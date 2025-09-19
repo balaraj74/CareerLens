@@ -100,9 +100,11 @@ export function ProfilePage() {
                 description: error,
             });
         } else if (data) {
-            form.reset(data); // Populate the form with fetched data
+            // Existing user, populate form with fetched data
+            form.reset(data);
         } else {
-            // New user, just use default values and set basic info
+            // New user (data is null), use default values and set basic info
+            form.reset(defaultProfileData); // Ensure form is reset to defaults
             form.setValue('name', user.displayName || '');
             form.setValue('email', user.email || '');
             toast({
