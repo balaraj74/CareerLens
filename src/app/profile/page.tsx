@@ -1,5 +1,5 @@
-import { ProfilePageV2 } from '@/components/profile/profile-page-v2';
+import { ProfilePage } from '@/components/profile/profile-page';
 
 export default function Page() {
-  return <ProfilePageV2 />;
+  return <ProfilePage />;
 }

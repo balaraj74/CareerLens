@@ -57,7 +57,7 @@ export function SignupPage() {
     setIsLoading(true);
     try {
       await signUp(values.email, values.password);
-      router.push('/');
+      router.push('/profile');
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -73,7 +73,7 @@ export function SignupPage() {
     setIsGoogleLoading(true);
     try {
       await googleSignIn();
-      router.push('/');
+      router.push('/profile');
     } catch (error: any) {
         toast({
             variant: "destructive",

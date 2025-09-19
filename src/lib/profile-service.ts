@@ -1,8 +1,16 @@
 'use client';
 
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, FieldValue } from 'firebase/firestore';
 import { db } from '@/lib/firebaseClient';
 import { UserProfile } from './types';
+
+// Helper to safely convert Firestore Timestamps to JS Date objects.
+const convertTimestamps = (data: any) => {
+    if (data.dob && typeof data.dob.toDate === 'function') {
+        data.dob = data.dob.toDate();
+    }
+    return data;
+}
 
 /**
  * Fetches a user's profile from Firestore.
@@ -17,12 +25,8 @@ export async function fetchProfile(
     const userDoc = await getDoc(userDocRef);
 
     if (userDoc.exists()) {
-      // The 'dob' field is stored as a Timestamp, convert it to a Date object
       const data = userDoc.data() as any;
-      if (data.dob && typeof data.dob.toDate === 'function') {
-        data.dob = data.dob.toDate();
-      }
-      return { success: true, data: data as UserProfile };
+      return { success: true, data: convertTimestamps(data) as UserProfile };
     } else {
       // User profile does not exist yet.
       return { success: true, data: null };
@@ -31,6 +35,13 @@ export async function fetchProfile(
     console.error('Error fetching profile:', err);
     return { success: false, error: 'Failed to retrieve profile data.' };
   }
+}
+
+
+interface UpdatableUserProfile {
+    [key: string]: any;
+    updatedAt?: FieldValue;
+    createdAt?: FieldValue;
 }
 
 /**
@@ -45,19 +56,22 @@ export async function saveProfile(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const userDocRef = doc(db, 'users', userId);
-    
-    // Prepare data for Firestore by removing undefined values and adding a timestamp.
-    // Date objects are automatically converted to Timestamps by Firestore.
-    const profileData = {
-        ...data,
-        updatedAt: serverTimestamp(),
-        createdAt: data.createdAt || serverTimestamp(), // Only set on creation
-    };
+    const docSnap = await getDoc(userDocRef);
+
+    const profileData: UpdatableUserProfile = { ...data };
+
+    // Set timestamps
+    profileData.updatedAt = serverTimestamp();
+    if (!docSnap.exists()) {
+        // Only set createdAt if the document doesn't exist.
+        profileData.createdAt = serverTimestamp();
+    }
 
     // Use setDoc with merge:true to create or update the document.
     await setDoc(userDocRef, profileData, { merge: true });
     return { success: true };
-  } catch (err: any) {
+  } catch (err: any)
+   {
     console.error('Error saving profile:', err);
     return { success: false, error: 'Failed to save profile changes.' };
   }
