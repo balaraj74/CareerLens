@@ -26,8 +26,10 @@ if (getApps().length === 0) {
 }
 
 try {
+  // This will throw if it's the first time, which is fine.
   db = getFirestore(app);
 } catch (e) {
+  // Initialize Firestore with long-polling for environments that need it.
   db = initializeFirestore(app, {
     experimentalForceLongPolling: true,
     cacheSizeBytes: CACHE_SIZE_UNLIMITED
@@ -37,4 +39,3 @@ try {
 auth = getAuth(app);
 
 export { app, auth, db };
-

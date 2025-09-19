@@ -1,9 +1,10 @@
 
+'use client';
+
 import { db } from "./firebaseClient";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import type { UserProfile } from './types';
 import { defaultProfileData } from "./data";
-
 
 /**
  * Fetches a user's profile from Firestore using the client-side SDK.
@@ -14,9 +15,9 @@ import { defaultProfileData } from "./data";
  */
 export async function fetchProfile(
   userId: string
-): Promise<{ success: boolean; data?: UserProfile | null; error?: string }> {
+): Promise<{ success: boolean; data: UserProfile | null; error?: string }> {
   if (!userId) {
-    return { success: false, error: 'User ID is required.' };
+    return { success: false, data: null, error: 'User ID is required.' };
   }
   try {
     const docRef = doc(db, "users", userId);
@@ -34,18 +35,14 @@ export async function fetchProfile(
     if (data.dob && data.dob instanceof Timestamp) {
       data.dob = data.dob.toDate();
     }
-    if (data.createdAt && data.createdAt instanceof Timestamp) {
-      data.createdAt = data.createdAt.toDate().toISOString();
-    }
-     if (data.updatedAt && data.updatedAt instanceof Timestamp) {
-      data.updatedAt = data.updatedAt.toDate().toISOString();
-    }
-
+    
+    // The user's profile already exists, so return it
     return { success: true, data: data as UserProfile };
+
   } catch (err: any) {
     console.error('Error fetching profile from Firestore:', err);
     // Return default data as a fallback on error to prevent crashes
-    return { success: false, data: defaultProfileData, error: 'Failed to retrieve profile data.' };
+    return { success: false, data: defaultProfileData, error: 'Failed to retrieve profile data. You might be offline.' };
   }
 }
 
@@ -74,7 +71,7 @@ export async function saveProfile(
         dataToSave.dob = Timestamp.fromDate(dataToSave.dob);
     }
     
-    // Add/update timestamps
+    // Add/update timestamps for creation and updates
     dataToSave.updatedAt = Timestamp.now();
     
     const docSnap = await getDoc(docRef);
@@ -86,7 +83,6 @@ export async function saveProfile(
     return { success: true };
   } catch (err: any) {
     console.error('Error saving profile to Firestore:', err);
-    return { success: false, error: 'Failed to save profile changes.' };
+    return { success: false, error: 'Failed to save profile changes. Please check your connection.' };
   }
 }
-
