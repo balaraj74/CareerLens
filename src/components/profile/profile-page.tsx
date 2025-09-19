@@ -1,4 +1,3 @@
-
 'use client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -6,10 +5,9 @@ import { PlusCircle, Trash2, ArrowLeft, ArrowRight, User, School, Briefcase, Spa
 import { useState, useEffect } from 'react';
 
 import { userProfileSchema, type UserProfile } from '@/lib/types';
-import { defaultProfileData } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
-import { fetchProfile, saveProfile } from '@/lib/profile-service';
+import { saveProfile } from '@/lib/profile-service';
+import { useProfile } from '@/hooks/use-profile'; // Use the new profile hook
 
 import { Button } from '@/components/ui/button';
 import {
@@ -38,72 +36,21 @@ const steps = [
 
 export function ProfilePage() {
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: profileLoading, reloadProfile } = useProfile(); // Get user and profile from context
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-
+  
   const form = useForm<UserProfile>({
     resolver: zodResolver(userProfileSchema),
-    defaultValues: defaultProfileData,
-    mode: 'onChange',
+    // The form will be reset once the profile is loaded.
   });
 
   useEffect(() => {
-    if (authLoading) {
-      // Still waiting for auth state to resolve, do nothing.
-      return;
+    // When the profile data is loaded from the context, reset the form.
+    if (profile) {
+      form.reset(profile);
     }
-    if (!user) {
-      // No user, probably will be redirected by AppLayout, but stop loading just in case.
-      setIsProfileLoading(false);
-      return;
-    }
-
-    const loadProfile = async () => {
-      setIsProfileLoading(true);
-      const { data, error } = await fetchProfile(user.uid);
-      
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Failed to load profile",
-          description: error,
-        });
-        // Set defaults even on error, using auth info.
-        form.reset({
-          ...defaultProfileData,
-          name: user.displayName || '',
-          email: user.email || '',
-        });
-      } else if (data) {
-        // Profile exists, merge with defaults to ensure all fields are controlled.
-        const mergedData = {
-          ...defaultProfileData,
-          ...data,
-          name: data.name || user.displayName || '',
-          email: data.email || user.email || '',
-        };
-        form.reset(mergedData);
-      } else {
-        // No profile data exists, this is a new user.
-        toast({
-            title: "Welcome!",
-            description: "Let's set up your profile to get started.",
-        });
-        // Reset the form with defaults but populate basic info from auth.
-        form.reset({
-          ...defaultProfileData,
-          name: user.displayName || '',
-          email: user.email || '',
-        });
-      }
-      setIsProfileLoading(false);
-    };
-
-    loadProfile();
-  }, [user, authLoading, form, toast]);
-
+  }, [profile, form]);
 
   const {
     fields: experienceFields,
@@ -123,15 +70,6 @@ export function ProfilePage() {
     name: 'education',
   });
 
-  const {
-    fields: skillFields,
-    append: appendSkill,
-    remove: removeSkill,
-  } = useFieldArray({
-    control: form.control,
-    name: 'skills',
-  });
-
   async function onSubmit(data: UserProfile) {
     if (!user) {
         toast({
@@ -143,13 +81,13 @@ export function ProfilePage() {
     }
     setIsSubmitting(true);
     const { success, error } = await saveProfile(user.uid, data);
-    setIsSubmitting(false);
-
+    
     if (success) {
       toast({
         title: "Profile saved successfully ✅",
         description: "Your AI-powered career journey begins now.",
       });
+      await reloadProfile(); // Reload profile data into context
       setCurrentStep(0);
     } else {
        toast({
@@ -158,6 +96,7 @@ export function ProfilePage() {
         description: error,
       });
     }
+    setIsSubmitting(false);
   }
 
   const handleNext = async () => {
@@ -173,7 +112,7 @@ export function ProfilePage() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  if (authLoading || isProfileLoading) {
+  if (profileLoading) {
     return (
         <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
              <div className="mb-8">
@@ -226,14 +165,14 @@ export function ProfilePage() {
                             <FormField control={form.control} name="name" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Full Name</FormLabel>
-                                    <FormControl><Input placeholder="Ada Lovelace" {...field} /></FormControl>
+                                    <FormControl><Input placeholder="Ada Lovelace" {...field} value={field.value || ''} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}/>
                             <FormField control={form.control} name="email" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
-                                    <FormControl><Input placeholder="ada@futureofcode.com" {...field} readOnly /></FormControl>
+                                    <FormControl><Input placeholder="ada@futureofcode.com" {...field} value={field.value || ''} readOnly /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}/>
@@ -262,7 +201,7 @@ export function ProfilePage() {
                                         <FormField control={form.control} name={`experience.${index}.years`} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Years</FormLabel>
-                                                <FormControl><Input {...field} type="number" placeholder="e.g. 5" /></FormControl>
+                                                <FormControl><Input {...field} placeholder="e.g. 5" /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}/>
@@ -329,7 +268,6 @@ export function ProfilePage() {
                                                     name={`skills.${index}.proficiency`}
                                                     render={({ field: proficiencyField }) => (
                                                         <FormItem className="flex-1">
-                                                            {/* Replace with a cooler slider in the future */}
                                                              <FormControl>
                                                                 <Input {...proficiencyField} placeholder="e.g., Expert" />
                                                              </FormControl>
@@ -385,7 +323,7 @@ export function ProfilePage() {
                                 <FormField control={form.control} name="preferences.location" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Preferred Location</FormLabel>
-                                        <FormControl><Input placeholder="e.g., San Francisco, CA or Remote" {...field} /></FormControl>
+                                        <FormControl><Input placeholder="e.g., San Francisco, CA or Remote" {...field} value={field.value || ''} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>

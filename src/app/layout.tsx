@@ -4,6 +4,7 @@ import './globals.css';
 import { AppLayout } from '@/components/app-layout';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
+import { ProfileProvider } from '@/hooks/use-profile';
 
 // export const metadata: Metadata = {
 //   title: 'CareerLens',
@@ -32,12 +33,14 @@ export default function RootLayout({
       <body className="font-body antialiased" suppressHydrationWarning>
         <div className="animated-gradient absolute top-0 left-0 w-full h-full -z-10" />
         <AuthProvider>
+          <ProfileProvider>
             {isAuthPage ? (
-            <div className="flex min-h-screen items-center justify-center">{children}</div>
+              <div className="flex min-h-screen items-center justify-center">{children}</div>
             ) : (
-            <AppLayout>{children}</AppLayout>
+              <AppLayout>{children}</AppLayout>
             )}
             <Toaster />
+          </ProfileProvider>
         </AuthProvider>
       </body>
     </html>

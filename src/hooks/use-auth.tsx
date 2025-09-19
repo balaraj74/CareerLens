@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -11,9 +10,7 @@ import {
   signInWithPopup,
   User,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebaseClient';
-import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebaseClient';
 
 interface AuthContextType {
   user: User | null;
@@ -36,25 +33,9 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
-  const createUserDocument = async (user: User) => {
-    const userDocRef = doc(db, 'users', user.uid);
-    // This write operation is now fire-and-forget from the perspective of the user's login flow.
-    setDoc(userDocRef, {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      createdAt: new Date().toISOString(),
-    }, { merge: true });
-  };
-
-  const signUp = async (email: string, pass: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-    // Not awaiting this allows the UI to proceed without waiting for the DB write.
-    createUserDocument(userCredential.user);
-    return userCredential;
+  const signUp = (email: string, pass: string) => {
+    return createUserWithEmailAndPassword(auth, email, pass);
   };
 
   const signIn = (email: string, pass: string) => {
@@ -63,10 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const googleSignIn = async () => {
       const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-      // Not awaiting this allows the UI to proceed without waiting for the DB write.
-      createUserDocument(userCredential.user);
-      return userCredential;
+      return signInWithPopup(auth, provider);
   }
 
   const logOut = () => {

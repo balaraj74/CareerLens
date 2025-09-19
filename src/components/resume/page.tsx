@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Download } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { fetchProfile } from '@/lib/profile-service';
+import { useProfile } from '@/hooks/use-profile';
 import { getResumeJson } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
@@ -62,11 +61,9 @@ const CircularProgress = ({ score }: { score: number }) => {
 
 
 export function ResumePage() {
-  const { user } = useAuth();
+  const { profile, loading: loadingProfile } = useProfile();
   const { toast } = useToast();
   
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
   const [manual, setManual] = useState({
     fullName: '', email: '', phone: '', linkedin: '', github: '',
     education: '', experience: '', projects: '', skills: '', summary: ''
@@ -75,42 +72,30 @@ export function ResumePage() {
   const [result, setResult] = useState<any | null>(null);
   const [jobDesc, setJobDesc] = useState('');
 
-  useEffect(() => {
-    if (user) {
-        loadProfile();
+  const loadProfile = () => {
+    if (loadingProfile) {
+      toast({ title: 'Still loading...', description: 'Profile data is currently being fetched.' });
+      return;
     }
-  }, [user]);
-
-  async function loadProfile() {
-    if (!user) return;
-    setLoadingProfile(true);
-    try {
-      const { data, error } = await fetchProfile(user.uid);
-      if (error) throw new Error(error);
-      if (data) {
-        setProfile(data);
-        setManual(prev => ({
-          ...prev,
-          fullName: data.name || prev.fullName,
-          email: data.email || prev.email,
-          phone: data.phone || prev.phone,
-          linkedin: data.linkedin || prev.linkedin,
-          github: data.github || prev.github,
-          summary: data.summary || prev.summary,
-          skills: (data.skills || []).map(s=>s.name).join(', '),
-          experience: (data.experience || []).map(e => `- ${e.role} at ${e.company} (${e.years} years).`).join('\n'),
-          education: (data.education || []).map(e => `- ${e.degree} in ${e.field} from ${e.institution || 'University'} (${e.year}).`).join('\n'),
-        }));
-        toast({ title: 'Profile Loaded', description: 'Your saved profile has been loaded into the form.' });
-      } else {
-         toast({ variant: "destructive", title: 'Profile Not Found', description: 'Please create a profile first.' });
-      }
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Failed to load profile', description: err.message });
-    } finally {
-      setLoadingProfile(false);
+    if (profile) {
+      setManual(prev => ({
+        ...prev,
+        fullName: profile.name || prev.fullName,
+        email: profile.email || prev.email,
+        phone: profile.phone || prev.phone,
+        linkedin: profile.linkedin || prev.linkedin,
+        github: profile.github || prev.github,
+        summary: profile.summary || prev.summary,
+        skills: (profile.skills || []).map(s=>s.name).join(', '),
+        experience: (profile.experience || []).map(e => `- ${e.role} at ${e.company} (${e.years} years).`).join('\n'),
+        education: (profile.education || []).map(e => `- ${e.degree} in ${e.field} from ${e.institution || 'University'} (${e.year}).`).join('\n'),
+      }));
+      toast({ title: 'Profile Loaded', description: 'Your saved profile has been loaded into the form.' });
+    } else {
+       toast({ variant: "destructive", title: 'Profile Not Found', description: 'Please create a profile first.' });
     }
   }
+
 
   async function generateResume() {
     if (!profile) {
@@ -151,7 +136,7 @@ export function ResumePage() {
                 <CardTitle>1. Load Profile & Add Manual Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <Button onClick={loadProfile} disabled={loadingProfile || !user}>
+                <Button onClick={loadProfile} disabled={loadingProfile}>
                     {loadingProfile ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Loading...</> : 'Load Saved Profile Data'}
                 </Button>
 
@@ -183,7 +168,7 @@ export function ResumePage() {
 
           <div className="flex gap-3">
             <Button onClick={generateResume} size="lg" className="bg-gradient-to-r from-primary to-accent" disabled={generating}>{generating ? <><Loader2 className="animate-spin" /> Generating...</> : 'Generate AI Resume'}</Button>
-            <Button onClick={()=>{ setProfile(null); setManual({ fullName:'', email:'', phone:'', linkedin:'', github:'', education:'', experience:'', projects:'', skills:'', summary:'' }); setResult(null); setJobDesc(''); }} variant="outline">Reset</Button>
+            <Button onClick={()=>{ setManual({ fullName:'', email:'', phone:'', linkedin:'', github:'', education:'', experience:'', projects:'', skills:'', summary:'' }); setResult(null); setJobDesc(''); }} variant="outline">Reset</Button>
           </div>
         </div>
 
