@@ -2,8 +2,38 @@
 'use client';
 
 import { db } from "./firebaseClient";
-import { doc, setDoc, Timestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import type { UserProfile } from './types';
+
+
+/**
+ * Fetches a user's profile from Firestore using the client-side SDK.
+ * @param userId - The ID of the user.
+ * @returns The user profile data or undefined if not found.
+ */
+export async function fetchProfile(userId: string): Promise<UserProfile | undefined> {
+  if (!userId) {
+    console.error('User ID is required to fetch a profile.');
+    return undefined;
+  }
+  try {
+    const docRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      // The document data is returned, which should conform to UserProfile
+      return docSnap.data() as UserProfile;
+    } else {
+      // No document found, return undefined
+      return undefined;
+    }
+  } catch (err: any) {
+    console.error('Error fetching profile from Firestore:', err);
+    // In case of error (e.g., offline), return undefined
+    return undefined;
+  }
+}
+
 
 /**
  * Creates or updates a user's profile in Firestore using the client-side SDK.
