@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -111,8 +112,10 @@ export function ProfilePageV2() {
         });
       } else if (data) {
         // Profile exists, populate the form
+        // Ensure all fields have a default value to prevent uncontrolled -> controlled error
         form.reset({
-          ...data,
+          ...defaultProfileData, // Start with defaults
+          ...data, // Override with fetched data
           name: data.name || user.displayName || '',
           email: data.email || user.email || '',
           photoURL: data.photoURL || user.photoURL || '',
