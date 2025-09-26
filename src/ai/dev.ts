@@ -9,3 +9,4 @@ import '@/ai/flows/create-personalized-roadmap.ts';
 import '@/ai/flows/generate-interview-questions.ts';
 import '@/ai/flows/generate-resume-from-json.ts';
 import '@/ai/flows/learning-helper.ts';
+import '@/ai/flows/learning-orchestrator.ts';

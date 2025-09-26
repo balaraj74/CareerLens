@@ -1,9 +1,10 @@
 /**
  * @fileOverview This file defines the Zod schemas and TypeScript types 
- * for the AI Learning Helper feature.
+ * for the AI Learning Helper feature. It is now the primary input schema.
  */
 import { z } from 'genkit';
 
+// This remains the input for the entire flow.
 export const LearningHelperInputSchema = z.object({
   pdfDataUri: z
     .string()
@@ -12,10 +13,3 @@ export const LearningHelperInputSchema = z.object({
     ),
 });
 export type LearningHelperInput = z.infer<typeof LearningHelperInputSchema>;
-
-export const LearningHelperOutputSchema = z.object({
-  quickPoints: z
-    .array(z.string())
-    .describe('A summarized list of key points from the document in bullet format.'),
-});
-export type LearningHelperOutput = z.infer<typeof LearningHelperOutputSchema>;

@@ -13,7 +13,8 @@ import type { SkillGapAnalysisInput, SkillGapAnalysisOutput } from '@/ai/flows/p
 import type { CreatePersonalizedRoadmapInput, CreatePersonalizedRoadmapOutput } from '@/ai/flows/create-personalized-roadmap';
 import type { GenerateResumeFromJsonInput, GenerateResumeFromJsonOutput } from '@/ai/flows/generate-resume-from-json';
 import type { GenerateInterviewQuestionsInput, GenerateInterviewQuestionsOutput } from '@/ai/flows/generate-interview-questions';
-import type { LearningHelperInput, LearningHelperOutput } from '@/ai/schemas/learning-helper';
+import type { LearningHelperInput } from '@/ai/schemas/learning-helper';
+import type { LearningOrchestratorOutput } from '@/ai/schemas/learning-orchestrator';
 
 
 export async function getCareerRecommendations(
@@ -75,7 +76,7 @@ export async function getInterviewQuestions(
 
 export async function getLearningHelperOutput(
   input: LearningHelperInput
-): Promise<{ success: boolean; data?: LearningHelperOutput; error?: string }> {
+): Promise<{ success: boolean; data?: LearningOrchestratorOutput; error?: string }> {
   try {
     const result = await processPdf(input);
     return { success: true, data: result };
