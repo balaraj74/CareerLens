@@ -44,31 +44,27 @@ export function Nav({ handleLogout, isLoggingOut, user }: NavProps) {
   if (isMobile === undefined) return null; // avoid hydration mismatch
 
   if (isMobile) {
-    // 📱 Mobile Floating Dock (fixed + perfectly centered)
+    // 📱 Mobile Floating Dock
     return (
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 120, damping: 20 }}
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 
-               flex items-center justify-center 
-               w-full max-w-md px-4 py-2
-               rounded-2xl bg-white/10 backdrop-blur-xl 
-               border border-white/20 shadow-lg"
+        className="fixed bottom-0 left-0 right-0 z-50 h-24 bg-card/80 backdrop-blur-xl border-t border-border md:bottom-4 md:left-1/2 md:-translate-x-1/2 md:right-auto md:w-full md:max-w-md md:rounded-2xl md:border md:h-auto"
       >
-        <div className="flex w-full justify-evenly">
+        <div className="flex h-full w-full justify-evenly items-center md:py-2">
           {navItems.map((item) => (
-            <Link href={item.href} key={item.label} className="flex-1">
+            <Link href={item.href} key={item.label} className="flex-1 md:flex-initial">
               <button
                 className={cn(
-                  "flex flex-col items-center justify-center h-14 w-full rounded-lg text-white transition-colors",
+                  "flex flex-col items-center justify-center h-full w-full rounded-lg text-white transition-colors gap-1",
                   pathname === item.href
-                    ? "bg-primary/20 text-primary"
-                    : "hover:text-primary hover:bg-white/5"
+                    ? "text-primary"
+                    : "hover:text-primary"
                 )}
               >
                 {item.icon}
-                <span className="text-xs mt-1">{item.label}</span>
+                <span className="text-xs">{item.label}</span>
               </button>
             </Link>
           ))}
