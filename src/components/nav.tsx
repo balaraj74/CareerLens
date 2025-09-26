@@ -11,6 +11,7 @@ import {
   FileText,
   MessageSquare,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
@@ -27,6 +28,7 @@ const navItems = [
   { href: '/roadmap', icon: <BookOpen />, label: 'Roadmap' },
   { href: '/resume', icon: <FileText />, label: 'Resume' },
   { href: '/interview-prep', icon: <MessageSquare />, label: 'Interview' },
+  { href: '/learning-helper', icon: <Sparkles />, label: 'AI Helper' },
 ];
 
 interface NavProps {
