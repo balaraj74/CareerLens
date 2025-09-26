@@ -4,28 +4,17 @@
  * @fileOverview This file defines the Genkit flows for the AI Learning Helper feature.
  *
  * - processPdf - A function that takes a PDF and returns various learning aids.
- * - LearningHelperInput - The input type for the processPdf function.
- * - LearningHelperOutput - The return type for the processPdf function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { 
+    LearningHelperInputSchema, 
+    LearningHelperOutputSchema,
+    type LearningHelperInput,
+    type LearningHelperOutput
+} from '@/ai/schemas/learning-helper';
 
-export const LearningHelperInputSchema = z.object({
-  pdfDataUri: z
-    .string()
-    .describe(
-      "A PDF file of study material, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:application/pdf;base64,<encoded_data>'."
-    ),
-});
-export type LearningHelperInput = z.infer<typeof LearningHelperInputSchema>;
-
-export const LearningHelperOutputSchema = z.object({
-  quickPoints: z
-    .array(z.string())
-    .describe('A summarized list of key points from the document in bullet format.'),
-});
-export type LearningHelperOutput = z.infer<typeof LearningHelperOutputSchema>;
 
 export async function processPdf(input: LearningHelperInput): Promise<LearningHelperOutput> {
   return learningHelperFlow(input);
