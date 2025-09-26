@@ -55,7 +55,7 @@ export async function saveProfile(
     // Add server timestamp for updates
     const dataToSave = {
       ...data,
-      updatedAt: Timestamp.now()
+      updatedAt: new Date().toISOString(),
     };
 
     await setDoc(docRef, dataToSave, { merge: true });

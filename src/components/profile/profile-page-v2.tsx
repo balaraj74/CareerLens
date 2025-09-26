@@ -20,7 +20,7 @@ import { motion } from 'framer-motion';
 import { userProfileSchema, type UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { saveProfile } from '@/lib/profile-service';
+import { saveProfile, fetchProfile } from '@/lib/profile-service';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -71,18 +71,29 @@ export function ProfilePageV2() {
   });
 
   useEffect(() => {
-    // Pre-fill email from auth state when user is loaded
-    if (user) {
-      form.reset({
-        name: user.displayName || '',
-        email: user.email || '',
-        phone: '',
-        bio: '',
-        linkedin: '',
-        github: '',
-        skills: [],
-      });
+    async function loadProfile() {
+      if (user) {
+        const profileData = await fetchProfile(user.uid);
+        if (profileData) {
+          form.reset({
+            ...profileData,
+            name: profileData.name || user.displayName || '',
+            email: user.email || '',
+          });
+        } else {
+          form.reset({
+            name: user.displayName || '',
+            email: user.email || '',
+            phone: '',
+            bio: '',
+            linkedin: '',
+            github: '',
+            skills: [],
+          });
+        }
+      }
     }
+    loadProfile();
   }, [user, form]);
 
   const handleAddSkill = () => {
@@ -108,6 +119,11 @@ export function ProfilePageV2() {
     const profileData = {
       ...data,
       email: user.email, // Ensure email from auth is saved
+      name: data.name || '',
+      phone: data.phone || '',
+      bio: data.bio || '',
+      linkedin: data.linkedin || '',
+      github: data.github || '',
     };
 
     const { success, error } = await saveProfile(user.uid, profileData);

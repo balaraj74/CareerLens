@@ -26,16 +26,15 @@ export const educationSchema = z.object({
 
 export const skillSchema = z.object({
   name: z.string().min(1, 'Skill name cannot be empty.'),
-  proficiency: z.string().min(1, 'Skill proficiency cannot be empty'),
 });
 
 export const userProfileSchema = z.object({
   name: z.string().min(2, 'Full name is required.'),
   email: z.string().email('Invalid email address.'),
-  phone: z.string().regex(phoneRegex, 'Must be a valid 10-digit phone number.').optional().or(z.literal('')),
+  phone: z.string().regex(phoneRegex, 'Must be a valid 10-digit phone number.').optional(),
   bio: z.string().max(200, 'Bio must be 200 characters or less.').optional(),
-  linkedin: z.string().regex(linkedinRegex, 'Invalid LinkedIn profile URL.').optional().or(z.literal('')),
-  github: z.string().regex(githubRegex, 'Invalid GitHub profile URL.').optional().or(z.literal('')),
+  linkedin: z.string().url('Invalid LinkedIn profile URL.').optional(),
+  github: z.string().url('Invalid GitHub profile URL.').optional(),
   skills: z.array(z.object({ name: z.string() })).optional().default([]),
   updatedAt: z.string().optional(),
 });
