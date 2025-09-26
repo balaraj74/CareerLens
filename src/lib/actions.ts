@@ -6,11 +6,14 @@ import { performSkillGapAnalysis } from '@/ai/flows/perform-skill-gap-analysis';
 import { createPersonalizedRoadmap } from '@/ai/flows/create-personalized-roadmap';
 import { generateResumeFromJson } from '@/ai/flows/generate-resume-from-json';
 import { generateInterviewQuestions } from '@/ai/flows/generate-interview-questions';
+import { processPdf } from '@/ai/flows/learning-helper';
+
 import type { GenerateCareerRecommendationsInput, GenerateCareerRecommendationsOutput } from '@/ai/schemas/career-recommendations';
 import type { SkillGapAnalysisInput, SkillGapAnalysisOutput } from '@/ai/flows/perform-skill-gap-analysis';
 import type { CreatePersonalizedRoadmapInput, CreatePersonalizedRoadmapOutput } from '@/ai/flows/create-personalized-roadmap';
 import type { GenerateResumeFromJsonInput, GenerateResumeFromJsonOutput } from '@/ai/flows/generate-resume-from-json';
 import type { GenerateInterviewQuestionsInput, GenerateInterviewQuestionsOutput } from '@/ai/flows/generate-interview-questions';
+import type { LearningHelperInput, LearningHelperOutput } from '@/ai/flows/learning-helper';
 
 
 export async function getCareerRecommendations(
@@ -67,5 +70,17 @@ export async function getInterviewQuestions(
    {
     console.error(error);
     return { success: false, error: error.message || 'Failed to generate questions.' };
+  }
+}
+
+export async function getLearningHelperOutput(
+  input: LearningHelperInput
+): Promise<{ success: boolean; data?: LearningHelperOutput; error?: string }> {
+  try {
+    const result = await processPdf(input);
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to process PDF.' };
   }
 }

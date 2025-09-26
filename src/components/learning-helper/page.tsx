@@ -12,12 +12,16 @@ import {
   MessageSquare,
   Sparkles,
   Loader2,
-  File as FileIcon
+  File as FileIcon,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '../ui/progress';
+import { getLearningHelperOutput } from '@/lib/actions';
+import type { LearningHelperOutput } from '@/ai/flows/learning-helper';
+import { useToast } from '@/hooks/use-toast';
 
 const learningModes = [
     { name: 'Quick Points', icon: Lightbulb },
@@ -30,48 +34,72 @@ const learningModes = [
 ]
 
 export function LearningHelperPage() {
-    const [isUploading, setIsUploading] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [fileName, setFileName] = useState<string | null>(null);
-    const [uploadProgress, setUploadProgress] = useState(0);
+    const [aiOutput, setAiOutput] = useState<LearningHelperOutput | null>(null);
+    const { toast } = useToast();
+
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        setFileName(file.name);
-        setIsUploading(true);
-        setUploadProgress(0);
-
-        // Simulate upload progress
-        const progressInterval = setInterval(() => {
-            setUploadProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(progressInterval);
-                    return 100;
-                }
-                return prev + 10;
+        if (file.type !== 'application/pdf') {
+            toast({
+                variant: 'destructive',
+                title: 'Invalid File Type',
+                description: 'Please upload a valid PDF file.',
             });
-        }, 200);
-        
-        // Simulate processing after upload
-        setTimeout(() => {
-            clearInterval(progressInterval);
-            setUploadProgress(100);
-            setIsUploading(false);
-            setIsProcessing(true);
-            // Simulate AI processing time
-            setTimeout(() => {
+            return;
+        }
+
+        setFileName(file.name);
+        setIsProcessing(true);
+        setAiOutput(null);
+
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const pdfDataUri = reader.result as string;
+                const response = await getLearningHelperOutput({ pdfDataUri });
+
+                if (response.success && response.data) {
+                    setAiOutput(response.data);
+                } else {
+                     toast({
+                        variant: 'destructive',
+                        title: 'AI Processing Failed',
+                        description: response.error || 'An unknown error occurred.',
+                    });
+                     handleReset(); // Reset UI on failure
+                }
+                 setIsProcessing(false);
+            };
+            reader.onerror = (error) => {
+                 toast({
+                    variant: 'destructive',
+                    title: 'File Read Error',
+                    description: 'Could not read the selected file.',
+                });
                 setIsProcessing(false);
-            }, 2500);
-        }, 2200);
+                handleReset();
+            };
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.message || 'Something went wrong.',
+            });
+            setIsProcessing(false);
+            handleReset();
+        }
     };
 
     const handleReset = () => {
         setFileName(null);
         setIsProcessing(false);
-        setIsUploading(false);
-        setUploadProgress(0);
+        setAiOutput(null);
     }
 
   return (
@@ -94,10 +122,10 @@ export function LearningHelperPage() {
                          </div>
                         <h2 className="text-2xl font-bold font-headline">Upload Your Study Material</h2>
                         <p className="text-muted-foreground">Drop any Unit PDF, Notes, or Study Material here and let AI do the rest.</p>
-                        <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent text-lg h-14 px-8">
+                        <Button asChild size="lg" className="bg-gradient-to-r from-primary to-accent text-lg h-14 px-8" disabled={isProcessing}>
                             <label htmlFor="file-upload">
-                                Choose File
-                                <input id="file-upload" type="file" className="sr-only" onChange={handleFileUpload} accept=".pdf"/>
+                                {isProcessing ? "Processing..." : "Choose File"}
+                                <input id="file-upload" type="file" className="sr-only" onChange={handleFileUpload} accept=".pdf" disabled={isProcessing}/>
                             </label>
                         </Button>
                     </CardContent>
@@ -111,11 +139,11 @@ export function LearningHelperPage() {
                             <FileIcon className="w-6 h-6 text-primary"/>
                             <span className="font-semibold">{fileName}</span>
                         </div>
-                        {isUploading || isProcessing ? (
-                             <div className="w-full md:w-64">
-                                <Progress value={isProcessing ? 100 : uploadProgress} />
-                                <p className="text-xs text-muted-foreground text-center mt-1">
-                                    {isUploading ? `Uploading... ${uploadProgress}%` : 'Processing with AI...'}
+                        {isProcessing ? (
+                             <div className="w-full md:w-64 flex items-center gap-2">
+                                <Loader2 className="w-5 h-5 animate-spin"/>
+                                <p className="text-sm text-muted-foreground">
+                                    AI is processing your document...
                                 </p>
                              </div>
                         ) : (
@@ -127,7 +155,7 @@ export function LearningHelperPage() {
                 <Tabs defaultValue="Quick Points" className="w-full">
                     <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 h-auto p-2">
                         {learningModes.map(mode => (
-                             <TabsTrigger key={mode.name} value={mode.name} disabled={isUploading || isProcessing} className="flex flex-col md:flex-row gap-2 h-12">
+                             <TabsTrigger key={mode.name} value={mode.name} disabled={isProcessing} className="flex flex-col md:flex-row gap-2 h-12">
                                 <mode.icon className="w-5 h-5"/>
                                 {mode.name}
                             </TabsTrigger>
@@ -135,7 +163,7 @@ export function LearningHelperPage() {
                     </TabsList>
 
                     <AnimatePresence mode="wait">
-                    {isUploading || isProcessing ? (
+                    {isProcessing ? (
                         <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center text-center p-16 glass-card rounded-2xl mt-4">
                             <Loader2 className="w-12 h-12 text-primary animate-spin mb-4"/>
                             <h3 className="text-xl font-bold">AI is warming up...</h3>
@@ -144,8 +172,17 @@ export function LearningHelperPage() {
                     ) : (
                         <motion.div key="content" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                             <TabsContent value="Quick Points" className="p-6 glass-card rounded-2xl mt-4">
-                                <h2 className="text-2xl font-bold mb-4">Quick Points</h2>
-                                <p className="text-muted-foreground">AI-generated summary will appear here...</p>
+                                <h2 className="text-2xl font-bold mb-4 font-headline text-glow">Quick Points</h2>
+                                {aiOutput?.quickPoints ? (
+                                    <ul className="space-y-3">
+                                        {aiOutput.quickPoints.map((point, index) => (
+                                            <li key={index} className="flex items-start gap-3">
+                                                <CheckCircle2 className="w-5 h-5 text-green-400 mt-1 shrink-0"/>
+                                                <span className="text-foreground">{point}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : <p className="text-muted-foreground">AI-generated summary will appear here...</p>}
                             </TabsContent>
                             <TabsContent value="Deep Dive" className="p-6 glass-card rounded-2xl mt-4">
                                 <h2 className="text-2xl font-bold mb-4">Deep Dive</h2>
