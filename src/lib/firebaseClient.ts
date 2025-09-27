@@ -2,7 +2,7 @@
 // src/lib/firebaseClient.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence, type Firestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence, connectFirestoreEmulator, type Firestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration from the user
 const firebaseConfig = {
@@ -25,7 +25,14 @@ if (getApps().length === 0) {
   app = getApp();
 }
 
+auth = getAuth(app);
 db = getFirestore(app);
+
+// Check if we are in a development environment and connect to the emulator
+if (typeof window !== 'undefined' && window.location.hostname === "localhost") {
+  console.log("Development environment detected. Connecting to local Firestore emulator.");
+  connectFirestoreEmulator(db, 'localhost', 8080);
+}
 
 // Enable offline persistence
 enableIndexedDbPersistence(db)
@@ -37,7 +44,5 @@ enableIndexedDbPersistence(db)
     }
   });
 
-
-auth = getAuth(app);
 
 export { app, auth, db };
