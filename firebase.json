@@ -12,7 +12,6 @@
     "public": "out",
     "ignore": [
       "firebase.json",
-      "firestore.rules",
       "**/.*",
       "**/node_modules/**"
     ],

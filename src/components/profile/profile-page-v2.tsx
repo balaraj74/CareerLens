@@ -1,8 +1,10 @@
 
-'use client';
+"use client";
 
+import React, { useState, useEffect } from 'react';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { z } from 'zod';
 import {
   Loader2,
   User,
@@ -14,10 +16,8 @@ import {
   X,
   PlusCircle,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-import { userProfileSchema, type UserProfile } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { saveProfile, fetchProfile } from '@/lib/profile-service';
@@ -45,6 +45,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '../ui/skeleton';
 
+// Define a precise type for your profile data
+const userProfileSchema = z.object({
+  name: z.string().optional(),
+  bio: z.string().optional(),
+  phone: z.string().optional(),
+  linkedin: z.string().optional(),
+  github: z.string().optional(),
+  skills: z.array(z.object({ name: z.string() })).optional(),
+});
+type UserProfile = z.infer<typeof userProfileSchema>;
+
+
 export function ProfilePageV2() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -56,7 +68,6 @@ export function ProfilePageV2() {
     resolver: zodResolver(userProfileSchema),
     defaultValues: {
       name: '',
-      email: '',
       phone: '',
       bio: '',
       linkedin: '',
@@ -78,9 +89,7 @@ export function ProfilePageV2() {
         const profileData = await fetchProfile(user.uid);
         if (profileData) {
           form.reset({
-            ...profileData,
             name: profileData.name || user.displayName || '',
-            email: user.email || '',
             phone: profileData.phone || '',
             bio: profileData.bio || '',
             linkedin: profileData.linkedin || '',
@@ -88,9 +97,9 @@ export function ProfilePageV2() {
             skills: profileData.skills || [],
           });
         } else {
-          form.reset({
+           console.log("No profile document found. A new one will be created on save.");
+           form.reset({
             name: user.displayName || '',
-            email: user.email || '',
             phone: '',
             bio: '',
             linkedin: '',
@@ -107,10 +116,9 @@ export function ProfilePageV2() {
   }, [user, form, authLoading]);
 
   const handleAddSkill = () => {
-    if (newSkill.trim()) {
-      if (!skillFields.some(field => field.name.toLowerCase() === newSkill.trim().toLowerCase())) {
-        appendSkill({ name: newSkill.trim() });
-      }
+    const trimmedSkill = newSkill.trim();
+    if (trimmedSkill && !skillFields.some(field => field.name.toLowerCase() === trimmedSkill.toLowerCase())) {
+      appendSkill({ name: trimmedSkill });
       setNewSkill('');
     }
   };
@@ -127,23 +135,25 @@ export function ProfilePageV2() {
     }
     setIsSubmitting(true);
     
-    console.log(`Attempting to save data for user UID: ${user.uid}`);
-    console.log("Submitting this data payload:", data);
+    console.log(`--- Starting Save Process for UID: ${user.uid} ---`);
+    console.log("Data to save:", data);
     
-    const dataToSave: Partial<UserProfile> = {};
+    // **CRITICAL CHECK FOR UNDEFINED VALUES**
+    const dataToSave: any = {};
     Object.keys(data).forEach(key => {
       const value = data[key as keyof UserProfile];
       if (value !== undefined) {
-        (dataToSave as any)[key] = value;
+        dataToSave[key] = value;
       }
     });
     console.log("Cleaned data payload (no undefined values):", dataToSave);
+
 
     try {
       const { success, error } = await saveProfile(user.uid, dataToSave);
       
       if (success) {
-        console.log("SUCCESS! Document written successfully.");
+        console.log("--- SUCCESS: Firestore write operation completed. ---");
         toast({
           title: 'Profile Saved! ✅',
           description: 'Your information has been successfully updated.',
@@ -152,14 +162,17 @@ export function ProfilePageV2() {
         throw new Error(error || 'An unknown error occurred during save.');
       }
     } catch (err: any) {
-      console.error("FIRESTORE SAVE ERROR:", err);
+      console.error("--- FIRESTORE SAVE FAILED ---");
+      console.error(`Error Code: ${err.code}`);
+      console.error(`Error Message: ${err.message}`);
+      console.error(err);
       toast({
         variant: 'destructive',
         title: 'Save Failed ❌',
         description: err.message || 'An unknown error occurred.',
       });
     } finally {
-      console.log("Finished save attempt. Setting 'isSubmitting' state to false.");
+      console.log("--- Finished Save Process. ---");
       setIsSubmitting(false);
     }
   }
@@ -216,22 +229,15 @@ export function ProfilePageV2() {
                         </FormItem>
                     )}
                     />
-                <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
-                                <Input placeholder="ada@futureofcode.com" {...field} readOnly className="pl-10 bg-muted/50 cursor-not-allowed"/>
-                            </div>
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
+                <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
+                            <Input placeholder="ada@futureofcode.com" value={user?.email || ''} readOnly className="pl-10 bg-muted/50 cursor-not-allowed"/>
+                        </div>
+                    </FormControl>
+                </FormItem>
                  <FormField
                     control={form.control}
                     name="phone"

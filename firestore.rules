@@ -2,12 +2,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // This rule allows any logged-in user to create, read, and update
-    // ONLY THEIR OWN document in the 'users' collection.
+
+    // The 'users' collection
     match /users/{userId} {
-      allow read, create, update: if request.auth != null && request.auth.uid == userId;
-      // You can deny deletion if you want
-      allow delete: if false; 
+      // A user can get their own document.
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // A new user can create their profile.
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // An existing user can update their profile.
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // Nobody can delete a profile through the client.
+      allow delete: if false;
     }
   }
 }

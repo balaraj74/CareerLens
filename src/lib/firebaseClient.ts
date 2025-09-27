@@ -4,6 +4,10 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence, connectFirestoreEmulator, type Firestore } from "firebase/firestore";
 
+// ADD THIS LOG
+console.log(`Firebase client module loaded. Hostname: ${typeof window !== 'undefined' ? window.location.hostname : 'SERVER'}`);
+
+
 // Your web app's Firebase configuration from the user
 const firebaseConfig = {
   apiKey: "AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs",
