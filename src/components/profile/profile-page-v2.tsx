@@ -50,6 +50,7 @@ export function ProfilePageV2() {
   const { user, loading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newSkill, setNewSkill] = useState('');
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   const form = useForm<UserProfile>({
     resolver: zodResolver(userProfileSchema),
@@ -73,6 +74,7 @@ export function ProfilePageV2() {
   useEffect(() => {
     async function loadProfile() {
       if (user) {
+        setIsLoadingProfile(true);
         const profileData = await fetchProfile(user.uid);
         if (profileData) {
           form.reset({
@@ -91,10 +93,13 @@ export function ProfilePageV2() {
             skills: [],
           });
         }
+        setIsLoadingProfile(false);
+      } else if (!authLoading) {
+        setIsLoadingProfile(false);
       }
     }
     loadProfile();
-  }, [user, form]);
+  }, [user, form, authLoading]);
 
   const handleAddSkill = () => {
     if (newSkill.trim()) {
@@ -124,6 +129,7 @@ export function ProfilePageV2() {
       bio: data.bio || '',
       linkedin: data.linkedin || '',
       github: data.github || '',
+      skills: data.skills || [],
     };
 
     const { success, error } = await saveProfile(user.uid, profileData);
@@ -143,7 +149,7 @@ export function ProfilePageV2() {
     }
   }
   
-  if (authLoading) {
+  if (authLoading || isLoadingProfile) {
     return (
        <div className="p-4 md:p-8 max-w-2xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
