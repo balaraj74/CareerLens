@@ -81,6 +81,11 @@ export function ProfilePageV2() {
             ...profileData,
             name: profileData.name || user.displayName || '',
             email: user.email || '',
+            phone: profileData.phone || '',
+            bio: profileData.bio || '',
+            linkedin: profileData.linkedin || '',
+            github: profileData.github || '',
+            skills: profileData.skills || [],
           });
         } else {
           form.reset({
