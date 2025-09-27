@@ -55,3 +55,4 @@ export async function saveProfile(
   // Use setDoc with { merge: true } to create or update the document.
   await setDoc(docRef, dataToSave, { merge: true });
 }
+

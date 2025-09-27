@@ -84,23 +84,13 @@ export function ProfilePageV2() {
   };
 
   async function onSubmit(data: UserProfile) {
-    if (!user) { 
+    if (!user) {
       toast({ variant: 'destructive', title: 'Not Authenticated', description: 'You must be logged in to save your profile.' });
-      return; 
+      return;
     }
     setIsSubmitting(true);
-
-    // CRITICAL: Clean the data to remove any `undefined` values
-    const dataToSave: Partial<UserProfile> = {};
-    for (const key in data) {
-        const value = data[key as keyof UserProfile];
-        if (value !== undefined) {
-            (dataToSave as any)[key] = value;
-        }
-    }
-
     try {
-      await saveProfile(user.uid, dataToSave);
+      await saveProfile(user.uid, data);
       toast({ title: 'Profile Saved! ✅', description: 'Your information has been successfully updated.' });
     } catch (err: any) {
       console.error("FIRESTORE SAVE ERROR:", err);
