@@ -1,16 +1,16 @@
 'use client';
 
-import { db } from "./firebaseClient";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, type Firestore } from "firebase/firestore";
 import type { UserProfile } from './types';
 
 
 /**
  * Fetches a user's profile from Firestore using the client-side SDK.
+ * @param db - The Firestore instance.
  * @param userId - The ID of the user.
  * @returns The user profile data or undefined if not found.
  */
-export async function fetchProfile(userId: string): Promise<UserProfile | undefined> {
+export async function fetchProfile(db: Firestore, userId: string): Promise<UserProfile | undefined> {
   if (!userId) {
     console.error('User ID is required to fetch a profile.');
     return undefined;
@@ -32,10 +32,12 @@ export async function fetchProfile(userId: string): Promise<UserProfile | undefi
 
 /**
  * Creates or updates a user's profile in Firestore.
+ * @param db - The Firestore instance.
  * @param userId - The ID of the user.
  * @param data - The user profile data to save.
  */
 export async function saveProfile(
+  db: Firestore,
   userId: string,
   data: Partial<UserProfile>
 ): Promise<void> {

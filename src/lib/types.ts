@@ -24,7 +24,7 @@ export const skillSchema = z.object({
 
 export const userProfileSchema = z.object({
   name: z.string().min(2, 'Full name is required.').optional().or(z.literal('')),
-  phone: z.string().regex(phoneRegex, 'Must be a valid 10-digit phone number.').optional().or(z.literal('')),
+  phone: z.string().regex(phoneRegex, 'Must be a valid phone number.').optional().or(z.literal('')),
   bio: z.string().max(500, 'Bio must be 500 characters or less.').optional().or(z.literal('')),
   linkedin: z.string().url('Invalid LinkedIn profile URL.').optional().or(z.literal('')),
   github: z.string().url('Invalid GitHub profile URL.').optional().or(z.literal('')),

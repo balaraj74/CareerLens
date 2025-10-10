@@ -1,4 +1,5 @@
 
+
 // src/lib/firebaseClient.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
@@ -22,6 +23,7 @@ const firebaseConfig = {
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+
 
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);

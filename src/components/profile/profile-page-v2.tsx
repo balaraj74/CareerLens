@@ -1,10 +1,10 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Loader2, User, Linkedin, Github, Mail, Phone, Sparkles, X, PlusCircle, Trash2, ArrowLeft, ArrowRight, Briefcase, GraduationCap, Target, Building
 } from 'lucide-react';
@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { useFirebase } from '@/lib/use-firebase'; // NEW
 import { saveProfile, fetchProfile } from '@/lib/profile-service';
 import { userProfileSchema, type UserProfile } from '@/lib/types';
 
@@ -36,6 +37,7 @@ const steps = [
 export function ProfilePageV2() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
+  const { db } = useFirebase(); // NEW: Get db from our provider
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
@@ -63,9 +65,9 @@ export function ProfilePageV2() {
 
   useEffect(() => {
     async function loadProfile() {
-      if (user) {
+      if (user && db) { // NEW: Check for db instance
         setIsLoadingProfile(true);
-        const profileData = await fetchProfile(user.uid);
+        const profileData = await fetchProfile(db, user.uid); // NEW: Pass db
         if (profileData) {
           form.reset(profileData);
         }
@@ -73,7 +75,7 @@ export function ProfilePageV2() {
       }
     }
     loadProfile();
-  }, [user, form]);
+  }, [user, db, form]); // NEW: Add db to dependency array
   
   const handleAddSkill = () => {
     const trimmedSkill = newSkill.trim();
@@ -88,9 +90,13 @@ export function ProfilePageV2() {
       toast({ variant: 'destructive', title: 'Not Authenticated', description: 'You must be logged in to save your profile.' });
       return;
     }
+    if (!db) { // NEW: Check for db instance
+        toast({ variant: 'destructive', title: 'Database not available', description: 'Could not connect to the database.' });
+        return;
+    }
     setIsSubmitting(true);
     try {
-      await saveProfile(user.uid, data);
+      await saveProfile(db, user.uid, data); // NEW: Pass db
       toast({ title: 'Profile Saved! ✅', description: 'Your information has been successfully updated.' });
     } catch (err: any) {
       console.error("FIRESTORE SAVE ERROR:", err);
