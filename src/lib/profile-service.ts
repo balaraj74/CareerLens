@@ -22,11 +22,13 @@ export async function fetchProfile(db: Firestore, userId: string): Promise<UserP
     if (docSnap.exists()) {
       return docSnap.data() as UserProfile;
     } else {
+      console.log("No profile document found for user:", userId);
       return undefined;
     }
   } catch (err: any) {
     console.error('Error fetching profile from Firestore:', err);
-    return undefined;
+    // It's better to throw the error so the UI can handle it
+    throw err;
   }
 }
 
@@ -47,12 +49,18 @@ export async function saveProfile(
   
   const docRef = doc(db, "users", userId);
   
-  // Create the object to save, including the server-side timestamp.
+  // Create a new object that includes the server-side timestamp.
   const dataToSave = {
     ...data,
     updatedAt: serverTimestamp(),
   };
 
-  // Use setDoc with { merge: true } to create or update the document.
-  await setDoc(docRef, dataToSave, { merge: true });
+  try {
+    // Use setDoc with { merge: true } to create or update the document.
+    await setDoc(docRef, dataToSave, { merge: true });
+  } catch (error) {
+    // Catch any errors from the setDoc call and re-throw them.
+    console.error("Error saving profile to Firestore:", error);
+    throw error;
+  }
 }

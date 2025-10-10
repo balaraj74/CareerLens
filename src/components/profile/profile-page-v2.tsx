@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { useFirebase } from '@/lib/use-firebase'; // NEW
+import { useFirebase } from '@/lib/use-firebase';
 import { saveProfile, fetchProfile } from '@/lib/profile-service';
 import { userProfileSchema, type UserProfile } from '@/lib/types';
 
@@ -37,7 +37,7 @@ const steps = [
 export function ProfilePageV2() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-  const { db } = useFirebase(); // NEW: Get db from our provider
+  const { db } = useFirebase();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
@@ -65,17 +65,19 @@ export function ProfilePageV2() {
 
   useEffect(() => {
     async function loadProfile() {
-      if (user && db) { // NEW: Check for db instance
+      if (user && db) {
         setIsLoadingProfile(true);
-        const profileData = await fetchProfile(db, user.uid); // NEW: Pass db
+        const profileData = await fetchProfile(db, user.uid);
         if (profileData) {
           form.reset(profileData);
         }
         setIsLoadingProfile(false);
+      } else if (!authLoading) {
+        setIsLoadingProfile(false);
       }
     }
     loadProfile();
-  }, [user, db, form]); // NEW: Add db to dependency array
+  }, [user, db, authLoading, form]);
   
   const handleAddSkill = () => {
     const trimmedSkill = newSkill.trim();
@@ -90,17 +92,17 @@ export function ProfilePageV2() {
       toast({ variant: 'destructive', title: 'Not Authenticated', description: 'You must be logged in to save your profile.' });
       return;
     }
-    if (!db) { // NEW: Check for db instance
+    if (!db) {
         toast({ variant: 'destructive', title: 'Database not available', description: 'Could not connect to the database.' });
         return;
     }
     setIsSubmitting(true);
     try {
-      await saveProfile(db, user.uid, data); // NEW: Pass db
+      await saveProfile(db, user.uid, data);
       toast({ title: 'Profile Saved! ✅', description: 'Your information has been successfully updated.' });
     } catch (err: any) {
       console.error("FIRESTORE SAVE ERROR:", err);
-      toast({ variant: 'destructive', title: 'Save Failed ❌', description: err.message || 'An unknown error occurred.' });
+      toast({ variant: 'destructive', title: 'Save Failed ❌', description: err.message || 'An unknown error occurred while saving.' });
     } finally {
       setIsSubmitting(false);
     }
