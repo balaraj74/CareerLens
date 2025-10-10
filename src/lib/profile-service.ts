@@ -1,4 +1,3 @@
-
 'use client';
 
 import { db } from "./firebaseClient";
@@ -46,7 +45,7 @@ export async function saveProfile(
   
   const docRef = doc(db, "users", userId);
   
-  // Add a server timestamp for updates
+  // Create the object to save, including the server-side timestamp.
   const dataToSave = {
     ...data,
     updatedAt: serverTimestamp(),
@@ -55,4 +54,3 @@ export async function saveProfile(
   // Use setDoc with { merge: true } to create or update the document.
   await setDoc(docRef, dataToSave, { merge: true });
 }
-

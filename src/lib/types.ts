@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 const phoneRegex = new RegExp(
@@ -35,8 +34,6 @@ export const userProfileSchema = z.object({
   skills: z.array(skillSchema).optional().default([]),
   
   careerGoals: z.string().optional().or(z.literal('')),
-  
-  updatedAt: z.string().optional(),
 });
 
 export type UserProfile = z.infer<typeof userProfileSchema>;
