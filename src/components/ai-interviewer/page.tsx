@@ -12,7 +12,7 @@ import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { useAuth } from '@/hooks/use-auth';
 import { useFirebase } from '@/lib/use-firebase';
 import { fetchProfile } from '@/lib/profile-service';
-import { getAiInterviewerResponse } from '@/lib/actions';
+import { getAiInterviewerResponse, generateAvatarVideo } from '@/lib/actions';
 import type { UserProfile } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
 
@@ -37,8 +37,11 @@ export function AiInterviewerPage() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
+  const [avatarVideoUrl, setAvatarVideoUrl] = useState<string | null>(null);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
+  const avatarVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
      async function loadProfile() {
@@ -89,8 +92,15 @@ export function AiInterviewerPage() {
             stream.getTracks().forEach(track => track.stop());
             videoRef.current.srcObject = null;
        }
+       setAvatarVideoUrl(null);
     }
   }, [interviewState, toast]);
+
+  useEffect(() => {
+    if (avatarVideoUrl && avatarVideoRef.current) {
+      avatarVideoRef.current.load();
+    }
+  }, [avatarVideoUrl]);
   
   const startInterview = async () => {
     if (!profile) {
@@ -105,16 +115,37 @@ export function AiInterviewerPage() {
         interviewType: interviewType,
     });
 
-    setIsStarting(false);
 
     if (response.success && response.data) {
-        setTranscript([{ speaker: 'ai', text: response.data.firstQuestion }]);
+        const firstQuestion = response.data.firstQuestion;
+        setTranscript([{ speaker: 'ai', text: firstQuestion }]);
         setInterviewState('in_progress');
+        setIsStarting(false);
         toast({
             title: 'Interview Started!',
-            description: 'The AI will now start asking questions.'
+            description: 'Generating the AI interviewer avatar. This may take a moment...'
         });
+        
+        // Now, generate the video
+        setIsGeneratingVideo(true);
+        const videoResponse = await generateAvatarVideo({
+            text: firstQuestion,
+            character: `A professional, friendly ${interviewer} HR interviewer.`
+        });
+        setIsGeneratingVideo(false);
+
+        if (videoResponse.success && videoResponse.data?.videoUrl) {
+            setAvatarVideoUrl(videoResponse.data.videoUrl);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Avatar Generation Failed',
+                description: videoResponse.error || 'Could not create the video for the AI interviewer.',
+            });
+        }
+
     } else {
+        setIsStarting(false);
         toast({
             variant: 'destructive',
             title: 'Failed to start interview',
@@ -125,7 +156,6 @@ export function AiInterviewerPage() {
 
   const handleEndInterview = () => {
     setInterviewState('finished');
-    // Here you would later add logic to generate the final report
     setTranscript([]);
     toast({
         title: 'Interview Finished',
@@ -213,12 +243,30 @@ export function AiInterviewerPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-7xl">
             <div className="lg:col-span-2 space-y-4">
                  <div className="w-full aspect-video bg-black rounded-xl overflow-hidden relative flex items-center justify-center">
-                    {/* This is where the Veo 3 avatar would be rendered */}
-                    <div className="z-10 text-white text-center">
-                        <Bot className="w-24 h-24 mx-auto mb-4"/>
-                        <p>AI Avatar Video Stream</p>
-                        <p className="text-sm text-muted-foreground">(Veo 3 will be integrated here)</p>
-                    </div>
+                    {isGeneratingVideo && (
+                        <div className="z-10 text-white text-center p-4">
+                            <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin"/>
+                            <p className="font-bold">Generating AI Avatar...</p>
+                            <p className="text-sm text-muted-foreground">(This may take up to a minute)</p>
+                        </div>
+                    )}
+                    {avatarVideoUrl && (
+                        <video 
+                            ref={avatarVideoRef}
+                            src={avatarVideoUrl} 
+                            className="w-full h-full object-cover" 
+                            autoPlay 
+                            loop 
+                            playsInline 
+                            key={avatarVideoUrl} 
+                        />
+                    )}
+                    {!isGeneratingVideo && !avatarVideoUrl && (
+                         <div className="z-10 text-white text-center">
+                            <Bot className="w-24 h-24 mx-auto mb-4"/>
+                            <p>AI Avatar will appear here.</p>
+                        </div>
+                    )}
                 </div>
                  <div className="w-full aspect-video bg-black rounded-xl overflow-hidden relative flex items-center justify-center">
                      <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
