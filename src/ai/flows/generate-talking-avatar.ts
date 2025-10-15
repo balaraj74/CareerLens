@@ -9,13 +9,8 @@ import { GenerateTalkingAvatarInputSchema, GenerateTalkingAvatarOutputSchema, ty
 async function pollOperation(operation: any): Promise<any> {
     while (!operation.done) {
         await new Promise(resolve => setTimeout(resolve, 5000));
-        try {
-            operation = await ai.checkOperation(operation);
-        } catch (e) {
-            console.error("Polling error", e);
-            // Decide if you want to retry or just fail
-            throw new Error("Failed while polling for video generation status.");
-        }
+        // The try/catch is removed here to let the main flow handle promise rejections.
+        operation = await ai.checkOperation(operation);
     }
     return operation;
 }
@@ -43,6 +38,7 @@ const generateTalkingAvatarFlow = ai.defineFlow(
         throw new Error("Video generation failed to start.");
     }
     
+    // The polling operation is now wrapped in a try/catch in the main flow.
     const finalOperation = await pollOperation(operation);
 
     if (finalOperation.error) {
