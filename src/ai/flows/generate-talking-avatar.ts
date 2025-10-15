@@ -26,7 +26,7 @@ const generateTalkingAvatarFlow = ai.defineFlow(
   },
   async ({ text, character }) => {
     
-    const prompt = `${character}. The character is speaking the following words: "${text}"`;
+    const prompt = `A medium close-up shot of ${character}, looking directly at the camera and speaking as if in a video call. The character says the following words: "${text}"`;
     
     let { operation } = await ai.generate({
       model: googleAI.model('veo-2.0-generate-001'),
