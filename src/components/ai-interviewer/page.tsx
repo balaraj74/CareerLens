@@ -274,13 +274,14 @@ export function AiInterviewerPage() {
                     )}
                 </div>
                  <div className="w-full aspect-video bg-black rounded-xl overflow-hidden relative flex items-center justify-center">
-                     <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                     {!hasCameraPermission && (
-                        <Alert variant="destructive" className="absolute bottom-4 left-4 w-auto">
-                            <Webcam className="h-4 w-4" />
-                            <AlertTitle>Camera Not Found</AlertTitle>
-                        </Alert>
-                     )}
+                    {hasCameraPermission ? (
+                        <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                    ) : (
+                        <div className="text-center text-muted-foreground">
+                            <Webcam className="w-12 h-12 mx-auto mb-2" />
+                            <p>User camera feed</p>
+                        </div>
+                    )}
                 </div>
             </div>
             <div className="space-y-4">
