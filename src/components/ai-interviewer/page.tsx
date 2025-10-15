@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -253,15 +254,17 @@ export function AiInterviewerPage() {
                         </div>
                     )}
                     
-                    <video 
-                        ref={avatarVideoRef}
-                        className={`w-full h-full object-cover transition-opacity duration-500 ${avatarVideoUrl ? 'opacity-100' : 'opacity-0'}`} 
-                        autoPlay 
-                        loop 
-                        playsInline 
-                        key={avatarVideoUrl} // Re-mounts the video element on new URL
-                        src={avatarVideoUrl || ''}
-                    />
+                    {avatarVideoUrl && (
+                        <video 
+                            ref={avatarVideoRef}
+                            className={'w-full h-full object-cover transition-opacity duration-500 opacity-100'} 
+                            autoPlay 
+                            loop 
+                            playsInline 
+                            key={avatarVideoUrl} // Re-mounts the video element on new URL
+                            src={avatarVideoUrl}
+                        />
+                    )}
                     
                     {!isGeneratingVideo && !avatarVideoUrl && (
                          <div className="z-10 text-white text-center">
