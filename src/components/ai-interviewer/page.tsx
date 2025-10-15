@@ -99,6 +99,7 @@ export function AiInterviewerPage() {
   useEffect(() => {
     if (avatarVideoUrl && avatarVideoRef.current) {
       avatarVideoRef.current.load();
+      avatarVideoRef.current.play().catch(e => console.error("Video autoplay failed:", e));
     }
   }, [avatarVideoUrl]);
   
@@ -109,24 +110,26 @@ export function AiInterviewerPage() {
     }
     
     setIsStarting(true);
+    setInterviewState('in_progress');
     
-    const response = await getAiInterviewerResponse({
-        userProfile: profile,
-        interviewType: interviewType,
-    });
+    try {
+        const response = await getAiInterviewerResponse({
+            userProfile: profile,
+            interviewType: interviewType,
+        });
 
-
-    if (response.success && response.data) {
+        if (!response.success || !response.data) {
+            throw new Error(response.error || 'Failed to get first question.');
+        }
+        
         const firstQuestion = response.data.firstQuestion;
         setTranscript([{ speaker: 'ai', text: firstQuestion }]);
-        setInterviewState('in_progress');
-        setIsStarting(false);
+        
         toast({
             title: 'Interview Started!',
             description: 'Generating the AI interviewer avatar. This may take a moment...'
         });
         
-        // Now, generate the video
         setIsGeneratingVideo(true);
         const videoResponse = await generateAvatarVideo({
             text: firstQuestion,
@@ -137,20 +140,19 @@ export function AiInterviewerPage() {
         if (videoResponse.success && videoResponse.data?.videoUrl) {
             setAvatarVideoUrl(videoResponse.data.videoUrl);
         } else {
-            toast({
-                variant: 'destructive',
-                title: 'Avatar Generation Failed',
-                description: videoResponse.error || 'Could not create the video for the AI interviewer.',
-            });
+            throw new Error(videoResponse.error || 'Could not create the video for the AI interviewer.');
         }
 
-    } else {
+    } catch (error: any) {
         setIsStarting(false);
+        setInterviewState('configuring'); // Revert state
         toast({
             variant: 'destructive',
             title: 'Failed to start interview',
-            description: response.error || 'An unknown error occurred.',
+            description: error.message || 'An unknown error occurred.',
         });
+    } finally {
+        setIsStarting(false);
     }
   }
 
@@ -243,24 +245,24 @@ export function AiInterviewerPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-7xl">
             <div className="lg:col-span-2 space-y-4">
                  <div className="w-full aspect-video bg-black rounded-xl overflow-hidden relative flex items-center justify-center">
-                    {isGeneratingVideo && (
+                    {isGeneratingVideo && !avatarVideoUrl && (
                         <div className="z-10 text-white text-center p-4">
                             <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin"/>
                             <p className="font-bold">Generating AI Avatar...</p>
                             <p className="text-sm text-muted-foreground">(This may take up to a minute)</p>
                         </div>
                     )}
-                    {avatarVideoUrl && (
-                        <video 
-                            ref={avatarVideoRef}
-                            src={avatarVideoUrl} 
-                            className="w-full h-full object-cover" 
-                            autoPlay 
-                            loop 
-                            playsInline 
-                            key={avatarVideoUrl} 
-                        />
-                    )}
+                    
+                    <video 
+                        ref={avatarVideoRef}
+                        className={`w-full h-full object-cover transition-opacity duration-500 ${avatarVideoUrl ? 'opacity-100' : 'opacity-0'}`} 
+                        autoPlay 
+                        loop 
+                        playsInline 
+                        key={avatarVideoUrl} // Re-mounts the video element on new URL
+                        src={avatarVideoUrl || ''}
+                    />
+                    
                     {!isGeneratingVideo && !avatarVideoUrl && (
                          <div className="z-10 text-white text-center">
                             <Bot className="w-24 h-24 mx-auto mb-4"/>
@@ -334,3 +336,5 @@ export function AiInterviewerPage() {
     </div>
   );
 }
+
+    
