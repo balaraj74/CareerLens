@@ -8,7 +8,6 @@ import { generateResumeFromJson } from '@/ai/flows/generate-resume-from-json';
 import { generateInterviewQuestions } from '@/ai/flows/generate-interview-questions';
 import { processPdf } from '@/ai/flows/learning-helper';
 import { generateFirstInterviewQuestion } from '@/ai/flows/ai-interviewer';
-import { generateTalkingAvatar } from '@/ai/flows/generate-talking-avatar';
 import { aiInterviewerFollowup } from '@/ai/flows/ai-interviewer-flow';
 
 import type { GenerateCareerRecommendationsInput, GenerateCareerRecommendationsOutput } from '@/ai/schemas/career-recommendations';
@@ -19,7 +18,6 @@ import type { GenerateInterviewQuestionsInput, GenerateInterviewQuestionsOutput 
 import type { LearningHelperInput } from '@/ai/schemas/learning-helper';
 import type { LearningOrchestratorOutput } from '@/ai/schemas/learning-orchestrator';
 import type { AiInterviewerInput, AiInterviewerOutput } from '@/ai/schemas/ai-interviewer';
-import type { GenerateTalkingAvatarInput, GenerateTalkingAvatarOutput } from '@/ai/schemas/generate-talking-avatar';
 import type { AiInterviewerFlowInput, AiInterviewerFlowOutput } from '@/ai/schemas/ai-interviewer-flow';
 
 
@@ -110,19 +108,6 @@ export async function getAiInterviewerResponse(
   } catch (error: any) {
     console.error(error);
     return { success: false, error: error.message || 'Failed to get AI interviewer response.' };
-  }
-}
-
-
-export async function generateAvatarVideo(
-  input: GenerateTalkingAvatarInput
-): Promise<{ success: boolean; data?: GenerateTalkingAvatarOutput; error?: string }> {
-  try {
-    const result = await generateTalkingAvatar(input);
-    return { success: true, data: result };
-  } catch (error: any) {
-    console.error(error);
-    return { success: false, error: error.message || 'Failed to generate avatar video.' };
   }
 }
 

@@ -50,7 +50,7 @@ const features = [
     icon: <Bot className="h-8 w-8 text-primary" />,
     title: 'AI Interviewer',
     description:
-      'Engage in a mock interview with a hyper-realistic AI avatar.',
+      'Engage in a mock interview with a conversational AI.',
     link: '/ai-interviewer',
   },
   {
