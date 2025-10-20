@@ -11,7 +11,7 @@ import {
   signInWithPopup,
   User,
 } from 'firebase/auth';
-import { useFirebase } from '@/lib/use-firebase'; // NEW
+import { useFirebase } from '@/lib/use-firebase'; 
 
 interface AuthContextType {
   user: User | null;
@@ -32,7 +32,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const { auth } = useFirebase(); // NEW: get auth from our provider
+  const { auth } = useFirebase(); 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +59,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!auth) {
-        setLoading(false);
+        // Set loading to false only if auth is explicitly null after attempting to initialize
+        if (auth === null) {
+            setLoading(false);
+        }
         return;
     };
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -68,7 +71,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [auth]); // NEW: re-run when auth instance is available
+  }, [auth]);
 
   return (
     <AuthContext.Provider value={{ user, loading, signUp, signIn, googleSignIn, logOut }}>
