@@ -4,28 +4,16 @@
  * @fileOverview Generates interview questions (easy, medium, and hard) with model answers for a specific career role.
  *
  * - generateInterviewQuestions - A function that generates interview questions with model answers.
- * - GenerateInterviewQuestionsInput - The input type for the generateInterviewQuestions function.
- * - GenerateInterviewQuestionsOutput - The return type for the generateInterviewQuestions function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {
+  GenerateInterviewQuestionsInputSchema,
+  GenerateInterviewQuestionsOutputSchema,
+  type GenerateInterviewQuestionsInput,
+  type GenerateInterviewQuestionsOutput,
+} from '@/ai/schemas/generate-interview-questions';
 
-const GenerateInterviewQuestionsInputSchema = z.object({
-  careerRole: z.string().describe('The career role to generate interview questions for.'),
-});
-export type GenerateInterviewQuestionsInput = z.infer<typeof GenerateInterviewQuestionsInputSchema>;
-
-const InterviewQuestionSchema = z.object({
-  question: z.string().describe('The interview question.'),
-  difficulty: z.enum(['easy', 'medium', 'hard']).describe('The difficulty level of the question.'),
-  modelAnswer: z.string().describe('A model answer for the question.'),
-});
-
-const GenerateInterviewQuestionsOutputSchema = z.object({
-  interviewQuestions: z.array(InterviewQuestionSchema).describe('A list of interview questions with model answers.'),
-});
-export type GenerateInterviewQuestionsOutput = z.infer<typeof GenerateInterviewQuestionsOutputSchema>;
 
 export async function generateInterviewQuestions(
   input: GenerateInterviewQuestionsInput

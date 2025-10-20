@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -70,6 +69,9 @@ export function ProfilePageV2() {
         const profileData = await fetchProfile(db, user.uid);
         if (profileData) {
           form.reset(profileData);
+        } else {
+          // If no profile exists, set the user's name from auth if available
+          form.setValue('name', user.displayName || '');
         }
         setIsLoadingProfile(false);
       } else if (!authLoading) {
@@ -88,14 +90,11 @@ export function ProfilePageV2() {
   };
 
   async function onSubmit(data: UserProfile) {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Not Authenticated', description: 'You must be logged in to save your profile.' });
+    if (!user || !db) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'Could not save profile. Please try logging in again.' });
       return;
     }
-    if (!db) {
-        toast({ variant: 'destructive', title: 'Database not available', description: 'Could not connect to the database.' });
-        return;
-    }
+    
     setIsSubmitting(true);
     try {
       await saveProfile(db, user.uid, data);
@@ -107,10 +106,6 @@ export function ProfilePageV2() {
       setIsSubmitting(false);
     }
   }
-
-  const handleSave = () => {
-    form.handleSubmit(onSubmit)();
-  };
 
   const nextStep = () => setCurrentStep(prev => (prev < steps.length - 1 ? prev + 1 : prev));
   const prevStep = () => setCurrentStep(prev => (prev > 0 ? prev - 1 : prev));
@@ -141,7 +136,7 @@ export function ProfilePageV2() {
       </div>
 
       <Form {...form}>
-        <form>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           <AnimatePresence mode="wait">
             <motion.div key={currentStep} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}>
               {currentStep === 0 && (
@@ -164,8 +159,8 @@ export function ProfilePageV2() {
                   <CardHeader><CardTitle>Educational Background</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     {eduFields.map((field, index) => (
-                      <Card key={field.id} className="p-4 relative">
-                        <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeEdu(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                      <Card key={field.id} className="p-4 relative bg-background/50">
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeEdu(index)}><Trash2 className="h-4 w-4"/></Button>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField name={`education.${index}.degree`} control={form.control} render={({ field }) => ( <FormItem><FormLabel>Degree/Qualification</FormLabel><FormControl><Input placeholder="e.g., Bachelor of Science" {...field} /></FormControl><FormMessage /></FormItem> )} />
                           <FormField name={`education.${index}.field`} control={form.control} render={({ field }) => ( <FormItem><FormLabel>Field of Study</FormLabel><FormControl><Input placeholder="e.g., Computer Science" {...field} /></FormControl><FormMessage /></FormItem> )} />
@@ -174,7 +169,7 @@ export function ProfilePageV2() {
                         </div>
                       </Card>
                     ))}
-                    <Button type="button" variant="outline" onClick={() => appendEdu({ degree: '', field: '', institution: '', year: '' })}><PlusCircle/> Add Education</Button>
+                    <Button type="button" variant="outline" onClick={() => appendEdu({ degree: '', field: '', institution: '', year: '' })}><PlusCircle className="mr-2"/> Add Education</Button>
                   </CardContent>
                 </Card>
               )}
@@ -183,8 +178,8 @@ export function ProfilePageV2() {
                   <CardHeader><CardTitle>Work Experience</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     {expFields.map((field, index) => (
-                      <Card key={field.id} className="p-4 relative">
-                        <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeExp(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                      <Card key={field.id} className="p-4 relative bg-background/50">
+                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => removeExp(index)}><Trash2 className="h-4 w-4"/></Button>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField name={`experience.${index}.role`} control={form.control} render={({ field }) => ( <FormItem><FormLabel>Job Title / Role</FormLabel><FormControl><Input placeholder="e.g., Software Engineer Intern" {...field} /></FormControl><FormMessage /></FormItem> )} />
                           <FormField name={`experience.${index}.company`} control={form.control} render={({ field }) => ( <FormItem><FormLabel>Company</FormLabel><FormControl><Input placeholder="e.g., Google" {...field} /></FormControl><FormMessage /></FormItem> )} />
@@ -193,7 +188,7 @@ export function ProfilePageV2() {
                          <FormField name={`experience.${index}.description`} control={form.control} render={({ field }) => ( <FormItem className="mt-4"><FormLabel>Description / Achievements</FormLabel><FormControl><Textarea placeholder="Describe your responsibilities and achievements..." {...field} /></FormControl><FormMessage /></FormItem> )} />
                       </Card>
                     ))}
-                    <Button type="button" variant="outline" onClick={() => appendExp({ role: '', company: '', years: '', description: '' })}><PlusCircle/> Add Experience</Button>
+                    <Button type="button" variant="outline" onClick={() => appendExp({ role: '', company: '', years: '', description: '' })}><PlusCircle className="mr-2"/> Add Experience</Button>
                   </CardContent>
                 </Card>
               )}
@@ -205,9 +200,9 @@ export function ProfilePageV2() {
                         <FormLabel>Skills</FormLabel>
                         <div className="flex gap-2 my-2">
                             <Input placeholder="Add a new skill (e.g., React)" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSkill(); }}} />
-                            <Button type="button" variant="outline" onClick={handleAddSkill}><PlusCircle/> Add</Button>
+                            <Button type="button" variant="outline" onClick={handleAddSkill}><PlusCircle className="mr-2"/> Add</Button>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2 p-2 bg-background/50 rounded-lg min-h-[40px]">
                             {skillFields.map((field, index) => (
                             <Badge key={field.id} variant="secondary" className="text-base py-1 px-3 animate-in fade-in-0 zoom-in-95">
                                 {field.name}
@@ -216,30 +211,30 @@ export function ProfilePageV2() {
                             ))}
                         </div>
                     </div>
-                     <FormField name="careerGoals" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Primary Career Goal</FormLabel><FormControl><Input placeholder="e.g., Senior Full-Stack Developer, AI/ML Engineer" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                     <FormField name="careerGoals" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Primary Career Goal</FormLabel><FormControl><Textarea placeholder="e.g., To become a Senior Full-Stack Developer specializing in AI-driven applications..." {...field} /></FormControl><FormMessage /></FormItem> )} />
                   </CardContent>
                 </Card>
               )}
             </motion.div>
           </AnimatePresence>
+
+          <div className="mt-8 flex justify-between items-center">
+            <Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0}>
+                <ArrowLeft className="mr-2"/> Previous
+            </Button>
+
+            {currentStep === steps.length - 1 ? (
+              <Button type="submit" disabled={isSubmitting} className="bg-gradient-to-r from-primary to-accent">
+                {isSubmitting ? <><Loader2 className="animate-spin mr-2" /> Saving...</> : <><Sparkles className="mr-2"/> Save Profile</>}
+              </Button>
+            ) : (
+              <Button type="button" onClick={nextStep}>
+                Next <ArrowRight className="ml-2"/>
+              </Button>
+            )}
+          </div>
         </form>
       </Form>
-      
-      <div className="mt-8 flex justify-between items-center">
-        <Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 0}>
-            <ArrowLeft className="mr-2"/> Previous
-        </Button>
-
-        {currentStep === steps.length - 1 ? (
-          <Button type="button" onClick={handleSave} disabled={isSubmitting} className="bg-gradient-to-r from-primary to-accent">
-            {isSubmitting ? <><Loader2 className="animate-spin mr-2" /> Saving...</> : <><Sparkles className="mr-2"/> Save Profile</>}
-          </Button>
-        ) : (
-          <Button type="button" onClick={nextStep}>
-            Next <ArrowRight className="ml-2"/>
-          </Button>
-        )}
-      </div>
     </div>
   );
 }

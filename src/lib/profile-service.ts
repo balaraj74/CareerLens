@@ -12,7 +12,7 @@ import type { UserProfile } from './types';
  */
 export async function fetchProfile(db: Firestore, userId: string): Promise<UserProfile | undefined> {
   if (!userId) {
-    console.error('User ID is required to fetch a profile.');
+    console.warn('User ID is not provided. Cannot fetch profile.');
     return undefined;
   }
   try {
@@ -20,15 +20,17 @@ export async function fetchProfile(db: Firestore, userId: string): Promise<UserP
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
+      // Return the document data, which should conform to UserProfile
       return docSnap.data() as UserProfile;
     } else {
       console.log("No profile document found for user:", userId);
+      // Return undefined, the caller can decide to create a new profile.
       return undefined;
     }
   } catch (err: any) {
     console.error('Error fetching profile from Firestore:', err);
-    // It's better to throw the error so the UI can handle it
-    throw err;
+    // Propagate the error so the UI can handle it (e.g., show a toast).
+    throw new Error('Failed to fetch user profile.');
   }
 }
 
@@ -41,7 +43,7 @@ export async function fetchProfile(db: Firestore, userId: string): Promise<UserP
 export async function saveProfile(
   db: Firestore,
   userId: string,
-  data: Partial<UserProfile>
+  data: UserProfile
 ): Promise<void> {
   if (!userId) {
     throw new Error('User ID is required to save the profile.');
@@ -50,6 +52,8 @@ export async function saveProfile(
   // A reference to the document in the 'users' collection.
   const docRef = doc(db, "users", userId);
   
+  // Create a new object for Firestore to avoid mutating the original form data.
+  // Add the `updatedAt` server timestamp.
   const dataToSave = {
     ...data,
     updatedAt: serverTimestamp(),
@@ -57,9 +61,11 @@ export async function saveProfile(
 
   try {
     // Use setDoc with { merge: true } to create or update the document.
+    // This is robust and prevents overwriting fields unintentionally.
     await setDoc(docRef, dataToSave, { merge: true });
   } catch (error) {
     console.error("Error saving profile to Firestore:", error);
-    throw error;
+    // Throw a more user-friendly error message.
+    throw new Error("Could not save your profile to the database. Please try again.");
   }
 }

@@ -11,10 +11,10 @@ import { generateFirstInterviewQuestion } from '@/ai/flows/ai-interviewer';
 import { aiInterviewerFollowup } from '@/ai/flows/ai-interviewer-flow';
 
 import type { GenerateCareerRecommendationsInput, GenerateCareerRecommendationsOutput } from '@/ai/schemas/career-recommendations';
-import type { SkillGapAnalysisInput, SkillGapAnalysisOutput } from '@/ai/flows/perform-skill-gap-analysis';
-import type { CreatePersonalizedRoadmapInput, CreatePersonalizedRoadmapOutput } from '@/ai/flows/create-personalized-roadmap';
-import type { GenerateResumeFromJsonInput, GenerateResumeFromJsonOutput } from '@/ai/flows/generate-resume-from-json';
-import type { GenerateInterviewQuestionsInput, GenerateInterviewQuestionsOutput } from '@/ai/flows/generate-interview-questions';
+import type { SkillGapAnalysisInput, SkillGapAnalysisOutput } from '@/ai/schemas/perform-skill-gap-analysis';
+import type { CreatePersonalizedRoadmapInput, CreatePersonalizedRoadmapOutput } from '@/ai/schemas/create-personalized-roadmap';
+import type { GenerateResumeFromJsonInput, GenerateResumeFromJsonOutput } from '@/ai/schemas/generate-resume-from-json';
+import type { GenerateInterviewQuestionsInput, GenerateInterviewQuestionsOutput } from '@/ai/schemas/generate-interview-questions';
 import type { LearningHelperInput } from '@/ai/schemas/learning-helper';
 import type { LearningOrchestratorOutput } from '@/ai/schemas/learning-orchestrator';
 import type { AiInterviewerInput, AiInterviewerOutput } from '@/ai/schemas/ai-interviewer';
@@ -57,15 +57,15 @@ export async function getPersonalizedRoadmap(
 
 export async function getResumeJson(input: any): Promise<{ success: boolean; data?: GenerateResumeFromJsonOutput; error?: string }> {
   try {
-    // Flatten the profile data into the main payload
+    // The profile data is now directly at the top level of the payload due to form structure.
     const payload = {
-      ...(input.profile || {}), // Spread the fields from the nested profile object
+      ...(input.profile || {}),
       manual: input.manual,
       jobDescription: input.jobDescription,
-      email: input.profile.email,
+      email: input.profile.email, // Ensure email is passed if available
     };
-
-    const result = await generateResumeFromJson(payload);
+    
+    const result = await generateResumeFromJson(payload as GenerateResumeFromJsonInput);
     return { success: true, data: result };
   } catch (error: any) {
     console.error("Error in getResumeJson (adapter):", error);

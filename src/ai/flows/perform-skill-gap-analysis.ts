@@ -3,35 +3,16 @@
  * @fileOverview Performs skill gap analysis between user skills and target role requirements.
  *
  * - performSkillGapAnalysis - A function that analyzes the skill gap.
- * - SkillGapAnalysisInput - The input type for the performSkillGapAnalysis function.
- * - SkillGapAnalysisOutput - The return type for the performSkillGapAnalysis function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {
+  SkillGapAnalysisInputSchema,
+  SkillGapAnalysisOutputSchema,
+  type SkillGapAnalysisInput,
+  type SkillGapAnalysisOutput,
+} from '@/ai/schemas/perform-skill-gap-analysis';
 
-const SkillGapAnalysisInputSchema = z.object({
-  userSkills: z
-    .array(z.string())
-    .describe('A list of skills possessed by the user.'),
-  targetRoleRequirements: z
-    .array(z.string())
-    .describe('A list of skills required for the target role.'),
-});
-export type SkillGapAnalysisInput = z.infer<typeof SkillGapAnalysisInputSchema>;
-
-const SkillGapAnalysisOutputSchema = z.object({
-  overlappingSkills: z
-    .array(z.string())
-    .describe('Skills that the user possesses which are also required for the target role.'),
-  missingSkills: z
-    .array(z.string())
-    .describe('Skills that are required for the target role but not possessed by the user.'),
-  suggestedLearningOrder: z
-    .array(z.string())
-    .describe('A suggested order for learning the missing skills, based on dependencies and prerequisites.'),
-});
-export type SkillGapAnalysisOutput = z.infer<typeof SkillGapAnalysisOutputSchema>;
 
 export async function performSkillGapAnalysis(
   input: SkillGapAnalysisInput
