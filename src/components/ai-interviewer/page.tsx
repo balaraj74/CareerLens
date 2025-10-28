@@ -24,9 +24,9 @@ type AvatarType = 'HR' | 'Mentor' | 'Robot';
 type MicState = 'idle' | 'listening' | 'processing';
 
 const AVATAR_IMAGES = {
-    HR: 'https://cdn.d-id.com/avatars/fT47o6iKk2_SGS2A8m53I.png',
-    Mentor: 'https://cdn.d-id.com/avatars/enhanced/o_jC4I2Aa0Cj8y0sBso_U.jpeg',
-    Robot: 'https://cdn.d-id.com/avatars/enhanced/Cubs2gK3cDmF6xK2pGv01.jpeg',
+    HR: 'https://picsum.photos/seed/hr-avatar/256/256',
+    Mentor: 'https://picsum.photos/seed/mentor-avatar/256/256',
+    Robot: 'https://picsum.photos/seed/robot-avatar/256/256',
 };
 
 export function AiInterviewerPage() {
@@ -294,3 +294,5 @@ export function AiInterviewerPage() {
     </div>
   );
 }
+
+    
