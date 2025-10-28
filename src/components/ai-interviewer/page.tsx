@@ -206,7 +206,7 @@ export function AiInterviewerPage() {
             </ScrollArea>
             <form onSubmit={handleUserSubmit} className="mt-4">
                  <div className="relative">
-                    <input name="userInput" placeholder="Type your response..." className="w-full bg-secondary border-border rounded-lg p-3 pr-12 text-sm" disabled={isgenerating}/>
+                    <input name="userInput" placeholder="Type your response..." className="w-full bg-secondary border-border rounded-lg p-3 pr-12 text-sm" disabled={isGenerating}/>
                     <Button type="submit" size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2" disabled={isGenerating}>
                         <Send/>
                     </Button>
