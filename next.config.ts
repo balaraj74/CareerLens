@@ -23,7 +23,8 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https'
+      ,
         hostname: 'picsum.photos',
         port: '',
         pathname: '/**',
@@ -35,11 +36,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-  },
-  serverActions: {
-    bodySizeLimit: '4mb',
-    // Increase timeout for slow AI operations
-    serverActionsTimeout: 120000,
   },
 };
 
