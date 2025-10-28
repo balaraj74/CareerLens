@@ -1,8 +1,9 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import 'regenerator-runtime/runtime';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Mic, Send, User, Loader2 } from 'lucide-react';
+import { Bot, Mic, Send, User, Loader2, Video, VideoOff, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -14,17 +15,19 @@ import { getAiInterviewerResponse, getAiInterviewerFollowup } from '@/lib/action
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ScrollArea } from '../ui/scroll-area';
 import { useFirebase } from '@/lib/firebase-provider';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 type InterviewState = 'uninitialized' | 'configuring' | 'in_progress' | 'finished';
 type InterviewType = 'technical' | 'hr' | 'mixed';
 type AvatarType = 'HR' | 'Mentor' | 'Robot';
+type MicState = 'idle' | 'listening' | 'processing';
 
 const AVATAR_IMAGES = {
     HR: 'https://cdn.d-id.com/avatars/fT47o6iKk2_SGS2A8m53I.png',
     Mentor: 'https://cdn.d-id.com/avatars/enhanced/o_jC4I2Aa0Cj8y0sBso_U.jpeg',
     Robot: 'https://cdn.d-id.com/avatars/enhanced/Cubs2gK3cDmF6xK2pGv01.jpeg',
 };
-
 
 export function AiInterviewerPage() {
   const { user } = useAuth();
@@ -38,7 +41,15 @@ export function AiInterviewerPage() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
-  
+  const [micState, setMicState] = useState<MicState>('idle');
+
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const { transcript: speechTranscript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+
   // Load user profile
   useEffect(() => {
     async function loadProfile() {
@@ -55,12 +66,29 @@ export function AiInterviewerPage() {
     }
     loadProfile();
   }, [user, db, toast]);
-  
+
+  const getCameraPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setHasCameraPermission(true);
+      setIsCameraOn(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing media devices.', error);
+      toast({ variant: 'destructive', title: 'Media Access Denied', description: 'Please enable camera and microphone permissions.' });
+      setHasCameraPermission(false);
+    }
+  };
 
   const handleStartInterview = async () => {
     if (!profile) {
       toast({ variant: 'destructive', title: 'Profile not loaded' });
       return;
+    }
+    if (!hasCameraPermission) {
+      await getCameraPermission();
     }
     
     setIsGenerating(true);
@@ -74,24 +102,22 @@ export function AiInterviewerPage() {
     setIsGenerating(false);
 
     if (response.success && response.data) {
-        setTranscript([{ speaker: 'ai', text: response.data.firstQuestion, timestamp: new Date().toISOString() }]);
+        const aiResponseText = response.data.firstQuestion;
+        setTranscript([{ speaker: 'ai', text: aiResponseText, timestamp: new Date().toISOString() }]);
+        
+        // This initial question usually won't have audio, but we can add it if needed
+        // For now, we wait for the user to speak first.
     } else {
         toast({ variant: 'destructive', title: 'Could not start interview', description: response.error });
         setInterviewState('configuring');
     }
   };
-
-  const handleUserSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile) return;
-
-    const input = (e.target as HTMLFormElement).elements.namedItem('userInput') as HTMLInputElement;
-    const userText = input.value.trim();
-    if (!userText) return;
+  
+  const handleUserSubmit = async (userText: string) => {
+    if (!profile || !userText.trim()) return;
 
     const newTranscript: TranscriptItem[] = [...transcript, { speaker: 'user', text: userText, timestamp: new Date().toISOString() }];
     setTranscript(newTranscript);
-    input.value = '';
     setIsGenerating(true);
     
     const response = await getAiInterviewerFollowup({
@@ -104,6 +130,10 @@ export function AiInterviewerPage() {
     setIsGenerating(false);
      if (response.success && response.data) {
         setTranscript(prev => [...prev, { speaker: 'ai', text: response.data.followUp, timestamp: new Date().toISOString() }]);
+        if (response.data.audioDataUri && audioRef.current) {
+            audioRef.current.src = response.data.audioDataUri;
+            audioRef.current.play();
+        }
         if (response.data.isEndOfInterview) {
             setInterviewState('finished');
         }
@@ -112,6 +142,38 @@ export function AiInterviewerPage() {
     }
   };
 
+  const handleMicClick = () => {
+    if (listening) {
+      SpeechRecognition.stopListening();
+      setMicState('processing');
+    } else {
+      resetTranscript();
+      SpeechRecognition.startListening({ continuous: true });
+      setMicState('listening');
+    }
+  };
+
+  useEffect(() => {
+    if (!listening && micState === 'processing' && speechTranscript) {
+      handleUserSubmit(speechTranscript);
+      resetTranscript();
+      setMicState('idle');
+    }
+  }, [listening, speechTranscript, micState]);
+
+
+  if (!browserSupportsSpeechRecognition) {
+      return (
+           <div className="p-8">
+            <Alert variant="destructive">
+                <AlertTitle>Browser Not Supported</AlertTitle>
+                <AlertDescription>
+                   This browser does not support speech recognition. Please use Google Chrome for the best experience.
+                </AlertDescription>
+            </Alert>
+           </div>
+      )
+  }
 
   if (interviewState !== 'in_progress') {
      return (
@@ -158,7 +220,11 @@ export function AiInterviewerPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button size="lg" className="w-full" onClick={handleStartInterview} disabled={isGenerating}>
+                         <div className="flex items-center space-x-2">
+                            <Button variant="outline" onClick={getCameraPermission} disabled={hasCameraPermission}>Enable Mic & Video</Button>
+                            {!hasCameraPermission && <span className="text-xs text-muted-foreground">Camera and Mic access is required.</span>}
+                         </div>
+                        <Button size="lg" className="w-full" onClick={handleStartInterview} disabled={isGenerating || !hasCameraPermission}>
                             {isGenerating ? <Loader2 className="animate-spin"/> : 'Start Interview'}
                         </Button>
                     </CardContent>
@@ -185,9 +251,15 @@ export function AiInterviewerPage() {
             <img src={AVATAR_IMAGES[avatarType]} alt="AI Avatar" className="w-64 h-64 rounded-full object-cover border-4 border-primary shadow-2xl shadow-primary/20"/>
             <h2 className="text-2xl font-bold mt-4">AI Interviewer: Alex</h2>
             <p className="text-muted-foreground">{avatarType} Persona</p>
+
+            <div className="absolute bottom-6 right-6 w-48 h-36">
+                 <video ref={videoRef} className={`w-full h-full rounded-md object-cover transition-opacity ${isCameraOn ? 'opacity-100' : 'opacity-0'}`} autoPlay muted />
+                 {!isCameraOn && <div className="w-full h-full bg-black rounded-md flex items-center justify-center"><VideoOff className="text-muted-foreground" /></div>}
+            </div>
+             <audio ref={audioRef} hidden />
         </div>
 
-        {/* Transcript Sidebar */}
+        {/* Transcript & Controls */}
         <div className="w-96 bg-card rounded-2xl flex flex-col p-4">
             <h2 className="text-xl font-bold mb-4 font-headline text-glow">Live Transcript</h2>
             <ScrollArea className="flex-1 pr-4">
@@ -201,17 +273,23 @@ export function AiInterviewerPage() {
                              {item.speaker === 'user' && <User className="w-5 h-5 text-green-400 shrink-0"/>}
                         </div>
                     ))}
+                     {listening && <p className="text-sm text-muted-foreground italic">{speechTranscript}...</p>}
                     {isGenerating && <Loader2 className="animate-spin mx-auto text-primary"/>}
                 </div>
             </ScrollArea>
-            <form onSubmit={handleUserSubmit} className="mt-4">
-                 <div className="relative">
-                    <input name="userInput" placeholder="Type your response..." className="w-full bg-secondary border-border rounded-lg p-3 pr-12 text-sm" disabled={isGenerating}/>
-                    <Button type="submit" size="icon" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2" disabled={isGenerating}>
-                        <Send/>
-                    </Button>
-                </div>
-            </form>
+             <div className="mt-4 flex items-center justify-center gap-4">
+                <Button onClick={handleMicClick} size="icon" className={`rounded-full h-16 w-16 transition-colors ${micState === 'listening' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary'}`} disabled={isGenerating}>
+                    {micState === 'listening' ? <MicOff /> : <Mic />}
+                </Button>
+                <Button onClick={() => setIsCameraOn(!isCameraOn)} size="icon" variant="outline">
+                    {isCameraOn ? <Video /> : <VideoOff />}
+                </Button>
+            </div>
+            <div className="text-center text-xs text-muted-foreground mt-2">
+                {micState === 'idle' && 'Click the mic to speak'}
+                {micState === 'listening' && 'Listening... Click mic to stop'}
+                {micState === 'processing' && 'Processing your response...'}
+            </div>
         </div>
     </div>
   );

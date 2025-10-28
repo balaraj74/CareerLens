@@ -32,6 +32,7 @@ export type AiInterviewerInput = z.infer<
 export const AiInterviewerFlowOutputSchema = z.object({
     followUp: z.string().describe("The AI's next question or statement in the conversation."),
     isEndOfInterview: z.boolean().describe("Set to true only when the interview should be concluded."),
+    audioDataUri: z.string().optional().describe('The base64 encoded audio data URI of the AI response.'),
 });
 export type AiInterviewerFlowOutput = z.infer<
   typeof AiInterviewerFlowOutputSchema
