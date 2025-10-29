@@ -12,6 +12,7 @@ import {
   AiInterviewerFlowOutputSchema,
   type AiInterviewerInput,
   type AiInterviewerFlowOutput,
+  type TranscriptItem,
 } from '@/ai/schemas/ai-interviewer-flow';
 import { z } from 'zod';
 
@@ -31,7 +32,7 @@ At the very end of the entire interview, you will provide a comprehensive perfor
 const aiInterviewerFollowupPrompt = ai.definePrompt({
     name: 'aiInterviewerFollowupPrompt',
     system: systemPrompt,
-    input: { schema: AiInterviewerInputSchema.omit({ userProfile: true }) },
+    input: { schema: AiInterviewerInputSchema },
     output: { schema: AiInterviewerFlowOutputSchema },
     prompt: `
       Job Description: ${"{{jobDescription}}"}
@@ -44,13 +45,13 @@ const aiInterviewerFollowupPrompt = ai.definePrompt({
 export const aiInterviewerFlow = ai.defineFlow(
   {
     name: 'aiInterviewerFlow',
-    inputSchema: AiInterviewerInputSchema.omit({ userProfile: true }),
+    inputSchema: AiInterviewerInputSchema,
     outputSchema: AiInterviewerFlowOutputSchema,
   },
   async (input) => {
     const { transcript } = input;
 
-    const history = transcript.map(item => ({
+    const history = transcript.map((item: TranscriptItem) => ({
       role: item.speaker === 'user' ? 'user' : 'model',
       content: [{ text: item.text }],
     }));
