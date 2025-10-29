@@ -185,6 +185,9 @@ export function AiInterviewerPage() {
         if (listening) {
           SpeechRecognition.stopListening();
         }
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+        }
         
         const utterance = new SpeechSynthesisUtterance(text);
         
