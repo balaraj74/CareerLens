@@ -13,7 +13,7 @@ import {
   type AiInterviewerInput,
   type AiInterviewerFlowOutput,
 } from '@/ai/schemas/ai-interviewer-flow';
-import { generate } from 'genkit/generate';
+import { generate } from 'genkit';
 import { z } from 'zod';
 
 export async function aiInterviewerFollowup(input: Omit<AiInterviewerInput, 'userProfile'>): Promise<AiInterviewerFlowOutput> {
@@ -36,7 +36,7 @@ export const aiInterviewerFlow = ai.defineFlow(
     outputSchema: AiInterviewerFlowOutputSchema,
   },
   async (input) => {
-    const { jobDescription, transcript } = input;
+    const { jobDescription, transcript, avatarType } = input;
 
     const model = ai.getGenerator('googleai/gemini-2.5-flash-lite');
 
