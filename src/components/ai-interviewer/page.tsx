@@ -141,6 +141,7 @@ export function AiInterviewerPage() {
         const response = await getAiInterviewerResponse({
             interviewType: 'mixed', // Example
             jobDescription: 'Software Engineer',
+            avatarType: 'HR', // Added missing property
         });
         setIsAwaitingAI(false);
 
@@ -208,6 +209,7 @@ export function AiInterviewerPage() {
         const response = await getAiInterviewerFollowup({
             transcript: newTranscript,
             jobDescription: 'Software Engineer',
+            avatarType: 'HR', // Added missing property
         });
         
         setIsAwaitingAI(false);
@@ -357,5 +359,7 @@ export function AiInterviewerPage() {
         </div>
     );
 }
+
+    
 
     
