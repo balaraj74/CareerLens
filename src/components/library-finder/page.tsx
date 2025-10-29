@@ -17,12 +17,16 @@ const containerStyle = {
   borderRadius: '1rem',
 };
 
+const mapLibraries: ('places' | 'drawing' | 'geometry' | 'localContext' | 'visualization')[] = ['places'];
+
+
 export function LibraryFinderPage() {
   const { toast } = useToast();
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries: mapLibraries,
   });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -359,3 +363,5 @@ export function LibraryFinderPage() {
 }
 
 export default LibraryFinderPage;
+
+    
