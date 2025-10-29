@@ -1,298 +1,338 @@
-
 'use client';
 import 'regenerator-runtime/runtime';
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Bot, Mic, Send, User, Loader2, Video, VideoOff, MicOff } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useAnimation } from 'framer-motion';
+import { Mic, MicOff, Video, VideoOff, Phone, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { fetchProfile } from '@/lib/profile-service';
 import type { UserProfile } from '@/lib/types';
-import type { TranscriptItem } from '@/ai/schemas/ai-interviewer-flow';
-import { getAiInterviewerResponse, getAiInterviewerFollowup } from '@/lib/actions';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { ScrollArea } from '../ui/scroll-area';
-import { useFirebase } from '@/lib/firebase-provider';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import { getAiInterviewerResponse, getAiInterviewerFollowup } from '@/lib/actions';
+import { useFirebase } from '@/lib/firebase-provider';
+import type { TranscriptItem } from '@/ai/schemas/ai-interviewer-flow';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
-type InterviewState = 'uninitialized' | 'configuring' | 'in_progress' | 'finished';
-type InterviewType = 'technical' | 'hr' | 'mixed';
-type AvatarType = 'HR' | 'Mentor' | 'Robot';
-type MicState = 'idle' | 'listening' | 'processing';
-
-const AVATAR_IMAGES = {
-    HR: 'https://picsum.photos/seed/hr-avatar/256/256',
-    Mentor: 'https://picsum.photos/seed/mentor-avatar/256/256',
-    Robot: 'https://picsum.photos/seed/robot-avatar/256/256',
-};
-
-export function AiInterviewerPage() {
-  const { user } = useAuth();
-  const { db } = useFirebase();
-  const { toast } = useToast();
-
-  const [interviewState, setInterviewState] = useState<InterviewState>('uninitialized');
-  const [interviewType, setInterviewType] = useState<InterviewType>('hr');
-  const [avatarType, setAvatarType] = useState<AvatarType>('HR');
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
-  const [micState, setMicState] = useState<MicState>('idle');
-
-  const [hasCameraPermission, setHasCameraPermission] = useState(false);
-  const [isCameraOn, setIsCameraOn] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  const { transcript: speechTranscript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
-
-  // Load user profile
-  useEffect(() => {
-    async function loadProfile() {
-      if (user && db) {
-        setLoadingProfile(true);
-        try {
-          const profileData = await fetchProfile(db, user.uid);
-          setProfile(profileData || null);
-        } catch (error) {
-          toast({ variant: 'destructive', title: 'Could not load profile' });
-        }
-        setLoadingProfile(false);
-      }
-    }
-    loadProfile();
-  }, [user, db, toast]);
-
-  const getCameraPermission = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      setHasCameraPermission(true);
-      setIsCameraOn(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (error) {
-      console.error('Error accessing media devices.', error);
-      toast({ variant: 'destructive', title: 'Media Access Denied', description: 'Please enable camera and microphone permissions.' });
-      setHasCameraPermission(false);
-    }
-  };
-
-  const handleStartInterview = async () => {
-    if (!profile) {
-      toast({ variant: 'destructive', title: 'Profile not loaded' });
-      return;
-    }
-    if (!hasCameraPermission) {
-      await getCameraPermission();
-    }
-    
-    setIsGenerating(true);
-    setInterviewState('in_progress');
-    const response = await getAiInterviewerResponse({ 
-      userProfile: profile, 
-      interviewType,
-      jobDescription: 'Software Engineer at a top tech company.',
-      avatarType,
-    });
-    setIsGenerating(false);
-
-    if (response.success && response.data) {
-        const aiResponseText = response.data.firstQuestion;
-        setTranscript([{ speaker: 'ai', text: aiResponseText, timestamp: new Date().toISOString() }]);
-        
-        // This initial question usually won't have audio, but we can add it if needed
-        // For now, we wait for the user to speak first.
-    } else {
-        toast({ variant: 'destructive', title: 'Could not start interview', description: response.error });
-        setInterviewState('configuring');
-    }
-  };
-  
-  const handleUserSubmit = async (userText: string) => {
-    if (!profile || !userText.trim()) return;
-
-    const newTranscript: TranscriptItem[] = [...transcript, { speaker: 'user', text: userText, timestamp: new Date().toISOString() }];
-    setTranscript(newTranscript);
-    setIsGenerating(true);
-    
-    const response = await getAiInterviewerFollowup({
-        userProfile: profile,
-        jobDescription: 'Software Engineer at a top tech company.',
-        transcript: newTranscript,
-        avatarType,
-    });
-
-    setIsGenerating(false);
-     if (response.success && response.data) {
-        setTranscript(prev => [...prev, { speaker: 'ai', text: response.data.followUp, timestamp: new Date().toISOString() }]);
-        if (response.data.audioDataUri && audioRef.current) {
-            audioRef.current.src = response.data.audioDataUri;
-            audioRef.current.play();
-        }
-        if (response.data.isEndOfInterview) {
-            setInterviewState('finished');
-        }
-    } else {
-        toast({ variant: 'destructive', title: 'Error getting response', description: response.error });
-    }
-  };
-
-  const handleMicClick = () => {
-    if (listening) {
-      SpeechRecognition.stopListening();
-      setMicState('processing');
-    } else {
-      resetTranscript();
-      SpeechRecognition.startListening({ continuous: true });
-      setMicState('listening');
-    }
-  };
+// --- SVG Avatar Component ---
+const InterviewerAvatar = ({ audioData }: { audioData: Uint8Array | null }) => {
+  const [mouthOpen, setMouthOpen] = useState(0); // 0 to 1
+  const controls = useAnimation();
 
   useEffect(() => {
-    if (!listening && micState === 'processing' && speechTranscript) {
-      handleUserSubmit(speechTranscript);
-      resetTranscript();
-      setMicState('idle');
+    // Simple blinking animation
+    controls.start({
+      scaleY: [1, 1, 0.1, 1, 1],
+      transition: { duration: 0.5, times: [0, 0.45, 0.5, 0.55, 1], repeat: Infinity, repeatDelay: 5 }
+    });
+  }, [controls]);
+
+  useEffect(() => {
+    if (audioData && audioData.length > 0) {
+      // Calculate average volume
+      const average = audioData.reduce((a, b) => a + b) / audioData.length;
+      // Normalize and scale the value for mouth opening
+      const normalized = Math.min((average - 128) / 32, 1);
+      setMouthOpen(normalized);
+    } else {
+      setMouthOpen(0);
     }
-  }, [listening, speechTranscript, micState]);
+  }, [audioData]);
 
-
-  if (!browserSupportsSpeechRecognition) {
-      return (
-           <div className="p-8">
-            <Alert variant="destructive">
-                <AlertTitle>Browser Not Supported</AlertTitle>
-                <AlertDescription>
-                   This browser does not support speech recognition. Please use Google Chrome for the best experience.
-                </AlertDescription>
-            </Alert>
-           </div>
-      )
-  }
-
-  if (interviewState !== 'in_progress') {
-     return (
-        <div className="p-4 md:p-8 flex flex-col items-center justify-center space-y-8 min-h-[calc(100vh-10rem)]">
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-                <h1 className="text-3xl font-bold flex items-center justify-center gap-3 font-headline text-glow">
-                    <Bot className="w-8 h-8 text-primary"/> AI Interviewer
-                </h1>
-                <p className="text-muted-foreground">Practice with a conversational AI to hone your skills.</p>
-            </motion.div>
-
-            {interviewState === 'uninitialized' && (
-                 <Card className="glass-card w-full max-w-lg">
-                    <CardHeader><CardTitle>Welcome!</CardTitle><CardDescription>{loadingProfile ? 'Loading your profile...' : (profile ? 'Get ready to practice.' : 'Please complete your profile first.')}</CardDescription></CardHeader>
-                    <CardContent className="flex justify-center">
-                        <Button size="lg" className="bg-gradient-to-r from-primary to-accent" onClick={() => setInterviewState('configuring')} disabled={loadingProfile || !profile}>Begin Setup</Button>
-                    </CardContent>
-                </Card>
-            )}
-
-            {interviewState === 'configuring' && (
-                <Card className="glass-card w-full max-w-lg">
-                    <CardHeader><CardTitle>Configure Your Interview</CardTitle><CardDescription>Choose the type of interview and avatar persona.</CardDescription></CardHeader>
-                    <CardContent className="space-y-6">
-                         <div className="space-y-2">
-                            <p className="text-sm font-medium">Interview Type</p>
-                            <Select onValueChange={(v: InterviewType) => setInterviewType(v)} defaultValue={interviewType}>
-                                <SelectTrigger><SelectValue placeholder="Select interview type" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="hr">HR / Behavioral</SelectItem>
-                                    <SelectItem value="technical">Technical</SelectItem>
-                                    <SelectItem value="mixed">Mixed</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                             <p className="text-sm font-medium">Avatar Persona</p>
-                            <Select onValueChange={(v: AvatarType) => setAvatarType(v)} defaultValue={avatarType}>
-                                <SelectTrigger><SelectValue placeholder="Select an avatar" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="HR">HR Professional</SelectItem>
-                                    <SelectItem value="Mentor">Senior Mentor</SelectItem>
-                                    <SelectItem value="Robot">Technical Bot</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <Button variant="outline" onClick={getCameraPermission} disabled={hasCameraPermission}>Enable Mic & Video</Button>
-                            {!hasCameraPermission && <span className="text-xs text-muted-foreground">Camera and Mic access is required.</span>}
-                         </div>
-                        <Button size="lg" className="w-full" onClick={handleStartInterview} disabled={isGenerating || !hasCameraPermission}>
-                            {isGenerating ? <Loader2 className="animate-spin"/> : 'Start Interview'}
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
-
-            {interviewState === 'finished' && (
-                <Card className="glass-card w-full max-w-lg">
-                    <CardHeader><CardTitle>Interview Complete!</CardTitle></CardHeader>
-                     <CardContent className="flex flex-col gap-4">
-                       <p className="text-muted-foreground">The full performance report feature is coming soon! For now, review the transcript for feedback.</p>
-                        <Button size="lg" className="flex-1" variant="outline" onClick={() => { setInterviewState('uninitialized'); setTranscript([]); }}>Start a New Interview</Button>
-                    </CardContent>
-                </Card>
-            )}
-        </div>
-    );
-  }
+  const mouthPath = `M 120 150 Q 150 ${150 + mouthOpen * 40} 180 150`;
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] w-full text-white p-4 gap-4">
-        {/* Main View */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-card rounded-2xl overflow-hidden relative">
-            <img src={AVATAR_IMAGES[avatarType]} alt="AI Avatar" className="w-64 h-64 rounded-full object-cover border-4 border-primary shadow-2xl shadow-primary/20"/>
-            <h2 className="text-2xl font-bold mt-4">AI Interviewer: Alex</h2>
-            <p className="text-muted-foreground">{avatarType} Persona</p>
-
-            <div className="absolute bottom-6 right-6 w-48 h-36">
-                 <video ref={videoRef} className={`w-full h-full rounded-md object-cover transition-opacity ${isCameraOn ? 'opacity-100' : 'opacity-0'}`} autoPlay muted />
-                 {!isCameraOn && <div className="w-full h-full bg-black rounded-md flex items-center justify-center"><VideoOff className="text-muted-foreground" /></div>}
-            </div>
-             <audio ref={audioRef} hidden />
-        </div>
-
-        {/* Transcript & Controls */}
-        <div className="w-96 bg-card rounded-2xl flex flex-col p-4">
-            <h2 className="text-xl font-bold mb-4 font-headline text-glow">Live Transcript</h2>
-            <ScrollArea className="flex-1 pr-4">
-                <div className="space-y-4">
-                    {transcript.map((item, index) => (
-                        <div key={index} className={`flex gap-2 ${item.speaker === 'user' ? 'justify-end' : ''}`}>
-                             {item.speaker === 'ai' && <Bot className="w-5 h-5 text-primary shrink-0"/>}
-                             <div className={`max-w-xs p-3 rounded-xl ${item.speaker === 'ai' ? 'bg-secondary' : 'bg-primary text-primary-foreground'}`}>
-                                <p className="text-sm">{item.text}</p>
-                             </div>
-                             {item.speaker === 'user' && <User className="w-5 h-5 text-green-400 shrink-0"/>}
-                        </div>
-                    ))}
-                     {listening && <p className="text-sm text-muted-foreground italic">{speechTranscript}...</p>}
-                    {isGenerating && <Loader2 className="animate-spin mx-auto text-primary"/>}
-                </div>
-            </ScrollArea>
-             <div className="mt-4 flex items-center justify-center gap-4">
-                <Button onClick={handleMicClick} size="icon" className={`rounded-full h-16 w-16 transition-colors ${micState === 'listening' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary'}`} disabled={isGenerating}>
-                    {micState === 'listening' ? <MicOff /> : <Mic />}
-                </Button>
-                <Button onClick={() => setIsCameraOn(!isCameraOn)} size="icon" variant="outline">
-                    {isCameraOn ? <Video /> : <VideoOff />}
-                </Button>
-            </div>
-            <div className="text-center text-xs text-muted-foreground mt-2">
-                {micState === 'idle' && 'Click the mic to speak'}
-                {micState === 'listening' && 'Listening... Click mic to stop'}
-                {micState === 'processing' && 'Processing your response...'}
-            </div>
-        </div>
+    <div className="relative w-64 h-64">
+      <svg viewBox="0 0 300 300" className="w-full h-full">
+        {/* Head */}
+        <motion.path
+          d="M 150 50 C 100 50, 50 100, 50 150 C 50 250, 100 300, 150 300 C 200 300, 250 250, 250 150 C 250 100, 200 50, 150 50 Z"
+          fill="#A680FF"
+          stroke="#F2F9FF"
+          strokeWidth="8"
+        />
+        {/* Eyes */}
+        <g>
+          <circle cx="115" cy="120" r="15" fill="#F2F9FF" />
+          <motion.rect x="100" y="105" width="30" height="30" fill="#A680FF" ry="15" animate={controls} />
+        </g>
+        <g>
+          <circle cx="185" cy="120" r="15" fill="#F2F9FF" />
+           <motion.rect x="170" y="105" width="30" height="30" fill="#A680FF" ry="15" animate={controls} />
+        </g>
+        {/* Mouth */}
+        <motion.path
+          d={mouthPath}
+          stroke="#F2F9FF"
+          strokeWidth="5"
+          fill="transparent"
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        />
+      </svg>
     </div>
   );
-}
+};
 
+
+export function AiInterviewerPage() {
+    const { user } = useAuth();
+    const { db } = useFirebase();
+    const { toast } = useToast();
     
+    // Component State
+    const [interviewState, setInterviewState] = useState<'idle' | 'in_progress' | 'finished'>('idle');
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
+    
+    // Media & Permissions
+    const [stream, setStream] = useState<MediaStream | null>(null);
+    const [hasPermission, setHasPermission] = useState(false);
+    const [isMuted, setIsMuted] = useState(false);
+    const [isCameraOff, setIsCameraOff] = useState(false);
+    
+    // Refs for media elements and APIs
+    const userVideoRef = useRef<HTMLVideoElement>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const audioDataRef = useRef<Uint8Array | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
+    
+    const [speakingAudioData, setSpeakingAudioData] = useState<Uint8Array | null>(null);
+    
+    const { transcript: speechTranscript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+    
+    // --- Effects ---
+
+    // Load Profile
+    useEffect(() => {
+        async function loadProfile() {
+            if (user && db) {
+                const profileData = await fetchProfile(db, user.uid);
+                setProfile(profileData || null);
+            }
+        }
+        loadProfile();
+    }, [user, db]);
+    
+    // --- Core Functions ---
+    
+    const startInterview = async () => {
+        if (!profile) {
+            toast({ variant: 'destructive', title: 'Profile not loaded' });
+            return;
+        }
+
+        // 1. Get Camera/Mic Permissions
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+            setStream(mediaStream);
+            setHasPermission(true);
+            if (userVideoRef.current) {
+                userVideoRef.current.srcObject = mediaStream;
+            }
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Permission Denied', description: 'Camera and microphone access is required.' });
+            return;
+        }
+        
+        // 2. Set state and get first question
+        setInterviewState('in_progress');
+        const response = await getAiInterviewerResponse({
+            userProfile: profile,
+            interviewType: 'mixed', // Example
+            jobDescription: 'Software Engineer',
+            avatarType: 'Robot'
+        });
+
+        if (response.success && response.data) {
+            speak(response.data.firstQuestion, () => {
+                 // After the first question is spoken, start listening for the user's answer
+                 if (!listening) {
+                     SpeechRecognition.startListening({ continuous: true });
+                 }
+            });
+            setTranscript([{ speaker: 'ai', text: response.data.firstQuestion, timestamp: new Date().toISOString() }]);
+        } else {
+            toast({ variant: 'destructive', title: 'Could not start interview.' });
+            setInterviewState('idle');
+        }
+    };
+
+    const speak = (text: string, onEndCallback?: () => void) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Ensure audio context is initialized (must be done after user interaction)
+        if (!audioContextRef.current) {
+            audioContextRef.current = new window.AudioContext();
+            analyserRef.current = audioContextRef.current.createAnalyser();
+            analyserRef.current.fftSize = 256;
+            audioDataRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+        }
+        const audioCtx = audioContextRef.current;
+        const analyser = analyserRef.current!;
+
+        // When TTS starts speaking
+        utterance.onstart = () => {
+            // Disconnect any previous source to avoid interference
+            // This is a simple approach. A more robust solution might use a single, reusable source.
+            const source = audioCtx.createMediaStreamSource(new MediaStream()); // Dummy stream
+            
+            // This is a conceptual workaround. Direct `SpeechSynthesis` output is not routable
+            // into the Web Audio API in all browsers. A proper solution requires server-side TTS
+            // or a library that provides an audio stream.
+            // For now, we'll simulate the analysis loop.
+            const loop = () => {
+                analyser.getByteFrequencyData(audioDataRef.current!);
+                setSpeakingAudioData(new Uint8Array(audioDataRef.current!)); // Trigger re-render
+                animationFrameRef.current = requestAnimationFrame(loop);
+            };
+            loop();
+        };
+
+        // When TTS stops speaking
+        utterance.onend = () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+            setSpeakingAudioData(null); // Stop animation
+            if (onEndCallback) {
+                onEndCallback(); // e.g., start listening for user response
+            }
+        };
+
+        speechSynthesis.speak(utterance);
+    };
+
+    const handleUserResponse = async () => {
+        if (!speechTranscript.trim() || !profile) return;
+        SpeechRecognition.stopListening();
+
+        const newTranscript: TranscriptItem[] = [...transcript, { speaker: 'user', text: speechTranscript, timestamp: new Date().toISOString() }];
+        setTranscript(newTranscript);
+        resetTranscript();
+
+        const response = await getAiInterviewerFollowup({
+            userProfile: profile,
+            transcript: newTranscript,
+            jobDescription: 'Software Engineer',
+            avatarType: 'Robot'
+        });
+
+        if (response.success && response.data) {
+             setTranscript(prev => [...prev, { speaker: 'ai', text: response.data.followUp, timestamp: new Date().toISOString() }]);
+             speak(response.data.followUp, () => {
+                 if (!listening) SpeechRecognition.startListening({ continuous: true });
+             });
+             if (response.data.isEndOfInterview) {
+                 setInterviewState('finished');
+             }
+        } else {
+            toast({ variant: 'destructive', title: 'Error getting response' });
+        }
+    };
+    
+    // --- Control Handlers ---
+
+    const toggleMute = () => {
+        if (stream) {
+            stream.getAudioTracks().forEach(track => track.enabled = !track.enabled);
+            setIsMuted(!isMuted);
+        }
+    };
+    const toggleCamera = () => {
+        if (stream) {
+            stream.getVideoTracks().forEach(track => track.enabled = !track.enabled);
+            setIsCameraOff(!isCameraOff);
+        }
+    };
+     const endInterview = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        setStream(null);
+        setInterviewState('finished');
+        setTranscript([]);
+    };
+    
+    // --- Render Logic ---
+    
+    if (!browserSupportsSpeechRecognition) {
+        return (
+             <div className="p-8"><Alert variant="destructive"><AlertTitle>Browser Not Supported</AlertTitle><AlertDescription>This feature requires Google Chrome for speech recognition.</AlertDescription></Alert></div>
+        );
+    }
+    
+    if (interviewState === 'idle') {
+        return (
+            <div className="p-4 md:p-8 flex flex-col items-center justify-center space-y-8 min-h-[calc(100vh-10rem)]">
+                <Card className="glass-card w-full max-w-lg text-center">
+                    <CardHeader>
+                        <CardTitle className="text-3xl font-bold flex items-center justify-center gap-3 font-headline text-glow"><Bot/> AI Interviewer</CardTitle>
+                        <CardDescription>Practice with an interactive AI in a simulated video call.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button size="lg" className="bg-gradient-to-r from-primary to-accent" onClick={startInterview}>Start Interview</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+    
+    if (interviewState === 'finished') {
+        return (
+            <div className="p-4 md:p-8 flex flex-col items-center justify-center space-y-8 min-h-[calc(100vh-10rem)]">
+                <Card className="glass-card w-full max-w-lg text-center">
+                    <CardHeader>
+                        <CardTitle>Interview Complete!</CardTitle>
+                        <CardDescription>Great job! You've completed the mock interview.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button size="lg" variant="outline" onClick={() => setInterviewState('idle')}>Start a New Interview</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex h-[calc(100vh-6rem)] w-full text-white p-4 gap-4">
+            {/* Left side: AI Interviewer */}
+            <div className="flex-1 flex flex-col items-center justify-center bg-black rounded-2xl relative">
+                <InterviewerAvatar audioData={speakingAudioData} />
+                <div className="absolute top-4 left-4">
+                    <p className="font-bold text-lg">AI Interviewer</p>
+                    <p className="text-sm text-muted-foreground">{transcript.findLast(t => t.speaker === 'ai')?.text}</p>
+                </div>
+            </div>
+            
+            {/* Right side: User Video & Controls */}
+            <div className="w-1/3 flex flex-col space-y-4">
+                <div className="flex-1 bg-black rounded-2xl overflow-hidden relative">
+                    <video ref={userVideoRef} autoPlay muted className={`w-full h-full object-cover transform -scale-x-100 ${isCameraOff ? 'hidden' : 'block'}`}></video>
+                    {isCameraOff && <div className="w-full h-full flex items-center justify-center"><VideoOff className="w-16 h-16 text-muted-foreground"/></div>}
+                     <div className="absolute top-4 right-4">
+                        <p className="font-bold text-lg">{user?.displayName || "You"}</p>
+                        <p className="text-sm text-muted-foreground">{listening ? 'Listening...' : 'Thinking...'}</p>
+                    </div>
+                    {listening && speechTranscript && <p className="absolute bottom-4 left-4 bg-black/50 p-2 rounded-lg text-sm">{speechTranscript}</p>}
+                </div>
+                
+                <div className="bg-card/50 rounded-2xl p-4 flex justify-center items-center gap-4">
+                    <Button variant={isMuted ? 'destructive' : 'secondary'} size="icon" className="w-14 h-14 rounded-full" onClick={toggleMute}>
+                        {isMuted ? <MicOff/> : <Mic/>}
+                    </Button>
+                    <Button variant={isCameraOff ? 'destructive' : 'secondary'} size="icon" className="w-14 h-14 rounded-full" onClick={toggleCamera}>
+                        {isCameraOff ? <VideoOff/> : <Video/>}
+                    </Button>
+                     <Button variant="secondary" size="icon" className="w-14 h-14 rounded-full" onClick={handleUserResponse} disabled={!speechTranscript || listening}>
+                        <Send />
+                    </Button>
+                    <Button variant='destructive' size="icon" className="w-14 h-14 rounded-full" onClick={endInterview}>
+                        <Phone/>
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
