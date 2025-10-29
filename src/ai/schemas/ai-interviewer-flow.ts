@@ -5,7 +5,6 @@
  */
 
 import { z } from 'genkit';
-import { userProfileSchema } from '@/lib/types';
 
 export const transcriptItemSchema = z.object({
   speaker: z.enum(['user', 'ai']),
@@ -16,9 +15,6 @@ export type TranscriptItem = z.infer<typeof transcriptItemSchema>;
 
 
 export const AiInterviewerInputSchema = z.object({
-  userProfile: userProfileSchema.describe(
-    'The full profile of the user being interviewed.'
-  ),
   jobDescription: z.string().optional().describe('The description of the role the user is interviewing for.'),
   transcript: z
     .array(transcriptItemSchema)

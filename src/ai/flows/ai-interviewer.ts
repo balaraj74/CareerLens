@@ -15,14 +15,14 @@ import {
 } from '@/ai/schemas/ai-interviewer';
 
 export async function generateFirstInterviewQuestion(
-  input: AiInterviewerInput
+  input: Omit<AiInterviewerInput, 'userProfile'>
 ): Promise<AiInterviewerOutput> {
   return aiInterviewerFlow(input);
 }
 
 const prompt = ai.definePrompt({
   name: 'aiInterviewerPrompt',
-  input: { schema: AiInterviewerInputSchema },
+  input: { schema: AiInterviewerInputSchema.omit({ userProfile: true }) },
   output: { schema: AiInterviewerOutputSchema },
   prompt: `
     You are a professional and friendly HR interviewer for a company called CareerLens.
@@ -30,8 +30,8 @@ const prompt = ai.definePrompt({
 
     The interview type is: '{{interviewType}}'.
 
-    Based on the user's profile, generate a warm, welcoming opening line, and then ask the first question.
-    The question should be a classic opener like "Tell me about yourself" but tailored slightly to their profile. For example, if they are a developer, you might mention one of their skills.
+    Generate a warm, welcoming opening line, and then ask the first question.
+    The question should be a classic opener like "Tell me about yourself" or "Why are you interested in this role?".
 
     Return a single JSON object with the key "firstQuestion".
   `,
@@ -41,7 +41,7 @@ const prompt = ai.definePrompt({
 const aiInterviewerFlow = ai.defineFlow(
   {
     name: 'aiInterviewerFlow',
-    inputSchema: AiInterviewerInputSchema,
+    inputSchema: AiInterviewerInputSchema.omit({ userProfile: true }),
     outputSchema: AiInterviewerOutputSchema,
   },
   async (input) => {
@@ -49,5 +49,3 @@ const aiInterviewerFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    

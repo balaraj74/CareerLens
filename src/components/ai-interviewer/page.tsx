@@ -7,11 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { fetchProfile } from '@/lib/profile-service';
-import type { UserProfile } from '@/lib/types';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { getAiInterviewerResponse, getAiInterviewerFollowup } from '@/lib/actions';
-import { useFirebase } from '@/lib/firebase-provider';
 import type { TranscriptItem } from '@/ai/schemas/ai-interviewer-flow';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
@@ -77,12 +74,10 @@ const InterviewerAvatar = ({ audioData }: { audioData: Uint8Array | null }) => {
 
 export function AiInterviewerPage() {
     const { user } = useAuth();
-    const { db } = useFirebase();
     const { toast } = useToast();
     
     // Component State
     const [interviewState, setInterviewState] = useState<'idle' | 'in_progress' | 'finished'>('idle');
-    const [profile, setProfile] = useState<UserProfile | null>(null);
     const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
     
     // Media & Permissions
@@ -102,27 +97,9 @@ export function AiInterviewerPage() {
     
     const { transcript: speechTranscript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
     
-    // --- Effects ---
-
-    // Load Profile
-    useEffect(() => {
-        async function loadProfile() {
-            if (user && db) {
-                const profileData = await fetchProfile(db, user.uid);
-                setProfile(profileData || null);
-            }
-        }
-        loadProfile();
-    }, [user, db]);
-    
     // --- Core Functions ---
     
     const startInterview = async () => {
-        if (!profile) {
-            toast({ variant: 'destructive', title: 'Profile not loaded' });
-            return;
-        }
-
         // 1. Get Camera/Mic Permissions
         try {
             const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
@@ -139,7 +116,6 @@ export function AiInterviewerPage() {
         // 2. Set state and get first question
         setInterviewState('in_progress');
         const response = await getAiInterviewerResponse({
-            userProfile: profile,
             interviewType: 'mixed', // Example
             jobDescription: 'Software Engineer',
             avatarType: 'Robot'
@@ -205,7 +181,7 @@ export function AiInterviewerPage() {
     };
 
     const handleUserResponse = async () => {
-        if (!speechTranscript.trim() || !profile) return;
+        if (!speechTranscript.trim()) return;
         SpeechRecognition.stopListening();
 
         const newTranscript: TranscriptItem[] = [...transcript, { speaker: 'user', text: speechTranscript, timestamp: new Date().toISOString() }];
@@ -213,7 +189,6 @@ export function AiInterviewerPage() {
         resetTranscript();
 
         const response = await getAiInterviewerFollowup({
-            userProfile: profile,
             transcript: newTranscript,
             jobDescription: 'Software Engineer',
             avatarType: 'Robot'

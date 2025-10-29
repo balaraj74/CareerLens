@@ -15,12 +15,12 @@ import {
 } from '@/ai/schemas/ai-interviewer-flow';
 import { z } from 'zod';
 
-export async function aiInterviewerFollowup(input: AiInterviewerInput): Promise<AiInterviewerFlowOutput> {
+export async function aiInterviewerFollowup(input: Omit<AiInterviewerInput, 'userProfile'>): Promise<AiInterviewerFlowOutput> {
     return aiInterviewerFlow(input);
 }
 
 const systemPrompt = `You are "Alex", an expert career coach and interviewer. Your persona is professional, encouraging, and insightful. Your goal is to conduct a realistic and helpful mock interview.
-You will be given the user's profile, the job description, and the entire conversation history.
+You will be given the job description, and the entire conversation history.
 Your task is to analyze the user's most recent answer and generate the next logical follow-up question or conversational turn.
 Keep your responses concise and natural-sounding, ideally 1-3 sentences.
 The interview should progress naturally. After about 5-7 questions, you should conclude the interview.
@@ -31,11 +31,11 @@ At the very end of the entire interview, you will provide a comprehensive perfor
 export const aiInterviewerFlow = ai.defineFlow(
   {
     name: 'aiInterviewerFlow',
-    inputSchema: AiInterviewerInputSchema,
+    inputSchema: AiInterviewerInputSchema.omit({ userProfile: true }),
     outputSchema: AiInterviewerFlowOutputSchema,
   },
   async (input) => {
-    const { userProfile, jobDescription, transcript } = input;
+    const { jobDescription, transcript } = input;
 
     const llm = ai.getModel('googleai/gemini-2.5-flash-lite');
 
@@ -45,7 +45,6 @@ export const aiInterviewerFlow = ai.defineFlow(
     }));
 
     const finalPrompt = `
-      User Profile: ${JSON.stringify(userProfile)}
       Job Description: ${jobDescription || 'Not provided.'}
       Conversation History is attached. Based on the last user response, ask the next question or conclude the interview.
     `;

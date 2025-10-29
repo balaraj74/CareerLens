@@ -101,7 +101,7 @@ export async function getLearningHelperOutput(
 
 
 export async function getAiInterviewerResponse(
-  input: AiInterviewerInput
+  input: Omit<AiInterviewerInput, 'userProfile'>
 ): Promise<{ success: boolean; data?: AiInterviewerOutput; error?: string }> {
   try {
     const result = await generateFirstInterviewQuestion(input);
@@ -113,7 +113,7 @@ export async function getAiInterviewerResponse(
 }
 
 export async function getAiInterviewerFollowup(
-  input: AiInterviewerFollowupInput
+  input: Omit<AiInterviewerFollowupInput, 'userProfile'>
 ): Promise<{ success: boolean; data?: AiInterviewerFollowupOutput; error?: string }> {
   try {
     const result = await genkitAiInterviewerFollowup(input);
