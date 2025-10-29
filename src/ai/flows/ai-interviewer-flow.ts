@@ -16,7 +16,7 @@ import {
 } from '@/ai/schemas/ai-interviewer-flow';
 import { z } from 'zod';
 
-export async function aiInterviewerFollowup(input: Omit<AiInterviewerInput, 'userProfile'>): Promise<AiInterviewerFlowOutput> {
+export async function aiInterviewerFollowup(input: AiInterviewerInput): Promise<AiInterviewerFlowOutput> {
     return aiInterviewerFlow(input);
 }
 
