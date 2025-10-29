@@ -13,7 +13,6 @@ import {
   type AiInterviewerInput,
   type AiInterviewerFlowOutput,
 } from '@/ai/schemas/ai-interviewer-flow';
-import { generate } from 'genkit';
 import { z } from 'zod';
 
 export async function aiInterviewerFollowup(input: Omit<AiInterviewerInput, 'userProfile'>): Promise<AiInterviewerFlowOutput> {
@@ -29,6 +28,19 @@ When you decide the interview is over, your response MUST be a concluding statem
 At the very end of the entire interview, you will provide a comprehensive performance report. The report should have a headline "## Performance Report" and include feedback on clarity, confidence, use of examples (like the STAR method), and suggestions for improvement.
 `;
 
+const aiInterviewerFollowupPrompt = ai.definePrompt({
+    name: 'aiInterviewerFollowupPrompt',
+    system: systemPrompt,
+    input: { schema: AiInterviewerInputSchema.omit({ userProfile: true }) },
+    output: { schema: AiInterviewerFlowOutputSchema },
+    prompt: `
+      Job Description: ${"{{jobDescription}}"}
+      Conversation History is attached. Based on the last user response, ask the next question or conclude the interview.
+    `,
+    model: 'googleai/gemini-2.5-flash-lite',
+});
+
+
 export const aiInterviewerFlow = ai.defineFlow(
   {
     name: 'aiInterviewerFlow',
@@ -36,29 +48,24 @@ export const aiInterviewerFlow = ai.defineFlow(
     outputSchema: AiInterviewerFlowOutputSchema,
   },
   async (input) => {
-    const { jobDescription, transcript } = input;
+    const { transcript } = input;
 
     const history = transcript.map(item => ({
       role: item.speaker === 'user' ? 'user' : 'model',
       content: [{ text: item.text }],
     }));
 
-    const finalPrompt = `
-      Job Description: ${jobDescription || 'Not provided.'}
-      Conversation History is attached. Based on the last user response, ask the next question or conclude the interview.
-    `;
-
-    const llmResponse = await generate({
-      model: 'googleai/gemini-2.5-flash-lite',
-      system: systemPrompt,
-      history,
-      prompt: finalPrompt,
-      output: {
-          schema: z.object({
-            followUp: z.string().describe("The AI's next question or statement in the conversation."),
-            isEndOfInterview: z.boolean().describe("Set to true only when the interview should be concluded."),
-          })
-      }
+    const llmResponse = await ai.generate({
+        prompt: `Job Description: ${input.jobDescription || 'Not provided.'}. Based on the last user response, ask the next question or conclude the interview.`,
+        history,
+        model: 'googleai/gemini-2.5-flash-lite',
+        system: systemPrompt,
+        output: {
+            schema: z.object({
+                followUp: z.string().describe("The AI's next question or statement in the conversation."),
+                isEndOfInterview: z.boolean().describe("Set to true only when the interview should be concluded."),
+            })
+        }
     });
 
     const output = llmResponse.output();
