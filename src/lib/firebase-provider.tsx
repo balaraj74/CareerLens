@@ -20,7 +20,7 @@ interface FirebaseContextType {
   auth: Auth | null;
   db: Firestore | null;
   user: User | null;
-  loading: boolean;
+  loading: boolean; // Unified loading state
   signUp: (email: string, pass: string) => Promise<any>;
   signIn: (email: string, pass: string) => Promise<any>;
   googleSignIn: () => Promise<any>;
@@ -44,7 +44,8 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [db, setDb] = useState<Firestore | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [firebaseLoading, setFirebaseLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     let _app: FirebaseApp;
@@ -53,7 +54,8 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         _app = initializeApp(firebaseConfig);
       } else {
         console.error("Firebase config is missing Project ID. App cannot be initialized.");
-        setLoading(false);
+        setFirebaseLoading(false);
+        setAuthLoading(false);
         return;
       }
     } else {
@@ -74,10 +76,11 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     setApp(_app);
     setAuth(_auth);
     setDb(_db);
+    setFirebaseLoading(false); // Firebase services are initialized
 
     const unsubscribe = onAuthStateChanged(_auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      setAuthLoading(false); // Auth state is resolved
     });
 
     return () => unsubscribe();
@@ -109,7 +112,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     auth,
     db,
     user,
-    loading,
+    loading: firebaseLoading || authLoading, // Combined loading state
     signUp,
     signIn,
     googleSignIn,
@@ -123,14 +126,16 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useFirebase = () => {
+// Renamed from useFirebase to useFirebaseContext to avoid confusion
+export const useFirebaseContext = () => {
     const context = useContext(FirebaseContext);
     if (context === undefined) {
-        throw new Error('useFirebase must be used within a FirebaseProvider');
+        throw new Error('useFirebaseContext must be used within a FirebaseProvider');
     }
     return context;
 };
 
+// Kept this hook for backward compatibility in other components.
 export const useAuth = () => {
     const context = useContext(FirebaseContext);
     if (context === undefined) {
@@ -140,3 +145,11 @@ export const useAuth = () => {
     return { user, loading, signUp, signIn, googleSignIn, logOut };
 };
 
+// New hook to provide all firebase services including db.
+export const useFirebase = () => {
+    const context = useContext(FirebaseContext);
+    if (context === undefined) {
+        throw new Error('useFirebase must be used within a FirebaseProvider');
+    }
+    return context;
+}

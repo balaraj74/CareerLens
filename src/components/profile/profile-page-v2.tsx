@@ -10,7 +10,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, useFirebase } from '@/hooks/use-auth';
 import { saveProfile, fetchProfile } from '@/lib/profile-service';
 import { userProfileSchema, type UserProfile } from '@/lib/types';
 
@@ -23,7 +23,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { Progress } from '../ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useFirebase } from '@/lib/firebase-provider';
 
 
 const steps = [
@@ -62,36 +61,40 @@ export function ProfilePageV2() {
   const { fields: eduFields, append: appendEdu, remove: removeEdu } = useFieldArray({ name: 'education', control: form.control });
   const [newSkill, setNewSkill] = useState('');
 
+  const overallLoading = authLoading || firebaseLoading;
+
   useEffect(() => {
     async function loadProfile() {
-      if (user && db) {
-        setIsLoadingProfile(true);
-        try {
-            const profileData = await fetchProfile(db, user.uid);
-            if (profileData) {
-            form.reset(profileData);
-            } else {
-            // If no profile exists, set the user's name from auth if available
-            form.setValue('name', user.displayName || '');
-            }
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Failed to load profile',
-                description: 'Could not fetch your profile data. Please try again later.'
-            })
+      // Ensure we don't run this function if we are loading or don't have the necessary objects
+      if (overallLoading || !user || !db) {
+        // If we are not loading but still don't have user/db, it means user is not logged in.
+        if (!overallLoading) {
+            setIsLoadingProfile(false);
         }
-        setIsLoadingProfile(false);
+        return;
       }
+      
+      setIsLoadingProfile(true);
+      try {
+          const profileData = await fetchProfile(db, user.uid);
+          if (profileData) {
+            form.reset(profileData);
+          } else {
+          // If no profile exists, set the user's name from auth if available
+          form.setValue('name', user.displayName || '');
+          }
+      } catch (error) {
+          toast({
+              variant: 'destructive',
+              title: 'Failed to load profile',
+              description: 'Could not fetch your profile data. Please try again later.'
+          })
+      }
+      setIsLoadingProfile(false);
     }
-    // Only run when auth and firebase are done loading and we have a user and db instance
-    if (!authLoading && !firebaseLoading && user && db) {
-        loadProfile();
-    } else if (!authLoading && !firebaseLoading) {
-        // If everything is loaded but there's no user/db, stop loading.
-        setIsLoadingProfile(false);
-    }
-  }, [user, db, authLoading, firebaseLoading, form, toast]);
+    
+    loadProfile();
+  }, [user, db, overallLoading, form, toast]);
   
   const handleAddSkill = () => {
     const trimmedSkill = newSkill.trim();
@@ -122,7 +125,7 @@ export function ProfilePageV2() {
   const nextStep = () => setCurrentStep(prev => (prev < steps.length - 1 ? prev + 1 : prev));
   const prevStep = () => setCurrentStep(prev => (prev > 0 ? prev - 1 : prev));
 
-  if (authLoading || isLoadingProfile || firebaseLoading) {
+  if (overallLoading || isLoadingProfile) {
     return <div className="p-8 max-w-4xl mx-auto"><Skeleton className="h-96 w-full" /></div>;
   }
 
