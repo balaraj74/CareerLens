@@ -55,7 +55,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className={!isMobile ? 'pt-20' : ''}>
+    <div className={isMobile ? 'pt-4' : 'pt-20'}>
       <Nav handleLogout={handleLogout} isLoggingOut={isLoggingOut} user={user} />
       <main className={`flex-1 overflow-auto ${isMobile ? 'pb-28' : ''}`}>
         {children}
