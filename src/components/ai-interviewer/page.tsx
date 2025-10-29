@@ -108,6 +108,7 @@ export function AiInterviewerPage() {
     
     // Refs for media elements
     const userVideoRef = useRef<HTMLVideoElement>(null);
+    const speechTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
     const { transcript: speechTranscript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
     
@@ -120,6 +121,25 @@ export function AiInterviewerPage() {
         }
     }, [stream]);
     
+    // This effect handles automatically sending the user's response after a pause in speech.
+    useEffect(() => {
+        if (speechTimeoutRef.current) {
+            clearTimeout(speechTimeoutRef.current);
+        }
+
+        if (speechTranscript && listening) {
+            speechTimeoutRef.current = setTimeout(() => {
+                handleUserResponse();
+            }, 2500); // Wait for 2.5 seconds of silence before sending
+        }
+
+        return () => {
+            if (speechTimeoutRef.current) {
+                clearTimeout(speechTimeoutRef.current);
+            }
+        };
+    }, [speechTranscript, listening]);
+
     // --- Core Functions ---
     
     const startInterview = async () => {
@@ -141,7 +161,7 @@ export function AiInterviewerPage() {
         const response = await getAiInterviewerResponse({
             interviewType: 'mixed', // Example
             jobDescription: 'Software Engineer',
-            avatarType: 'HR', // Added missing property
+            avatarType: 'HR',
         });
         setIsAwaitingAI(false);
 
@@ -195,6 +215,9 @@ export function AiInterviewerPage() {
     };
 
     const handleUserResponse = async () => {
+        if (speechTimeoutRef.current) {
+            clearTimeout(speechTimeoutRef.current);
+        }
         if (!speechTranscript.trim() || isAwaitingAI) return;
 
         SpeechRecognition.stopListening();
@@ -209,7 +232,7 @@ export function AiInterviewerPage() {
         const response = await getAiInterviewerFollowup({
             transcript: newTranscript,
             jobDescription: 'Software Engineer',
-            avatarType: 'HR', // Added missing property
+            avatarType: 'HR',
         });
         
         setIsAwaitingAI(false);
@@ -348,9 +371,6 @@ export function AiInterviewerPage() {
                     <Button variant={isCameraOff ? 'destructive' : 'secondary'} size="icon" className="w-14 h-14 rounded-full" onClick={toggleCamera}>
                         {isCameraOff ? <VideoOff/> : <Video/>}
                     </Button>
-                     <Button variant="secondary" size="icon" className="w-14 h-14 rounded-full" onClick={handleUserResponse} disabled={!speechTranscript || listening || isAwaitingAI}>
-                        { isAwaitingAI ? <Loader2 className="animate-spin" /> : <Send /> }
-                    </Button>
                     <Button variant='destructive' size="icon" className="w-14 h-14 rounded-full" onClick={endInterview}>
                         <Phone/>
                     </Button>
@@ -359,6 +379,8 @@ export function AiInterviewerPage() {
         </div>
     );
 }
+
+    
 
     
 
