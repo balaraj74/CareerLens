@@ -38,8 +38,6 @@ export const aiInterviewerFlow = ai.defineFlow(
   async (input) => {
     const { jobDescription, transcript } = input;
 
-    const model = ai.getGenerator('googleai/gemini-2.5-flash-lite');
-
     const history = transcript.map(item => ({
       role: item.speaker === 'user' ? 'user' : 'model',
       content: [{ text: item.text }],
@@ -51,7 +49,7 @@ export const aiInterviewerFlow = ai.defineFlow(
     `;
 
     const llmResponse = await generate({
-      model: model,
+      model: 'googleai/gemini-2.5-flash-lite',
       system: systemPrompt,
       history,
       prompt: finalPrompt,
