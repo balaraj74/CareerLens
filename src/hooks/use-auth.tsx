@@ -1,3 +1,4 @@
+
 'use client';
 
 // This file is now a proxy for the hooks in firebase-provider.
