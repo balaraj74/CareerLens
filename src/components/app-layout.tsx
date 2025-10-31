@@ -57,10 +57,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="block lg:hidden">
         <NavMobile handleLogout={() => {}} isLoggingOut={false} user={user} />
       </div>
-      <main className="lg:pt-20 lg:pl-64">
-        <div className="p-4 sm:p-6 lg:p-8">
-            {children}
-        </div>
+      <main className="lg:pl-64 lg:pt-20 pb-24 lg:pb-0">
+          {children}
       </main>
     </>
   );
