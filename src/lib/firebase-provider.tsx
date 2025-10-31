@@ -1,12 +1,12 @@
-
 'use client';
 
 import React, { createContext, useEffect, useState, useContext } from 'react';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, type Auth, type User } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence, type Firestore } from 'firestore';
+import { getFirestore, enableIndexedDbPersistence, type Firestore } from 'firebase/firestore';
 import { getAnalytics, isSupported } from "firebase/analytics";
 
+// This should be loaded from environment variables in a real app
 const firebaseConfig = {
   apiKey: "AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs",
   authDomain: "careerlens-1.firebaseapp.com",
@@ -17,22 +17,31 @@ const firebaseConfig = {
   measurementId: "G-WEF48JHJF9"
 };
 
-interface FirebaseContextType {
+
+interface FirebaseContextValue {
   app: FirebaseApp | null;
   auth: Auth | null;
   db: Firestore | null;
+  loading: boolean; // Is Firebase initializing?
+}
+
+const FirebaseContext = createContext<FirebaseContextValue>({
+  app: null,
+  auth: null,
+  db: null,
+  loading: true,
+});
+
+interface AuthContextValue {
   user: User | null;
-  loading: boolean; // Unified loading state
+  loading: boolean; // Is the auth state being checked?
   signUp: (email: string, pass: string) => Promise<any>;
   signIn: (email: string, pass: string) => Promise<any>;
   googleSignIn: () => Promise<any>;
   logOut: () => Promise<any>;
 }
 
-const FirebaseContext = createContext<FirebaseContextType>({
-  app: null,
-  auth: null,
-  db: null,
+const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
   signUp: async () => {},
@@ -45,13 +54,15 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [app, setApp] = useState<FirebaseApp | null>(null);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [db, setDb] = useState<Firestore | null>(null);
+  const [firebaseLoading, setFirebaseLoading] = useState(true);
+
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     let _app: FirebaseApp;
     if (!getApps().length) {
-        _app = initializeApp(firebaseConfig);
+      _app = initializeApp(firebaseConfig);
     } else {
       _app = getApp();
     }
@@ -59,11 +70,10 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     const _auth = getAuth(_app);
     const _db = getFirestore(_app);
 
-    // It's safe to call this multiple times.
     enableIndexedDbPersistence(_db).catch((err) => {
-      if (err.code == 'failed-precondition') {
+      if (err.code === 'failed-precondition') {
         console.warn('Firestore persistence failed: Multiple tabs open.');
-      } else if (err.code == 'unimplemented') {
+      } else if (err.code === 'unimplemented') {
         console.warn('Firestore persistence is not available in this browser.');
       }
     });
@@ -72,15 +82,16 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         if(supported) {
             getAnalytics(_app);
         }
-    })
+    });
 
     setApp(_app);
     setAuth(_auth);
     setDb(_db);
+    setFirebaseLoading(false);
 
     const unsubscribe = onAuthStateChanged(_auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      setAuthLoading(false);
     });
 
     return () => unsubscribe();
@@ -107,49 +118,32 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     return signOut(auth);
   };
 
-  const value = {
-    app,
-    auth,
-    db,
-    user,
-    loading,
-    signUp,
-    signIn,
-    googleSignIn,
-    logOut
-  };
+  const firebaseValue = { app, auth, db, loading: firebaseLoading };
+  const authValue = { user, loading: authLoading, signUp, signIn, googleSignIn, logOut };
 
   return (
-    <FirebaseContext.Provider value={value}>
-      {children}
+    <FirebaseContext.Provider value={firebaseValue}>
+      <AuthContext.Provider value={authValue}>
+        {children}
+      </AuthContext.Provider>
     </FirebaseContext.Provider>
   );
 }
 
 // Custom hook to use the Firebase context
-export const useFirebaseContext = () => {
-    const context = useContext(FirebaseContext);
-    if (context === undefined) {
-        throw new Error('useFirebaseContext must be used within a FirebaseProvider');
-    }
-    return context;
-};
-
-// Custom hook specifically for authentication
-export const useAuth = () => {
-    const context = useContext(FirebaseContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within a FirebaseProvider');
-    }
-    const { user, loading, signUp, signIn, googleSignIn, logOut } = context;
-    return { user, loading, signUp, signIn, googleSignIn, logOut };
-};
-
-// Custom hook to get Firebase services
 export const useFirebase = () => {
     const context = useContext(FirebaseContext);
     if (context === undefined) {
         throw new Error('useFirebase must be used within a FirebaseProvider');
     }
     return context;
-}
+};
+
+// Custom hook specifically for authentication
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within a FirebaseProvider');
+    }
+    return context;
+};
