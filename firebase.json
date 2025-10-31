@@ -1,7 +1,7 @@
 {
   "hosting": {
     "site": "careerlens-1",
-    "public": "public",
+    "public": "src/.next",
     "ignore": [
       "firebase.json",
       "**/.*",
