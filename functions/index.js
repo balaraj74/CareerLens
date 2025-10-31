@@ -1,15 +1,14 @@
+const { onRequest } = require('firebase-functions/v2/https');
+const next = require('next');
 
-const { onRequest } = require("firebase-functions/v2/https");
-const next = require("next");
-
-const nextjsServer = next({
-  dev: false,
-  conf: require("./.next/required-server-files.json"),
+const nextApp = next({
+  dev: process.env.NODE_ENV !== 'production',
+  conf: { distDir: '.next' }
 });
 
-const handle = nextjsServer.getRequestHandler();
+const handle = nextApp.getRequestHandler();
 
 exports.nextServer = onRequest(async (req, res) => {
-  await nextjsServer.prepare();
+  await nextApp.prepare();
   return handle(req, res);
 });

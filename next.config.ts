@@ -40,6 +40,8 @@ const nextConfig: NextConfig = {
   devIndicators: {
     buildActivity: false,
   },
+  output: 'standalone',
+  distDir: '.next',
 };
 
 export default nextConfig;
