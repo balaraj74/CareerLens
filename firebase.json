@@ -1,5 +1,19 @@
-
 {
+  "hosting": {
+    "site": "careerlens-1",
+    "public": ".next",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "nextServer"
+      }
+    ]
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
