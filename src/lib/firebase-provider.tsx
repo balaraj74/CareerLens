@@ -6,7 +6,6 @@ import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWith
 import { getFirestore, enableIndexedDbPersistence, type Firestore } from 'firebase/firestore';
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// This should be loaded from environment variables in a real app
 const firebaseConfig = {
   apiKey: "AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs",
   authDomain: "careerlens-1.firebaseapp.com",
@@ -60,13 +59,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    let _app: FirebaseApp;
-    if (!getApps().length) {
-      _app = initializeApp(firebaseConfig);
-    } else {
-      _app = getApp();
-    }
-
+    const _app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     const _auth = getAuth(_app);
     const _db = getFirestore(_app);
 
@@ -77,7 +70,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         console.warn('Firestore persistence is not available in this browser.');
       }
     });
-
+    
     isSupported().then(supported => {
         if(supported) {
             getAnalytics(_app);
