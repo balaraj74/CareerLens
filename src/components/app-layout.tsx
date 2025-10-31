@@ -15,14 +15,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   useEffect(() => {
-    // Wait until loading is false and we have a definitive user state
+    // This effect runs only on the client after hydration.
+    // It waits until the auth state is fully resolved before redirecting.
     if (!authLoading && !user && !isAuthPage) {
       router.replace('/login');
     }
   }, [authLoading, user, router, isAuthPage, pathname]);
 
-  // While checking auth state, show a full-screen loader.
-  // This is the key to preventing the hydration error.
+  // While checking authentication, show a full-screen loader.
+  // This prevents any content from rendering prematurely and causing a hydration mismatch.
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -32,15 +33,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
   
   // If we are on an auth page (login/signup), render it without the main layout.
+  // The user might be null here, which is expected.
   if (isAuthPage) {
       return (
           <div className="flex min-h-screen items-center justify-center">{children}</div>
       )
   }
   
-  // If not loading, but no user, and we're not on an auth page yet (mid-redirect),
-  // show a loader to prevent flashing content.
-  if (!user) {
+  // If we are still waiting for the redirect to happen after loading is complete,
+  // continue showing the loader to prevent flashing the main layout.
+  if (!user && !isAuthPage) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -48,7 +50,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Once loading is complete and we have a user, render the full app layout.
+  // At this point, we have a logged-in user, so render the full app layout.
   return (
     <>
       <div className="hidden lg:block">
