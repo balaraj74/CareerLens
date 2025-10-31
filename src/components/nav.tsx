@@ -24,6 +24,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import type { User } from 'firebase/auth';
 import React from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { Logo } from './icons';
 
 const allNavItems = [
   { href: '/', icon: <LayoutDashboard />, label: 'Dashboard' },
@@ -44,19 +46,33 @@ interface NavProps {
   user: User | null;
 }
 
-export function Nav({ handleLogout, isLoggingOut, user }: NavProps) {
+export function Nav({ user }: NavProps) {
   const pathname = usePathname();
+  const { logOut } = useAuth();
 
   return (
-    <motion.div
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-      className="fixed left-0 top-0 h-20 w-full bg-card/80 backdrop-blur-xl 
-                 border-b border-white/10 shadow-xl flex items-center justify-center p-4 z-50"
-    >
-      <div className="flex w-full max-w-screen-xl items-center justify-between">
-        <div className="flex items-center gap-2">
+    <>
+      {/* Top Bar for larger screens */}
+      <motion.div
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+        className="fixed left-0 top-0 h-20 w-full bg-card/80 backdrop-blur-xl 
+                   border-b border-white/10 shadow-xl flex items-center p-4 z-50
+                   lg:pl-72" // Adjust padding for the fixed sidebar
+      >
+        <div className="flex-1">
+          {/* Content for the top bar can go here, e.g., search bar or notifications */}
+        </div>
+        <div className="flex items-center gap-4">
+          <div className='text-right'>
+            <h2 className="text-sm text-white font-bold truncate">
+              {user?.displayName || user?.email}
+            </h2>
+            <span className="text-xs text-muted-foreground truncate">
+              {user?.email}
+            </span>
+          </div>
           <Avatar className="h-10 w-10 border-2 border-primary/50">
             <AvatarImage
               src={
@@ -68,47 +84,50 @@ export function Nav({ handleLogout, isLoggingOut, user }: NavProps) {
               {user?.email?.[0].toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-           <div>
-            <h2 className="text-sm text-white font-bold truncate">
-              {user?.displayName || user?.email}
-            </h2>
-            <span className="text-xs text-muted-foreground truncate">
-              {user?.email}
-            </span>
-           </div>
+          <Button
+            variant="ghost"
+            onClick={logOut}
+            className="text-muted-foreground hover:bg-destructive/20 hover:text-white"
+          >
+            <LogOut className="mr-2" />
+            <span>Log Out</span>
+          </Button>
         </div>
+      </motion.div>
 
-        <div className="flex-1 flex justify-center items-center gap-2">
+      {/* Fixed Sidebar for larger screens */}
+      <motion.div
+        initial={{ x: -256 }}
+        animate={{ x: 0 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+        className="fixed left-0 top-0 h-screen w-64 bg-card/80 backdrop-blur-xl 
+                   border-r border-white/10 shadow-xl hidden lg:flex flex-col z-50"
+      >
+        <div className="flex items-center justify-center h-20 border-b border-white/10">
+          <Logo />
+          <h1 className="text-xl font-bold ml-2 text-glow">CareerLens</h1>
+        </div>
+        <nav className="flex-1 px-4 py-6 space-y-2">
           {allNavItems.map((item) => (
             <Link href={item.href} key={item.label}>
               <button
                 className={cn(
-                  'flex flex-col items-center justify-center text-white rounded-lg px-3 py-2 text-sm transition-colors relative h-14 w-20',
+                  'w-full flex items-center gap-3 text-white rounded-lg px-3 py-3 text-sm transition-colors relative',
                   pathname === item.href
-                    ? 'text-primary'
+                    ? 'bg-primary/20 text-primary'
                     : 'hover:bg-white/10'
                 )}
               >
                 {item.icon}
-                <span className="text-xs mt-1 text-center">{item.label}</span>
-                 {pathname === item.href && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-10 bg-primary rounded-t-full shadow-lg shadow-primary/50"></span>
+                <span className="font-medium">{item.label}</span>
+                {pathname === item.href && (
+                  <span className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-l-full shadow-lg shadow-primary/50"></span>
                 )}
               </button>
             </Link>
           ))}
-        </div>
-
-        <Button
-          variant="ghost"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="text-muted-foreground hover:bg-destructive/20 hover:text-white"
-        >
-          <LogOut className="mr-2" />
-          <span>Log Out</span>
-        </Button>
-      </div>
-    </motion.div>
+        </nav>
+      </motion.div>
+    </>
   );
 }

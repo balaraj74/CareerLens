@@ -7,18 +7,21 @@ import { Loader2 } from 'lucide-react';
 import { NavMobile } from './nav-mobile';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading, logOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   useEffect(() => {
+    // Wait until loading is false and we have a definitive user state
     if (!authLoading && !user && !isAuthPage) {
       router.replace('/login');
     }
   }, [authLoading, user, router, isAuthPage, pathname]);
 
+  // While checking auth state, show a full-screen loader.
+  // This is the key to preventing the hydration error.
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -27,12 +30,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
   
+  // If we are on an auth page (login/signup), render it without the main layout.
   if (isAuthPage) {
       return (
           <div className="flex min-h-screen items-center justify-center">{children}</div>
       )
   }
   
+  // If not loading, but no user, and we're not on an auth page yet (mid-redirect),
+  // show a loader to prevent flashing content.
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -41,16 +47,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Once loading is complete and we have a user, render the full app layout.
   return (
     <>
-        <div className="hidden lg:block">
-            <Nav handleLogout={logOut} isLoggingOut={false} user={user} />
+      <div className="hidden lg:block">
+        <Nav handleLogout={() => {}} isLoggingOut={false} user={user} />
+      </div>
+      <div className="block lg:hidden">
+        <NavMobile handleLogout={() => {}} isLoggingOut={false} user={user} />
+      </div>
+      <main className="lg:pt-20 lg:pl-64">
+        <div className="p-4 sm:p-6 lg:p-8">
+            {children}
         </div>
-        <div className="block lg:hidden">
-             <NavMobile handleLogout={logOut} isLoggingOut={false} user={user} />
-        </div>
-      <main className="lg:pt-20">
-        {children}
       </main>
     </>
   );
