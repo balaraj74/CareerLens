@@ -71,6 +71,7 @@
     "postcss": "^8",
     "regenerator-runtime": "^0.14.1",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "firebase-functions-test": "^3.3.0"
   }
 }
