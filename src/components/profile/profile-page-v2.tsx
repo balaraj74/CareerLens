@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirebase } from '@/hooks/use-auth';
 import { saveProfile, fetchProfile } from '@/lib/profile-service';
+import { logCareerActivity } from '@/lib/career-graph-service';
 import { userProfileSchema, type UserProfile } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -101,6 +102,15 @@ export function ProfilePageV2() {
     if (trimmedSkill && !skillFields.some(field => field.name.toLowerCase() === trimmedSkill.toLowerCase())) {
       appendSkill({ name: trimmedSkill });
       setNewSkill('');
+      
+      // Log activity for skill addition
+      if (user && db) {
+        logCareerActivity(db, user.uid, {
+          type: 'skill_added',
+          metadata: { skillName: trimmedSkill },
+          impact: 5,
+        }).catch(console.error);
+      }
     }
   };
 
@@ -112,7 +122,49 @@ export function ProfilePageV2() {
     
     setIsSubmitting(true);
     try {
+      // Get previous profile to detect changes (non-blocking)
+      const previousProfile = await fetchProfile(db, user.uid).catch(() => null);
+      
+      // Save profile first (critical path)
       await saveProfile(db, user.uid, data);
+      
+      // Log activities asynchronously (non-blocking - don't await)
+      // Profile update activity
+      logCareerActivity(db, user.uid, {
+        type: 'profile_updated',
+        metadata: {},
+        impact: 3,
+      }).catch((err) => console.warn('Failed to log profile update activity:', err));
+      
+      // Log new skills added
+      if (previousProfile) {
+        const newSkills = data.skills?.filter(
+          (skill) => !previousProfile.skills?.some((ps) => ps.name === skill.name)
+        );
+        
+        if (newSkills && newSkills.length > 0) {
+          // Log all skills in parallel
+          Promise.all(
+            newSkills.map((skill) =>
+              logCareerActivity(db, user.uid, {
+                type: 'skill_added',
+                metadata: { skillName: skill.name },
+                impact: 5,
+              })
+            )
+          ).catch((err) => console.warn('Failed to log skill activities:', err));
+        }
+      }
+      
+      // Log new experience added
+      if (data.experience && previousProfile && data.experience.length > (previousProfile.experience?.length || 0)) {
+        logCareerActivity(db, user.uid, {
+          type: 'experience_added',
+          metadata: {},
+          impact: 7,
+        }).catch((err) => console.warn('Failed to log experience activity:', err));
+      }
+      
       toast({ title: 'Profile Saved! ✅', description: 'Your information has been successfully updated.' });
     } catch (err: any) {
       console.error("FIRESTORE SAVE ERROR:", err);

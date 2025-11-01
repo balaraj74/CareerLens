@@ -16,6 +16,7 @@ import {
   Hammer,
   ChevronUp,
   LibrarySquare,
+  Activity,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ import { Logo } from './icons';
 const allNavItems = [
   { href: '/', icon: <LayoutDashboard />, label: 'Dashboard' },
   { href: '/profile', icon: <UserIcon />, label: 'Profile' },
+  { href: '/career-graph', icon: <Activity />, label: 'Career Graph' },
   { href: '/recommendations', icon: <Briefcase />, label: 'Careers' },
   { href: '/skill-gap', icon: <Target />, label: 'Skill Gap' },
   { href: '/roadmap', icon: <BookOpen />, label: 'Roadmap' },

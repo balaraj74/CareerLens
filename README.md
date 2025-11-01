@@ -17,6 +17,11 @@ CareerLens is packed with features designed to assist users at every stage of th
 - **Career Recommendations:** Based on the user's profile, the AI suggests the top 3 career paths, providing reasons for the fit, identifying skill gaps, and offering a preliminary 3-month learning plan.
 - **Skill Gap Analysis:** Users can input their current skills and the requirements for a target role. The AI analyzes the two, highlights overlapping skills, identifies missing ones, and suggests a logical learning order.
 - **Personalized Learning Roadmap:** Generates a detailed 12-week learning plan to bridge identified skill gaps, complete with weekly topics and links to both free and paid online resources.
+- **Adaptive Career Graph:** 🆕 A GitHub contribution-style heatmap that visualizes your career development journey over time. Features include:
+  - **Activity Heatmap:** 365-day visualization of learning activities with intensity colors
+  - **Skill Network Graph:** Interactive force-directed graph showing skill relationships
+  - **Career Insights Dashboard:** AI-powered readiness score, top skills ranking, and emerging skill detection
+  - **Personalized Recommendations:** AI suggests next skills, courses, and projects based on your activity patterns
 - **ATS-Optimized Resume Builder:** Creates a professional, ATS-friendly resume by merging the user's stored profile with manual overrides. It can also tailor the resume to a specific job description and provides an ATS score with recommendations for improvement.
 - **Interview Prep:** Generates a list of role-specific interview questions categorized by difficulty (Easy, Medium, Hard), complete with model answers to help users prepare.
 
