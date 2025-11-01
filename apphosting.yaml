@@ -2,8 +2,6 @@
 # https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
   minInstances: 0
   maxInstances: 3
   cpu: 1
@@ -11,15 +9,7 @@ runConfig:
   concurrency: 80
 
 env:
-  # Environment variables will be set automatically from Firebase
-  # Additional secrets can be managed via Firebase Console
   - variable: NODE_ENV
     value: production
-  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: careerlens-1
   - variable: GCLOUD_PROJECT
     value: careerlens-1
-  - variable: FIREBASE_CONFIG
-    availability:
-      - BUILD
-      - RUNTIME
