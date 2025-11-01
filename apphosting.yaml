@@ -13,6 +13,8 @@ env:
     value: production
   - variable: GCLOUD_PROJECT
     value: careerlens-1
+  - variable: GOOGLE_GENAI_API_KEY
+    value: AIzaSyAQ.Ab8RN6IHFdJSriK9XXnh7I0Ys5xKTaWnCfwIG4ZGE2QLY5IvoA
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
