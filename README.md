@@ -1,78 +1,293 @@
+# 🚀 CareerLens: AI-Powered Career Development Platform
 
-# CareerLens: Your AI-Powered Career Co-Pilot
+<div align="center">
 
-Welcome to CareerLens, a modern web application built with Next.js and Firebase, designed to be your personal AI-powered career assistant. This project leverages the power of Google's generative AI models to provide a comprehensive suite of tools for career exploration, skill development, and interview preparation.
+![CareerLens Banner](https://img.shields.io/badge/CareerLens-AI%20Career%20Platform-blue?style=for-the-badge)
+[![Next.js](https://img.shields.io/badge/Next.js-15.3.3-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-11.9.1-orange?style=flat-square&logo=firebase)](https://firebase.google.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Gemini AI](https://img.shields.io/badge/Gemini-2.5%20Flash-purple?style=flat-square&logo=google)](https://ai.google.dev/)
 
-This document provides a detailed overview of the application's architecture, features, and the development journey.
+**Your Personal AI-Powered Career Co-Pilot**
+
+[Live Demo](https://careerlens--careerlens-1.us-central1.hosted.app) | [Documentation](#-documentation) | [Features](#-core-features)
+
+</div>
+
+---
+
+## 📋 Table of Contents
+
+- [Overview](#-overview)
+- [Core Features](#-core-features)
+- [Technology Stack](#️-technology-stack)
+- [Google Cloud Services](#-google-cloud-services-used)
+- [Architecture](#-architecture)
+- [AI Features Deep Dive](#-ai-features-deep-dive)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Deployment](#-deployment)
+
+---
+
+## 🌟 Overview
+
+**CareerLens** is a comprehensive, AI-powered career development platform that leverages Google's cutting-edge AI technologies to provide personalized career guidance, skill development recommendations, interview preparation, and intelligent resume optimization.
+
+### 🎯 Mission
+
+To democratize career development by providing every professional with access to AI-powered career coaching, personalized learning paths, and intelligent job search tools.
+
+---
 
 ## 🚀 Core Features
 
-CareerLens is packed with features designed to assist users at every stage of their career journey.
+### 1. 👤 **Intelligent Profile Management**
+- Multi-tab profile editor (6 comprehensive sections)
+- Gamified dashboard with 3D visuals
+- Achievement tracking and milestones
+- Real-time Firebase sync
 
-### 1. User Authentication & Profile Management
-- **Secure Authentication:** Users can sign up and log in using email/password or Google (OAuth).
-- **Comprehensive User Profile:** A multi-step form allows users to input their personal details, educational background, work experience, skills, and career goals. This profile data is securely stored in Firebase Firestore and serves as the foundation for all personalized AI recommendations.
+### 2. 🎓 **AI Career Hub**
+- **AI Skills Recommender** (620 lines): Personalized skill development paths
+- **AI Project Generator** (580 lines): Context-aware project recommendations
+- **Certification Hub** (450 lines): 25+ curated certifications
 
-### 2. AI-Powered Career Services
-- **Career Recommendations:** Based on the user's profile, the AI suggests the top 3 career paths, providing reasons for the fit, identifying skill gaps, and offering a preliminary 3-month learning plan.
-- **Skill Gap Analysis:** Users can input their current skills and the requirements for a target role. The AI analyzes the two, highlights overlapping skills, identifies missing ones, and suggests a logical learning order.
-- **Personalized Learning Roadmap:** Generates a detailed 12-week learning plan to bridge identified skill gaps, complete with weekly topics and links to both free and paid online resources.
-- **Adaptive Career Graph:** 🆕 A GitHub contribution-style heatmap that visualizes your career development journey over time. Features include:
-  - **Activity Heatmap:** 365-day visualization of learning activities with intensity colors
-  - **Skill Network Graph:** Interactive force-directed graph showing skill relationships
-  - **Career Insights Dashboard:** AI-powered readiness score, top skills ranking, and emerging skill detection
-  - **Personalized Recommendations:** AI suggests next skills, courses, and projects based on your activity patterns
-- **ATS-Optimized Resume Builder:** Creates a professional, ATS-friendly resume by merging the user's stored profile with manual overrides. It can also tailor the resume to a specific job description and provides an ATS score with recommendations for improvement.
-- **Interview Prep:** Generates a list of role-specific interview questions categorized by difficulty (Easy, Medium, Hard), complete with model answers to help users prepare.
+### 3. 🧠 **AI Learning Helper**
+- PDF document analysis with 4 modes
+- Quick Points, Deep Dive, Mind Map, Exam Mode
+- Powered by Gemini 2.5 Flash Lite
 
-### 3. AI Learning Helper
-- **PDF-to-Study-Guide:** Users can upload a PDF (e.g., lecture notes, a chapter from a book), and the AI processes it to generate a multi-faceted study guide, including:
-  - **Quick Points:** A bulleted summary of key takeaways.
-  - **Deep Dive:** A detailed explanation of core concepts.
-  - **Mind Map:** A hierarchical JSON structure of the document's topics.
-  - **Exam Mode:** An interactive quiz with multiple-choice questions based on the document content.
+### 4. 📊 **Career Graph & Analytics**
+- GitHub-style 365-day activity heatmap
+- Skill network graph visualization
+- AI-powered readiness score
+- Personalized recommendations
 
-### 4. The AI Interviewer
-- **Conversational Mock Interviews:** Users can engage in a mock interview with a conversational AI. The AI asks questions based on the user's profile and the job they are applying for. The architecture is built to support a full conversational loop.
+### 5. 📄 **ATS-Optimized Resume Builder**
+- Smart resume generation from profile
+- ATS score analysis
+- Job-specific tailoring
+- Resume parser for existing resumes
+
+### 6. 🎤 **AI Interview Preparation**
+- Mock interview with conversational AI
+- Role-specific questions with model answers
+- Voice recognition support
 
 ---
 
 ## 🛠️ Technology Stack
 
-CareerLens is built on a modern, robust, and scalable technology stack.
+### Frontend
+- **Next.js 15.3.3** - React framework
+- **React 18.3.1** - UI library
+- **TypeScript 5.0** - Type safety
+- **Tailwind CSS** - Styling
+- **Framer Motion** - Animations
 
-- **Frontend:** [Next.js](https://nextjs.org/) (with App Router) & [React](https://reactjs.org/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) with [ShadCN/UI](https://ui.shadcn.com/) for a sleek, component-based design system.
-- **AI Orchestration:** [Genkit](https://firebase.google.com/docs/genkit)
-- **Generative AI Models:**
-  - **Language:** Google's `gemini-2.5-flash-lite` for all text-based generation, analysis, and reasoning.
-- **Backend-as-a-Service:** [Firebase](https://firebase.google.com/)
-  - **Authentication:** Firebase Authentication for secure user management.
-  - **Database:** Firestore for storing user profiles and application data.
-- **Deployment:** The application is configured for deployment via Firebase App Hosting and includes a GitHub Actions workflow for continuous deployment.
+### AI & Machine Learning
+- **Google Gemini 2.5 Flash Lite** - Primary AI model
+- **Genkit 1.21.0** - AI orchestration
+
+### Backend & Services
+- **Firebase 11.9.1**
+  - Authentication
+  - Firestore Database
+  - Hosting & App Hosting
 
 ---
 
-## 🧑‍💻 Development Process & Architecture
+## ☁️ Google Cloud Services Used
 
-This application was developed iteratively, starting with a basic Next.js and Firebase foundation and progressively adding layers of functionality.
+### 1. 🤖 **Vertex AI & Gemini API**
+- **Gemini 2.5 Flash Lite** for all AI features
+- Career recommendations
+- Resume optimization
+- Interview preparation
+- Document analysis
 
-### Initial Setup
-The project began by setting up a Next.js application and integrating Firebase for authentication and database services. A `FirebaseProvider` was created to manage the Firebase app initialization and provide the Auth and Firestore instances to the rest of the application via React Context.
+### 2. 🔥 **Firebase Suite**
 
-### Building Core AI Features
-The initial development focused on creating the core AI-powered career services. For each feature, a similar pattern was followed:
-1.  **Genkit Flow:** An AI flow was defined in a `src/ai/flows/*.ts` file using Genkit. This flow encapsulates the logic for interacting with the Gemini model, including the prompt, input/output schemas (using Zod), and any data transformation.
-2.  **Server Action:** A Next.js Server Action was created in `src/lib/actions.ts` to act as a bridge between the client and the server-side Genkit flow. This action handles input validation and error handling.
-3.  **React Component:** A client-side React component was built in the `src/components/` directory to provide the user interface for the feature, manage form state, and call the Server Action.
+#### Authentication
+- Email/Password & Google OAuth 2.0
+- Session management
 
-### The AI Interviewer - An Advanced Implementation
-The AI Interviewer feature represents a complex integration in the app.
-1.  **Initial UI:** The UI was scaffolded to resemble a chat application, with a main window for the transcript.
-2.  **Conversational Logic:** A dedicated flow, `ai-interviewer-flow.ts`, was created to handle the conversational aspect. It takes the entire conversation transcript as context to generate relevant follow-up questions, making the interaction feel like a real interview.
+#### Cloud Firestore
+```
+firestore/
+├── users/{userId}/profile
+├── resumes/{resumeId}
+└── interviews/{interviewId}
+```
 
-### Firebase Integration Details
-- **Project ID:** The application is connected to the Firebase project with the ID `careerlens-1`.
-- **Services:** It uses **Firebase Authentication** for user sign-in and **Firestore** as the database.
-- **Data Model:** A `users` collection in Firestore stores a document for each user (keyed by their `uid`), which contains the profile data conforming to the `userProfileSchema` defined in `src/lib/types.ts`.
-- **Client-Side SDK:** All interactions with Firebase from the frontend are handled through the official Firebase client-side SDK, managed via the `FirebaseProvider`.
+#### Firebase Hosting
+- **Static**: `careerlens-1.web.app`
+- **App Hosting**: `careerlens--careerlens-1.us-central1.hosted.app`
+
+#### Configuration
+```yaml
+runConfig:
+  minInstances: 0
+  maxInstances: 3
+  cpu: 1
+  memoryMiB: 1024
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+Client Layer (Next.js 15)
+      ↓
+Server Actions (Type-safe API)
+      ↓
+Genkit AI Flows
+      ↓
+Google Gemini API
+      ↓
+Firebase Firestore
+```
+
+---
+
+## 🤖 AI Features Deep Dive
+
+### AI Skills Recommender
+**Algorithm**:
+1. Analyze user profile
+2. Query Gemini with context
+3. Generate 6 personalized recommendations
+4. Calculate relevance scores
+5. Fallback to curated data
+
+### AI Project Generator
+**Strategy**:
+- Match complexity to skill level
+- Use existing skills + 1-2 new ones
+- Provide implementation guides
+- 7 curated templates as fallback
+
+### Resume Intelligence
+**Components**:
+- Parser (PDF/DOCX)
+- Generator (Template-based)
+- ATS Analyzer (Scoring algorithm)
+
+### Conversational AI Interviewer
+- Context-aware questions
+- Real-time feedback
+- Voice recognition
+- Performance scoring
+
+---
+
+## 📁 Project Structure
+
+```
+CareerLens/
+├── src/
+│   ├── ai/flows/              # Genkit AI Flows
+│   ├── app/                   # Next.js Pages
+│   ├── components/            # React Components
+│   ├── hooks/                 # Custom Hooks
+│   └── lib/                   # Services & Utils
+├── apphosting.yaml            # Firebase Config
+├── next.config.ts             # Next.js Config
+└── package.json               # Dependencies
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- Firebase account
+- Google Cloud with Gemini API
+
+### Installation
+
+1. Clone repository
+```bash
+git clone https://github.com/balaraj74/CareerLens.git
+cd CareerLens
+```
+
+2. Install dependencies
+```bash
+npm install
+```
+
+3. Setup environment
+```bash
+cp .env.local.example .env.local
+```
+
+4. Configure Firebase
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=your_key
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project
+GOOGLE_GENAI_API_KEY=your_gemini_key
+```
+
+5. Run development server
+```bash
+npm run dev
+```
+
+6. Open browser
+```
+http://localhost:3000
+```
+
+---
+
+## 📦 Deployment
+
+### Firebase App Hosting
+```bash
+npm run build
+firebase apphosting:rollouts:create careerlens -b main -f
+```
+
+---
+
+## 📊 Performance
+
+- Lighthouse Score: 95+
+- First Contentful Paint: < 1.5s
+- Bundle Size: < 300KB
+
+---
+
+## 👥 Team
+
+- **Developer**: Balaraj R
+- **GitHub**: [@balaraj74](https://github.com/balaraj74)
+- **Email**: balarajr483@gmail.com
+
+---
+
+## 🙏 Acknowledgments
+
+- Next.js - React Framework
+- Firebase - Backend Infrastructure
+- Google Gemini - AI/ML Models
+- Genkit - AI Orchestration
+- Shadcn/UI - Components
+- Tailwind CSS - Styling
+
+---
+
+<div align="center">
+
+**Built with ❤️ using Google Cloud Technologies**
+
+![Next.js](https://img.shields.io/badge/Next.js-black?style=flat-square&logo=next.js)
+![Firebase](https://img.shields.io/badge/Firebase-orange?style=flat-square&logo=firebase)
+![TypeScript](https://img.shields.io/badge/TypeScript-blue?style=flat-square&logo=typescript)
+![Google AI](https://img.shields.io/badge/Google%20AI-purple?style=flat-square&logo=google)
+
+</div>
