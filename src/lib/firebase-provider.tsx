@@ -7,14 +7,25 @@ import { getFirestore, enableIndexedDbPersistence, type Firestore } from 'fireba
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs",
-  authDomain: "careerlens-1.firebaseapp.com",
-  projectId: "careerlens-1",
-  storageBucket: "careerlens-1.appspot.com",
-  messagingSenderId: "202306950137",
-  appId: "1:202306950137:web:ed4e91e619dd4cc7dde328",
-  measurementId: "G-WEF48JHJF9"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
+
+// Debug: Log config to ensure environment variables are loaded
+console.log('Firebase Config:', {
+  apiKey: firebaseConfig.apiKey ? '***' : 'MISSING',
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  storageBucket: firebaseConfig.storageBucket,
+  messagingSenderId: firebaseConfig.messagingSenderId ? '***' : 'MISSING',
+  appId: firebaseConfig.appId ? '***' : 'MISSING',
+  measurementId: firebaseConfig.measurementId
+});
 
 
 interface FirebaseContextValue {
@@ -59,35 +70,55 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const _app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    const _auth = getAuth(_app);
-    const _db = getFirestore(_app);
+    try {
+      console.log('Initializing Firebase...');
+      const _app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+      console.log('Firebase app initialized');
+      
+      const _auth = getAuth(_app);
+      console.log('Firebase Auth initialized');
+      
+      const _db = getFirestore(_app);
+      console.log('Firestore initialized');
 
-    enableIndexedDbPersistence(_db).catch((err) => {
-      if (err.code === 'failed-precondition') {
-        console.warn('Firestore persistence failed: Multiple tabs open.');
-      } else if (err.code === 'unimplemented') {
-        console.warn('Firestore persistence is not available in this browser.');
-      }
-    });
-    
-    isSupported().then(supported => {
-        if(supported) {
-            getAnalytics(_app);
+      // Optional: Enable offline persistence (can cause issues in some browsers)
+      enableIndexedDbPersistence(_db).catch((err) => {
+        if (err.code === 'failed-precondition') {
+          console.warn('Firestore persistence failed: Multiple tabs open.');
+        } else if (err.code === 'unimplemented') {
+          console.warn('Firestore persistence is not available in this browser.');
+        } else {
+          console.warn('Firestore persistence error:', err);
         }
-    });
+      });
+      
+      isSupported().then(supported => {
+          if(supported) {
+              console.log('Analytics supported, initializing...');
+              getAnalytics(_app);
+          } else {
+              console.log('Analytics not supported in this environment');
+          }
+      });
 
-    setApp(_app);
-    setAuth(_auth);
-    setDb(_db);
-    setFirebaseLoading(false);
+      setApp(_app);
+      setAuth(_auth);
+      setDb(_db);
+      setFirebaseLoading(false);
+      console.log('Firebase initialization complete');
 
-    const unsubscribe = onAuthStateChanged(_auth, (currentUser) => {
-      setUser(currentUser);
+      const unsubscribe = onAuthStateChanged(_auth, (currentUser) => {
+        console.log('Auth state changed:', currentUser ? `User: ${currentUser.uid}` : 'No user');
+        setUser(currentUser);
+        setAuthLoading(false);
+      });
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+      setFirebaseLoading(false);
       setAuthLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
   const signUp = (email: string, pass: string) => {

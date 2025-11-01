@@ -6,6 +6,27 @@ import type { UserProfile } from './types';
 
 
 /**
+ * Serializes a user profile by converting Firestore Timestamps to ISO strings.
+ * This is needed when passing profile data to Next.js server actions.
+ * @param profile - The user profile with potential Firestore Timestamp objects
+ * @returns A serialized profile safe for server actions
+ */
+export function serializeProfile(profile: any): any {
+  if (!profile) return profile;
+  
+  return {
+    ...profile,
+    updatedAt: profile.updatedAt?.seconds 
+      ? new Date(profile.updatedAt.seconds * 1000).toISOString() 
+      : undefined,
+    createdAt: profile.createdAt?.seconds 
+      ? new Date(profile.createdAt.seconds * 1000).toISOString() 
+      : undefined,
+  };
+}
+
+
+/**
  * Fetches a user's profile from Firestore using the client-side SDK.
  * @param db - The Firestore instance.
  * @param userId - The ID of the user.
@@ -71,12 +92,25 @@ export async function saveProfile(
   };
 
   try {
+    console.log('Attempting to save profile to Firestore for user:', userId);
+    console.log('Data to save:', dataToSave);
     // Use setDoc with { merge: true } to create or update the document.
     // This is robust and prevents overwriting fields unintentionally.
     await setDoc(docRef, dataToSave, { merge: true });
-  } catch (error) {
+    console.log('Profile successfully saved to Firestore!');
+  } catch (error: any) {
     console.error("Error saving profile to Firestore:", error);
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
+    
+    // Provide specific error messages based on the error type
+    if (error.code === 'permission-denied') {
+      throw new Error("Permission denied. Please ensure Firestore security rules are deployed.");
+    } else if (error.code === 'unavailable') {
+      throw new Error("Could not connect to Firestore. Please check your internet connection.");
+    }
+    
     // Throw a more user-friendly error message.
-    throw new Error("Could not save your profile to the database. Please try again.");
+    throw new Error(error.message || "Could not save your profile to the database. Please try again.");
   }
 }

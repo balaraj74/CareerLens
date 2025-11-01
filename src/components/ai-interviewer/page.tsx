@@ -2,97 +2,27 @@
 'use client';
 import 'regenerator-runtime/runtime';
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation } from 'framer-motion';
-import { Mic, MicOff, Video, VideoOff, Phone, Bot, User, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Bot, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { useFirebase } from '@/hooks/use-auth';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { getAiInterviewerResponse, getAiInterviewerFollowup } from '@/lib/actions';
+import { logCareerActivity } from '@/lib/career-graph-service';
 import type { TranscriptItem } from '@/ai/schemas/ai-interviewer-flow';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
-
-// --- SVG Avatar Component ---
-const InterviewerAvatar = () => {
-  const controls = useAnimation();
-  const mouthControls = useAnimation();
-
-  // Blinking animation
-  useEffect(() => {
-    controls.start({
-      scaleY: [1, 1, 0.1, 1, 1],
-      transition: { duration: 0.5, times: [0, 0.45, 0.5, 0.55, 1], repeat: Infinity, repeatDelay: 5 }
-    });
-  }, [controls]);
-  
-  // Mouth animation - listens for custom events
-  useEffect(() => {
-    const handleSpeechStart = () => {
-        mouthControls.start({
-            d: [
-                "M 120 150 Q 150 150 180 150",
-                "M 120 150 Q 150 170 180 150",
-                "M 120 150 Q 150 155 180 150",
-                "M 120 150 Q 150 180 180 150",
-                "M 120 150 Q 150 150 180 150",
-            ],
-            transition: { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
-        });
-    };
-    const handleSpeechEnd = () => {
-        mouthControls.start({
-            d: "M 120 150 Q 150 150 180 150",
-            transition: { duration: 0.2 }
-        });
-    };
-    
-    // Listen for the custom events dispatched from the speak function
-    document.addEventListener('speech-start', handleSpeechStart);
-    document.addEventListener('speech-end', handleSpeechEnd);
-
-    return () => {
-        document.removeEventListener('speech-start', handleSpeechStart);
-        document.removeEventListener('speech-end', handleSpeechEnd);
-    }
-  }, [mouthControls]);
-
-
-  return (
-    <div className="relative w-64 h-64">
-      <svg viewBox="0 0 300 300" className="w-full h-full">
-        {/* Head */}
-        <motion.path
-          d="M 150 50 C 100 50, 50 100, 50 150 C 50 250, 100 300, 150 300 C 200 300, 250 250, 250 150 C 250 100, 200 50, 150 50 Z"
-          fill="#A680FF"
-          stroke="#F2F9FF"
-          strokeWidth="8"
-        />
-        {/* Eyes */}
-        <g>
-          <circle cx="115" cy="120" r="15" fill="#F2F9FF" />
-          <motion.rect x="100" y="105" width="30" height="30" fill="#A680FF" ry="15" animate={controls} />
-        </g>
-        <g>
-          <circle cx="185" cy="120" r="15" fill="#F2F9FF" />
-           <motion.rect x="170" y="105" width="30" height="30" fill="#A680FF" ry="15" animate={controls} />
-        </g>
-        {/* Mouth */}
-        <motion.path
-          initial={{ d: "M 120 150 Q 150 150 180 150" }}
-          animate={mouthControls}
-          stroke="#F2F9FF"
-          strokeWidth="5"
-          fill="transparent"
-        />
-      </svg>
-    </div>
-  );
-};
+import { InterviewPanel } from './InterviewPanel';
+import { ControlBar } from './ControlBar';
+import { ChatBubble } from './ChatBubble';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 export function AiInterviewerPage() {
     const { user } = useAuth();
+    const { db } = useFirebase();
     const { toast } = useToast();
     
     // Component State
@@ -105,6 +35,7 @@ export function AiInterviewerPage() {
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);
     const [isAwaitingAI, setIsAwaitingAI] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
     
     // Refs for media elements
     const userVideoRef = useRef<HTMLVideoElement>(null);
@@ -127,10 +58,11 @@ export function AiInterviewerPage() {
             clearTimeout(speechTimeoutRef.current);
         }
 
-        if (speechTranscript && listening) {
+        // Only auto-send if we have some speech and we're actively listening
+        if (speechTranscript && listening && !isAwaitingAI && !isSpeaking) {
             speechTimeoutRef.current = setTimeout(() => {
                 handleUserResponse();
-            }, 2500); // Wait for 2.5 seconds of silence before sending
+            }, 1500); // Reduced to 1.5 seconds for faster response
         }
 
         return () => {
@@ -139,7 +71,7 @@ export function AiInterviewerPage() {
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [speechTranscript, listening]);
+    }, [speechTranscript, listening, isAwaitingAI, isSpeaking]);
 
     // --- Core Functions ---
     
@@ -168,12 +100,7 @@ export function AiInterviewerPage() {
 
         if (response.success && response.data) {
             setTranscript([{ speaker: 'ai', text: response.data.firstQuestion, timestamp: new Date().toISOString() }]);
-            speak(response.data.firstQuestion, () => {
-                 // After the first question is spoken, start listening for the user's answer
-                 if (!listening) {
-                     SpeechRecognition.startListening({ continuous: true });
-                 }
-            });
+            speak(response.data.firstQuestion);
         } else {
             toast({ variant: 'destructive', title: 'Could not start interview.', description: response.error });
             setInterviewState('idle');
@@ -189,30 +116,47 @@ export function AiInterviewerPage() {
             window.speechSynthesis.cancel();
         }
         
+        setIsSpeaking(true);
         const utterance = new SpeechSynthesisUtterance(text);
         
+        // Set voice properties for faster, more natural speech
+        utterance.rate = 1.1; // Slightly faster
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
         utterance.onstart = () => {
-            document.dispatchEvent(new Event('speech-start'));
+            setIsSpeaking(true);
         };
 
         utterance.onend = () => {
-            document.dispatchEvent(new Event('speech-end'));
-            if (onEndCallback) {
-                onEndCallback();
-            }
+            setIsSpeaking(false);
+            // Immediately start listening again after AI finishes speaking
+            setTimeout(() => {
+                if (browserSupportsSpeechRecognition && !listening) {
+                    SpeechRecognition.startListening({ continuous: true });
+                }
+                if (onEndCallback) {
+                    onEndCallback();
+                }
+            }, 300); // Small delay to ensure smooth transition
         };
         
         utterance.onerror = (e) => {
-            document.dispatchEvent(new Event('speech-end'));
+            setIsSpeaking(false);
              toast({
                 variant: 'destructive',
                 title: 'Text-to-Speech Error',
                 description: `Could not play audio: ${e.error}`
             });
-            // Still run callback to potentially restart listening
-            if (onEndCallback) {
-                onEndCallback();
-            }
+            // Still restart listening on error
+            setTimeout(() => {
+                if (browserSupportsSpeechRecognition && !listening) {
+                    SpeechRecognition.startListening({ continuous: true });
+                }
+                if (onEndCallback) {
+                    onEndCallback();
+                }
+            }, 300);
         };
 
         window.speechSynthesis.speak(utterance);
@@ -242,22 +186,21 @@ export function AiInterviewerPage() {
         setIsAwaitingAI(false);
 
         if (response.success && response.data) {
-             setTranscript(prev => [...prev, { speaker: 'ai', text: response.data.followUp, timestamp: new Date().toISOString() }]);
+             setTranscript(prev => [...prev, { speaker: 'ai', text: response.data!.followUp, timestamp: new Date().toISOString() }]);
              
              if (response.data.isEndOfInterview) {
                  speak(response.data.followUp, endInterview);
              } else {
-                 speak(response.data.followUp, () => {
-                    // This is the key fix: ensure listening starts again
-                    if (!listening && browserSupportsSpeechRecognition) {
-                        SpeechRecognition.startListening({ continuous: true });
-                    }
-                 });
+                 speak(response.data.followUp);
              }
         } else {
             toast({ variant: 'destructive', title: 'Error getting response', description: response.error });
-            // If AI fails, start listening again
-            if (!listening) SpeechRecognition.startListening({ continuous: true });
+            // If AI fails, restart listening
+            setTimeout(() => {
+                if (!listening && browserSupportsSpeechRecognition) {
+                    SpeechRecognition.startListening({ continuous: true });
+                }
+            }, 500);
         }
     };
     
@@ -275,7 +218,7 @@ export function AiInterviewerPage() {
             setIsCameraOff(!isCameraOff);
         }
     };
-     const endInterview = () => {
+     const endInterview = async () => {
         speechSynthesis.cancel();
         SpeechRecognition.stopListening();
         if (stream) {
@@ -284,6 +227,16 @@ export function AiInterviewerPage() {
         setStream(null);
         setHasPermission(false);
         setInterviewState('finished');
+        
+        // Log interview completion activity
+        if (user && db) {
+            const duration = transcript.length * 2; // Approximate minutes
+            await logCareerActivity(db, user.uid, {
+                type: 'interview_completed',
+                metadata: { duration },
+                impact: 8,
+            }).catch(console.error);
+        }
     };
     
     // --- Render Logic ---
@@ -296,93 +249,156 @@ export function AiInterviewerPage() {
     
     if (interviewState === 'idle') {
         return (
-            <div className="p-4 md:p-8 flex flex-col items-center justify-center space-y-8 min-h-[calc(100vh-10rem)]">
-                <Card className="glass-card w-full max-w-lg text-center">
-                    <CardHeader>
-                        <CardTitle className="text-3xl font-bold flex items-center justify-center gap-3 font-headline text-glow"><Bot/> AI Interviewer</CardTitle>
-                        <CardDescription>Practice with an interactive AI in a simulated video call.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button size="lg" className="bg-gradient-to-r from-primary to-accent" onClick={startInterview}>Start Interview</Button>
-                    </CardContent>
-                </Card>
+            <div className="min-h-screen bg-gradient-to-br from-[#090E24] via-[#1A1F40] to-[#0F1629] flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="w-full max-w-2xl"
+                >
+                    <Card className="glass-card border-white/10 shadow-2xl bg-white/5 backdrop-blur-xl">
+                        <CardHeader className="text-center space-y-4">
+                            <motion.div
+                                className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/50"
+                                animate={{
+                                    scale: [1, 1.1, 1],
+                                    boxShadow: [
+                                        '0 0 20px rgba(139, 92, 246, 0.5)',
+                                        '0 0 40px rgba(139, 92, 246, 0.8)',
+                                        '0 0 20px rgba(139, 92, 246, 0.5)',
+                                    ],
+                                }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                            >
+                                <Bot className="w-10 h-10 text-white" />
+                            </motion.div>
+                            <CardTitle className="text-4xl font-bold font-headline bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                                AI Interview Studio
+                            </CardTitle>
+                            <CardDescription className="text-gray-400 text-lg">
+                                Step into a virtual interview room powered by advanced AI.
+                                <br />
+                                Practice with confidence in an immersive, professional environment.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                    <div className="text-3xl mb-2">🎯</div>
+                                    <h4 className="font-semibold text-white mb-1">Real-Time</h4>
+                                    <p className="text-xs text-gray-400">Voice-activated responses</p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                    <div className="text-3xl mb-2">🧠</div>
+                                    <h4 className="font-semibold text-white mb-1">AI-Powered</h4>
+                                    <p className="text-xs text-gray-400">Intelligent follow-ups</p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                                    <div className="text-3xl mb-2">📊</div>
+                                    <h4 className="font-semibold text-white mb-1">Feedback</h4>
+                                    <p className="text-xs text-gray-400">Detailed transcript</p>
+                                </div>
+                            </div>
+                            <motion.div
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <Button
+                                    size="lg"
+                                    className="w-full bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 text-white shadow-lg shadow-violet-500/50 h-14 text-lg"
+                                    onClick={startInterview}
+                                >
+                                    <Sparkles className="mr-2" />
+                                    Start Interview Session
+                                </Button>
+                            </motion.div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
             </div>
         );
     }
     
     if (interviewState === 'finished') {
         return (
-            <div className="p-4 md:p-8 flex flex-col items-center justify-center space-y-8 min-h-[calc(100vh-10rem)]">
-                <Card className="glass-card w-full max-w-2xl text-center">
-                    <CardHeader>
-                        <CardTitle>Interview Complete!</CardTitle>
-                        <CardDescription>Great job! You've completed the mock interview. Here is your transcript.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 max-h-96 overflow-y-auto text-left p-4 bg-background/50 rounded-lg">
-                        {transcript.map((item, index) => (
-                             <div key={index} className={`flex gap-2 ${item.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-3 rounded-xl ${item.speaker === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                    <p className="font-bold capitalize">{item.speaker}</p>
-                                    <p>{item.text}</p>
+            <div className="min-h-screen bg-gradient-to-br from-[#090E24] via-[#1A1F40] to-[#0F1629] flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full max-w-4xl"
+                >
+                    <Card className="glass-card border-white/10 shadow-2xl bg-white/5 backdrop-blur-xl">
+                        <CardHeader className="text-center">
+                            <motion.div
+                                className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg mb-4"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 200 }}
+                            >
+                                <Sparkles className="w-10 h-10 text-white" />
+                            </motion.div>
+                            <CardTitle className="text-3xl font-bold text-white">Interview Complete!</CardTitle>
+                            <CardDescription className="text-gray-400">
+                                Great job! Here's your full conversation transcript.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ScrollArea className="h-96 rounded-2xl bg-black/40 p-6">
+                                <div className="space-y-4">
+                                    {transcript.map((item, index) => (
+                                        <ChatBubble
+                                            key={index}
+                                            speaker={item.speaker}
+                                            text={item.text}
+                                            timestamp={item.timestamp}
+                                            index={index}
+                                        />
+                                    ))}
                                 </div>
+                            </ScrollArea>
+                            <div className="mt-6 flex gap-4">
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    className="flex-1 border-white/20 hover:bg-white/10"
+                                    onClick={() => { setInterviewState('idle'); setTranscript([]); }}
+                                >
+                                    Start New Interview
+                                </Button>
                             </div>
-                        ))}
-                    </CardContent>
-                    <CardContent>
-                        <Button size="lg" variant="outline" onClick={() => { setInterviewState('idle'); setTranscript([]); }}>Start a New Interview</Button>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="flex h-[calc(100vh-6rem)] w-full text-white p-4 gap-4">
-            {/* Left side: AI Interviewer */}
-            <div className="flex-1 flex flex-col items-center justify-center bg-black rounded-2xl relative overflow-hidden">
-                <InterviewerAvatar />
-                <div className="absolute top-4 left-4 p-2 bg-black/50 rounded-lg max-w-sm">
-                    <p className="font-bold text-lg">AI Interviewer</p>
-                    <p className="text-sm text-muted-foreground break-words">{transcript.findLast(t => t.speaker === 'ai')?.text}</p>
-                </div>
-                 {isAwaitingAI && (
-                    <div className="absolute bottom-10 flex items-center gap-2 text-sm">
-                        <Loader2 className="w-4 h-4 animate-spin"/> Thinking...
-                    </div>
-                 )}
-            </div>
-            
-            {/* Right side: User Video & Controls */}
-            <div className="w-1/3 flex flex-col space-y-4">
-                <div className="flex-1 bg-black rounded-2xl overflow-hidden relative">
-                    {!hasPermission ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center">
-                           <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                           <p>Starting camera...</p>
-                        </div>
-                    ) : (
-                        <video ref={userVideoRef} autoPlay muted className={`w-full h-full object-cover transform -scale-x-100 ${isCameraOff ? 'hidden' : 'block'}`}></video>
-                    )}
-                    {isCameraOff && <div className="w-full h-full flex items-center justify-center"><VideoOff className="w-16 h-16 text-muted-foreground"/></div>}
-                     <div className="absolute top-4 right-4 p-2 bg-black/50 rounded-lg">
-                        <p className="font-bold text-lg text-right">{user?.displayName || "You"}</p>
-                        <p className={`text-sm text-right ${listening ? 'text-green-400' : 'text-muted-foreground'}`}>{listening ? 'Listening...' : 'Not Listening'}</p>
-                    </div>
-                    {listening && speechTranscript && <p className="absolute bottom-4 left-4 bg-black/50 p-2 rounded-lg text-sm max-w-[90%]">{speechTranscript}</p>}
-                </div>
-                
-                <div className="bg-card/50 rounded-2xl p-4 flex justify-center items-center gap-4">
-                    <Button variant={isMuted ? 'destructive' : 'secondary'} size="icon" className="w-14 h-14 rounded-full" onClick={toggleMute}>
-                        {isMuted ? <MicOff/> : <Mic/>}
-                    </Button>
-                    <Button variant={isCameraOff ? 'destructive' : 'secondary'} size="icon" className="w-14 h-14 rounded-full" onClick={toggleCamera}>
-                        {isCameraOff ? <VideoOff/> : <Video/>}
-                    </Button>
-                    <Button variant='destructive' size="icon" className="w-14 h-14 rounded-full" onClick={endInterview}>
-                        <Phone/>
-                    </Button>
-                </div>
-            </div>
+        <div className="min-h-screen bg-gradient-to-br from-[#090E24] via-[#1A1F40] to-[#0F1629] p-4 md:p-8">
+            <InterviewPanel
+                transcript={transcript}
+                isAISpeaking={isSpeaking}
+                isAIThinking={isAwaitingAI}
+                isUserSpeaking={listening}
+                userVideoRef={userVideoRef}
+                isCameraOff={isCameraOff}
+                userName={user?.displayName || 'You'}
+                currentUserText={speechTranscript}
+            />
+
+            <ControlBar
+                isMuted={isMuted}
+                isCameraOff={isCameraOff}
+                onToggleMute={toggleMute}
+                onToggleCamera={toggleCamera}
+                onEndInterview={endInterview}
+                onSendMessage={() => {
+                    if (speechTranscript.trim()) {
+                        handleUserResponse();
+                    }
+                }}
+                canSendMessage={!!speechTranscript.trim() && !isAwaitingAI && !isSpeaking}
+            />
         </div>
     );
 }
