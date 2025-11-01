@@ -1,5 +1,5 @@
-import { ProfilePageV2 } from '@/components/profile/profile-page-v2';
+import { GamifiedProfilePage } from '@/components/profile/gamified-profile-page';
 
-export default function Page() {
-  return <ProfilePageV2 />;
+export default function ProfilePage() {
+  return <GamifiedProfilePage />;
 }
