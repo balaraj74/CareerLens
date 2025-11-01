@@ -13,6 +13,8 @@ env:
     value: production
   - variable: GCLOUD_PROJECT
     value: careerlens-1
+  - variable: GOOGLE_GENAI_API_KEY
+    secret: GOOGLE_GENAI_API_KEY
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
@@ -27,11 +29,3 @@ env:
     value: 1:202306950137:web:ed4e91e619dd4cc7dde328
   - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
     value: G-WEF48JHJF9
-  - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    value: AIzaSyCCovOlhJubYYE5iZ5I2AGk_roWOUVa5LU
-  - variable: NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    value: 202306950137-i1e96uvp1bsqsblr8mvji6fdnrl0mdra.apps.googleusercontent.com
-  - variable: GOOGLE_GENAI_API_KEY
-    secret: GOOGLE_GENAI_API_KEY
-  - variable: GEMINI_API_KEY
-    secret: GEMINI_API_KEY
