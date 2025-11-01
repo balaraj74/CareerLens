@@ -9,6 +9,12 @@ import { generateInterviewQuestions } from '@/ai/flows/generate-interview-questi
 import { processPdf } from '@/ai/flows/learning-helper';
 import { generateFirstInterviewQuestion } from '@/ai/flows/ai-interviewer';
 import { aiInterviewerFollowup as genkitAiInterviewerFollowup } from '@/ai/flows/ai-interviewer-flow';
+import { 
+  suggestProjects, 
+  generateProjectPlan, 
+  generateProjectReadme, 
+  analyzeProjectCompletion 
+} from '@/ai/flows/dynamic-project-builder';
 
 
 import type { GenerateCareerRecommendationsInput, GenerateCareerRecommendationsOutput } from '@/ai/schemas/career-recommendations';
@@ -121,5 +127,89 @@ export async function getAiInterviewerFollowup(
   } catch (error: any) {
     console.error(error);
     return { success: false, error: error.message || 'Failed to get AI followup.' };
+  }
+}
+
+// Dynamic Project Builder Actions
+export async function getProjectSuggestions(input: {
+  careerGoal: string;
+  currentSkills: string[];
+  targetSkills: string[];
+  experienceLevel: string;
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const skillGaps = input.targetSkills.filter(skill => !input.currentSkills.includes(skill));
+    const result = await suggestProjects(
+      input.currentSkills,
+      input.careerGoal,
+      skillGaps,
+      input.experienceLevel as 'beginner' | 'intermediate' | 'advanced'
+    );
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to generate project suggestions.' };
+  }
+}
+
+export async function getProjectPlan(input: {
+  projectIdea: string;
+  projectDescription: string;
+  targetSkills: string[];
+  experienceLevel: string;
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const result = await generateProjectPlan(
+      input.projectIdea,
+      input.projectDescription,
+      input.targetSkills,
+      input.experienceLevel
+    );
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to generate project plan.' };
+  }
+}
+
+export async function getProjectReadme(input: {
+  projectTitle: string;
+  projectDescription: string;
+  techStack: string[];
+  features: string[];
+}): Promise<{ success: boolean; data?: string; error?: string }> {
+  try {
+    const result = await generateProjectReadme(
+      input.projectTitle,
+      input.projectDescription,
+      input.techStack,
+      input.features
+    );
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to generate README.' };
+  }
+}
+
+export async function getProjectCompletionAnalysis(input: {
+  projectTitle: string;
+  projectDescription: string;
+  skillsLearned: string[];
+  timeSpent: number;
+  challenges: string[];
+}): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const result = await analyzeProjectCompletion(
+      input.projectTitle,
+      input.projectDescription,
+      input.skillsLearned,
+      input.timeSpent,
+      input.challenges
+    );
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to analyze project completion.' };
   }
 }
