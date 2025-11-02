@@ -14,7 +14,9 @@ env:
   - variable: GCLOUD_PROJECT
     value: careerlens-1
   - variable: GOOGLE_GENAI_API_KEY
-    value: AIzaSyA_T0pm3WOMczHprNbE8wrKrPu9scXsPUc
+    secret: GOOGLE_GENAI_API_KEY
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
