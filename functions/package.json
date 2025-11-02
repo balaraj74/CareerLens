@@ -1,14 +1,30 @@
 {
-  "name": "functions",
-  "main": "index.js",
+  "name": "careerlens-functions",
+  "version": "1.0.0",
+  "description": "Firebase Cloud Functions for CareerLens real-time data intelligence",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
   "dependencies": {
-    "next": "15.3.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "firebase-admin": "^12.3.0",
     "firebase-functions": "^5.1.1",
-    "firebase-admin": "^12.3.0"
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "@google-cloud/firestore": "^7.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
     "firebase-functions-test": "^3.3.0"
-  }
+  },
+  "private": true
 }

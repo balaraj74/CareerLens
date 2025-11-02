@@ -75,6 +75,14 @@ To democratize career development by providing every professional with access to
 - Role-specific questions with model answers
 - Voice recognition support
 
+### 7. 📅 **AI Career Calendar** 🆕
+- **Google Calendar Integration**: Sync events, create/edit tasks
+- **AI Event Suggestions**: Gemini-powered personalized recommendations
+- **Smart Reminders**: Firebase Cloud Messaging notifications
+- **Today's Tasks Widget**: Interactive task completion tracking
+- **Productivity Analytics**: Streak tracking, scores, insights
+- **Modern UI**: Glassmorphic design with smooth animations
+
 ---
 
 ## 🛠️ Technology Stack
