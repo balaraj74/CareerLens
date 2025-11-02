@@ -17,5 +17,74 @@ service cloud.firestore {
     match /careerGraphs/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    
+    // Reviews - public read, authenticated write (with AI moderation)
+    match /reviews/{reviewId} {
+      allow read: if true; // Public read access
+      allow create: if request.auth != null && 
+                      request.resource.data.author.uid == request.auth.uid;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null && resource.data.author.uid == request.auth.uid;
+    }
+    
+    // Resources - public read, admin write (cached AI recommendations)
+    match /resources/{resourceId} {
+      allow read: if true; // Public read access
+      allow write: if request.auth != null; // Authenticated users can cache
+    }
+    
+    // Reddit Posts - public read, system write
+    match /redditPosts/{postId} {
+      allow read: if true; // Public read access
+      allow write: if true; // Allow system to cache Reddit posts
+    }
+    
+    // Scraped Courses - public read, system write
+    match /scrapedCourses/{courseId} {
+      allow read: if true; // Public read access
+      allow write: if true; // Allow system to cache scraped courses
+    }
+    
+    // Google Search Results - public read, system write
+    match /googleSearchResults/{resultId} {
+      allow read: if true; // Public read access
+      allow write: if true; // Allow system to cache search results
+    }
+    
+    // Mentors - public read, admin write
+    match /mentors/{mentorId} {
+      allow read: if true; // Public read access
+      allow write: if request.auth != null; // Authenticated users can update profiles
+    }
+    
+    // Chat Rooms - participants only
+    match /chatRooms/{roomId} {
+      allow read: if request.auth != null && 
+                    (request.auth.uid == resource.data.studentId || 
+                     request.auth.uid == resource.data.mentorId);
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+                      (request.auth.uid == resource.data.studentId || 
+                       request.auth.uid == resource.data.mentorId);
+    }
+    
+    // Messages - chat room participants only
+    match /messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+                      request.resource.data.senderId == request.auth.uid;
+    }
+    
+    // Mentorship Sessions - participants only
+    match /mentorshipSessions/{sessionId} {
+      allow read: if request.auth != null && 
+                    (request.auth.uid == resource.data.studentId || 
+                     request.auth.uid == resource.data.mentorId);
+      allow create: if request.auth != null && 
+                      request.resource.data.studentId == request.auth.uid;
+      allow update: if request.auth != null && 
+                      (request.auth.uid == resource.data.studentId || 
+                       request.auth.uid == resource.data.mentorId);
+    }
   }
 }

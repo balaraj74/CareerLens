@@ -179,8 +179,12 @@ Return ONLY the JSON array, no additional text.
  * Fallback skill recommendations when AI is unavailable
  */
 function generateFallbackSkillRecommendations(userContext: any): SkillRecommendation[] {
-  const goalLowerCase = userContext.goal.toLowerCase();
-  const currentSkills = userContext.currentSkills.map((s: string) => s.toLowerCase());
+  const goalLowerCase = userContext.goal?.toLowerCase() || '';
+  const currentSkills = Array.isArray(userContext.currentSkills) 
+    ? userContext.currentSkills.map((s: any) => 
+        typeof s === 'string' ? s.toLowerCase() : s?.name?.toLowerCase() || ''
+      )
+    : [];
 
   // Define skill trees for common career goals
   const skillTrees: Record<string, SkillRecommendation[]> = {
