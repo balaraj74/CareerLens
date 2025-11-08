@@ -14,6 +14,10 @@ import {
   Bot,
   ChevronUp,
   LibrarySquare,
+  Calendar,
+  Users,
+  GraduationCap,
+  UserPlus,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -35,6 +39,10 @@ const toolNavItems = [
   { href: '/learning-helper', icon: <Sparkles />, label: 'AI Helper' },
   { href: '/ai-interviewer', icon: <Bot />, label: 'AI Interviewer' },
   { href: '/library-finder', icon: <LibrarySquare />, label: 'Libraries' },
+  { href: '/calendar', icon: <Calendar />, label: 'AI Calendar' },
+  { href: '/community', icon: <Users />, label: 'Community' },
+  { href: '/resources', icon: <GraduationCap />, label: 'Resources' },
+  { href: '/mentors', icon: <UserPlus />, label: 'Find Mentor' },
   { href: '/ebooks', icon: <BookOpen />, label: 'eBooks' },
 ];
 

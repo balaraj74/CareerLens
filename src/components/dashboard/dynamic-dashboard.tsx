@@ -1183,11 +1183,11 @@ export function DynamicDashboard() {
         </div>
       </div>
 
-      {/* AI Copilot Floating Assistant */}
+      {/* AI Copilot Floating Assistant - Hidden on Mobile */}
       <AnimatePresence>
         {showAIChat && (
           <motion.div
-            className="fixed bottom-24 right-8 w-80 z-50"
+            className="fixed bottom-24 right-8 w-80 z-50 hidden lg:block"
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -1286,9 +1286,9 @@ export function DynamicDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Floating AI Button */}
+      {/* Floating AI Button - Hidden on Mobile */}
       <motion.button
-        className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-2xl z-50"
+        className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-2xl z-50 hidden lg:flex"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setShowAIChat(!showAIChat)}
