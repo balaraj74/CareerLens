@@ -460,13 +460,13 @@ export default function EBooksPage() {
         )}
 
         {/* Empty State */}
-        {!loading && displayBooks.length === 0 && googleBooks.length === 0 && (
+        {!loading && books.length === 0 && googleBooks.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p className="text-lg">
               {activeTab === 'bookmarks' 
                 ? 'No bookmarked books yet. Start exploring!' 
-                : 'No books found. Try a different search or source.'}
+                : 'No books found. Try a different search.'}
             </p>
           </div>
         )}
