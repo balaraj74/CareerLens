@@ -35,6 +35,7 @@ const toolNavItems = [
   { href: '/learning-helper', icon: <Sparkles />, label: 'AI Helper' },
   { href: '/ai-interviewer', icon: <Bot />, label: 'AI Interviewer' },
   { href: '/library-finder', icon: <LibrarySquare />, label: 'Libraries' },
+  { href: '/ebooks', icon: <BookOpen />, label: 'eBooks' },
 ];
 
 interface NavProps {

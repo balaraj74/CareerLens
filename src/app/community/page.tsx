@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Star, ThumbsUp, ThumbsDown, Plus, Filter, Search, Award, BookOpen, RefreshCw, Radio, ExternalLink } from 'lucide-react';
+import { MessageSquare, Star, ThumbsUp, ThumbsDown, Plus, Filter, Search, Award, BookOpen, RefreshCw, Radio, ExternalLink, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import {
 } from '@/lib/reddit-api-service';
 
 export default function CommunityPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -49,6 +51,20 @@ export default function CommunityPage() {
   useEffect(() => {
     filterReviews();
   }, [reviews, selectedCategory, searchQuery]);
+
+  // Debounced Reddit search - only triggers after user stops typing for 1.5 seconds
+  useEffect(() => {
+    if (searchQuery.trim().length > 3) {
+      const timer = setTimeout(() => {
+        searchCollegeOnReddit(searchQuery);
+      }, 1500); // Wait 1.5 seconds after user stops typing
+
+      return () => clearTimeout(timer);
+    } else {
+      // Clear Reddit reviews if search is too short
+      setRedditReviews([]);
+    }
+  }, [searchQuery]);
 
   const loadReviews = async () => {
     setLoading(true);
@@ -130,9 +146,76 @@ export default function CommunityPage() {
           review.content.toLowerCase().includes(query) ||
           review.college?.toLowerCase().includes(query)
       );
+    } else {
+      // Clear Reddit reviews when search is empty
+      setRedditReviews([]);
     }
 
     setFilteredReviews(filtered);
+  };
+
+  const searchCollegeOnReddit = async (collegeName: string) => {
+    setLoadingReddit(true);
+    try {
+      console.log(`🔍 Searching Reddit for: ${collegeName}`);
+      
+      // Must use API route to avoid CORS issues (Reddit blocks browser requests)
+      const response = await fetch('/api/reddit-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ collegeName }),
+      }).catch(err => {
+        console.error('Fetch error:', err);
+        throw new Error(`Network error: ${err.message}`);
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response not OK:', response.status, errorText);
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data);
+      const reviews = data.reviews || [];
+      
+      console.log(`📊 Found ${reviews.length} Reddit reviews for ${collegeName}`);
+      
+      // Convert Reddit reviews to RedditPost format for display
+      const redditPosts: RedditPost[] = reviews.map((review: any) => ({
+        id: review.id,
+        title: review.post_title,
+        text: review.content,
+        author: review.author,
+        subreddit: review.subreddit,
+        url: review.post_url,
+        score: review.score,
+        numComments: review.num_comments,
+        created: review.created_utc,
+        sentiment: review.sentiment === 'mixed' ? 'neutral' : review.sentiment,
+        category: review.topics[0] || 'General'
+      }));
+      
+      setRedditReviews(redditPosts);
+      
+      if (reviews.length > 0) {
+        toast({
+          title: `Found ${reviews.length} Reddit reviews`,
+          description: `Showing reviews for ${collegeName} from Reddit`,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching Reddit reviews:', error);
+      toast({
+        title: 'Could not load Reddit reviews',
+        description: 'Please try again later',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingReddit(false);
+    }
   };
 
   const handleSubmitReview = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -234,7 +317,14 @@ export default function CommunityPage() {
               Real student experiences from KCET, NEET, JEE, COMEDK, GATE & colleges
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => router.push('/colleges')}
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            >
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Find Your College
+            </Button>
             <Button
               onClick={() => setIsSubmitModalOpen(true)}
               className="bg-blue-600 hover:bg-blue-700"
@@ -255,6 +345,40 @@ export default function CommunityPage() {
               Load from Reddit
             </Button>
           </div>
+        </motion.div>
+
+        {/* College Recommendations Banner */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="bg-gradient-to-r from-purple-900/30 via-blue-900/30 to-purple-900/30 border-purple-500/30 backdrop-blur-sm overflow-hidden relative">
+            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+            <CardContent className="p-6 relative">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl">
+                    <GraduationCap className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">
+                      🎓 Find Your Perfect College
+                    </h3>
+                    <p className="text-slate-300 text-sm">
+                      Get AI-powered recommendations based on your exam scores with real student reviews from Reddit
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => router.push('/colleges')}
+                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold px-6 whitespace-nowrap"
+                >
+                  Start Finding →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Filters */}
@@ -285,21 +409,56 @@ export default function CommunityPage() {
 
               {/* Search */}
               <div className="space-y-2">
-                <label className="text-sm text-slate-400">Search</label>
+                <label className="text-sm text-slate-400">
+                  Search {loadingReddit && <span className="text-orange-500 text-xs ml-2">Fetching Reddit reviews...</span>}
+                </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  {loadingReddit ? (
+                    <RefreshCw className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 animate-spin" />
+                  ) : (
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  )}
                   <Input
                     type="text"
-                    placeholder="Search reviews, colleges..."
+                    placeholder="Search college name (e.g., RVCE, IIT Bombay, NITK)..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-slate-800/50 border-slate-700 text-white"
+                    className={`pl-10 bg-slate-800/50 border-slate-700 text-white ${loadingReddit ? 'border-orange-500' : ''}`}
                   />
+                  {searchQuery && redditReviews.length > 0 && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Badge className="bg-orange-600 text-white text-xs">
+                        {redditReviews.length} Reddit reviews
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Search Hint */}
+        {searchQuery.trim() && !loadingReddit && redditReviews.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="bg-gradient-to-r from-orange-900/30 via-red-900/30 to-orange-900/30 border-orange-500/30">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Radio className="w-5 h-5 text-orange-400 animate-pulse" />
+                  <div>
+                    <p className="text-white font-medium">Searching Reddit for "{searchQuery}"...</p>
+                    <p className="text-slate-400 text-sm">
+                      We'll fetch authentic student reviews from Reddit communities
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Reviews List */}
         <div className="space-y-4">
@@ -312,7 +471,7 @@ export default function CommunityPage() {
               />
               <p className="text-slate-400 mt-4">Loading reviews...</p>
             </div>
-          ) : filteredReviews.length === 0 ? (
+          ) : filteredReviews.length === 0 && !searchQuery.trim() ? (
             <Card className="bg-slate-900/50 border-slate-700/50">
               <CardContent className="p-12 text-center">
                 <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4" />

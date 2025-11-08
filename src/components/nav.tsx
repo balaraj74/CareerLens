@@ -43,6 +43,7 @@ const allNavItems = [
   { href: '/learning-helper', icon: <Sparkles />, label: 'AI Helper' },
   { href: '/ai-interviewer', icon: <Bot />, label: 'AI Interviewer' },
   { href: '/library-finder', icon: <LibrarySquare />, label: 'Libraries' },
+  { href: '/ebooks', icon: <BookOpen />, label: 'eBooks' },
   { href: '/community', icon: <Users />, label: 'Community' },
   { href: '/resources', icon: <GraduationCap />, label: 'Resources' },
   { href: '/mentors', icon: <MessageSquare />, label: 'Find Mentor' },
