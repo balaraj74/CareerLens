@@ -16,19 +16,77 @@ export interface ParsedResumeText {
 }
 
 /**
- * Parse PDF file using server-side action
+ * Parse PDF file using server-side API route
+ * Uses pdf-parse on Node.js backend to avoid webpack issues
  */
 async function parsePDF(file: File): Promise<string> {
   try {
-    const { parsePDFFromFile } = await import('./resume-parser-server');
+    console.log('Parsing PDF:', file.name, file.type, file.size);
+    
+    // Create form data to send file
     const formData = new FormData();
     formData.append('file', file);
     
-    const text = await parsePDFFromFile(formData);
-    return text;
+    console.log('Sending to API route /api/parse-resume...');
+    
+    // Send to API route for server-side parsing
+    const response = await fetch('/api/parse-resume', {
+      method: 'POST',
+      body: formData,
+    }).catch((fetchError) => {
+      console.error('Fetch error:', fetchError);
+      throw new Error('Unable to connect to PDF parsing service. Please restart the dev server (Ctrl+C, then npm run dev).');
+    });
+    
+    console.log('API Response status:', response.status, response.statusText);
+    
+    // Get response text first
+    const responseText = await response.text();
+    console.log('API Response:', responseText.substring(0, 500));
+    
+    // Try to parse as JSON
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse API response as JSON:', parseError);
+      throw new Error('Invalid response from parsing service. Response: ' + responseText.substring(0, 100));
+    }
+    
+    if (!response.ok) {
+      console.error('API Error:', result);
+      const errorMsg = result.details || result.error || 'Failed to parse PDF';
+      throw new Error(errorMsg);
+    }
+    
+    console.log('PDF parsed successfully. Text length:', result.text?.length || 0, 'Pages:', result.pages);
+    
+    if (!result.text || result.text.trim().length === 0) {
+      throw new Error('No text content found in PDF. It may be a scanned image or corrupted. Try converting to DOCX format.');
+    }
+    
+    return result.text;
   } catch (error) {
     console.error('Error parsing PDF:', error);
-    throw new Error('Failed to parse PDF file');
+    
+    if (error instanceof Error) {
+      // Provide helpful error messages
+      if (error.message.includes('restart the dev server')) {
+        throw error; // Already has helpful message
+      }
+      if (error.message.includes('scanned')) {
+        throw error; // Already has helpful message
+      }
+      if (error.message.includes('password')) {
+        throw new Error('PDF is password-protected. Please remove the password and try again.');
+      }
+      if (error.message.includes('Invalid response')) {
+        throw error; // Already has response details
+      }
+      throw error;
+    }
+    
+    throw new Error('Failed to parse PDF file. Try converting to DOCX or TXT format, or restart the dev server.');
   }
 }
 
@@ -43,10 +101,14 @@ async function parseDOCX(file: File): Promise<string> {
     const mammoth = await import('mammoth');
     const result = await mammoth.extractRawText({ arrayBuffer });
     
+    if (!result.value || result.value.trim().length === 0) {
+      throw new Error('No text content found in DOCX file');
+    }
+    
     return result.value;
   } catch (error) {
     console.error('Error parsing DOCX:', error);
-    throw new Error('Failed to parse DOCX file');
+    throw new Error('Failed to parse DOCX file. Please ensure the file is not corrupted.');
   }
 }
 
@@ -120,38 +182,60 @@ export async function parseResume(file: File): Promise<ParsedResumeText> {
     throw new Error('No file provided');
   }
   
-  const fileType = file.type;
-  let rawText = '';
-  
-  // Parse based on file type
-  if (fileType === 'application/pdf') {
-    rawText = await parsePDF(file);
-  } else if (
-    fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    fileType === 'application/msword'
-  ) {
-    rawText = await parseDOCX(file);
-  } else if (fileType === 'text/plain') {
-    rawText = await file.text();
-  } else {
-    throw new Error('Unsupported file type. Please upload PDF, DOCX, or TXT file.');
+  // Validate file first
+  const validation = validateResumeFile(file);
+  if (!validation.valid) {
+    throw new Error(validation.error || 'Invalid file');
   }
   
-  // Extract sections
-  const sections = extractSections(rawText);
+  const fileType = file.type;
+  const fileName = file.name.toLowerCase();
+  let rawText = '';
   
-  // Calculate metadata
-  const wordCount = rawText.split(/\s+/).filter((word) => word.length > 0).length;
-  const characterCount = rawText.length;
-  
-  return {
-    rawText,
-    sections,
-    metadata: {
-      wordCount,
-      characterCount,
-    },
-  };
+  try {
+    // Parse based on file type
+    if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      rawText = await parsePDF(file);
+    } else if (
+      fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      fileType === 'application/msword' ||
+      fileName.endsWith('.docx') ||
+      fileName.endsWith('.doc')
+    ) {
+      rawText = await parseDOCX(file);
+    } else if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
+      rawText = await file.text();
+    } else {
+      throw new Error(`Unsupported file type: ${fileType}. Please upload PDF, DOCX, or TXT file.`);
+    }
+    
+    // Validate extracted text
+    if (!rawText || rawText.trim().length < 50) {
+      throw new Error('Extracted text is too short. Please ensure your resume has readable content.');
+    }
+    
+    // Extract sections
+    const sections = extractSections(rawText);
+    
+    // Calculate metadata
+    const wordCount = rawText.split(/\s+/).filter((word) => word.length > 0).length;
+    const characterCount = rawText.length;
+    
+    return {
+      rawText,
+      sections,
+      metadata: {
+        wordCount,
+        characterCount,
+      },
+    };
+  } catch (error) {
+    console.error('Resume parsing error:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to parse resume. Please try a different file.');
+  }
 }
 
 /**

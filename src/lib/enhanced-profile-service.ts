@@ -137,14 +137,14 @@ export async function awardXP(
     const carryoverXP = newCurrentXP - profile.nextLevelXP;
     const newNextLevelXP = calculateNextLevelXP(newLevel);
 
-    await updateDoc(doc(db, 'users', userId), {
+    await setDoc(doc(db, 'users', userId), {
       level: newLevel,
       currentXP: carryoverXP,
       totalXP: newTotalXP,
       nextLevelXP: newNextLevelXP,
       careerStage: getCareerStage(newLevel),
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
 
     // Log achievement
     await logActivity(db, userId, 'level_up', {
@@ -152,11 +152,11 @@ export async function awardXP(
       reason,
     });
   } else {
-    await updateDoc(doc(db, 'users', userId), {
+    await setDoc(doc(db, 'users', userId), {
       currentXP: newCurrentXP,
       totalXP: newTotalXP,
       updatedAt: serverTimestamp(),
-    });
+    }, { merge: true });
   }
 
   return { leveledUp, newLevel };
@@ -184,10 +184,10 @@ export async function completeDailyGoal(
     await awardXP(db, userId, completedGoal.xpReward, `Completed goal: ${completedGoal.text}`);
   }
 
-  await updateDoc(doc(db, 'users', userId), {
+  await setDoc(doc(db, 'users', userId), {
     dailyGoals: updatedGoals,
     updatedAt: serverTimestamp(),
-  });
+  }, { merge: true });
 }
 
 /**
@@ -211,10 +211,10 @@ export async function unlockAchievement(
       : achievement
   );
 
-  await updateDoc(doc(db, 'users', userId), {
+  await setDoc(doc(db, 'users', userId), {
     achievements: updatedAchievements,
     updatedAt: serverTimestamp(),
-  });
+  }, { merge: true });
 
   // Award XP for unlocking achievement
   await awardXP(db, userId, 100, `Unlocked achievement: ${achievementId}`);
@@ -251,10 +251,10 @@ export async function updateProjectStatus(
     return project;
   });
 
-  await updateDoc(doc(db, 'users', userId), {
+  await setDoc(doc(db, 'users', userId), {
     projects: updatedProjects,
     updatedAt: serverTimestamp(),
-  });
+  }, { merge: true });
 
   // Award XP if completed
   const completedProject = updatedProjects.find((p) => p.id === projectId);
@@ -298,11 +298,11 @@ export async function updateStreak(db: Firestore, userId: string): Promise<numbe
     }
   }
 
-  await updateDoc(doc(db, 'users', userId), {
+  await setDoc(doc(db, 'users', userId), {
     streak: newStreak,
     lastActivityDate: new Date().toISOString(),
     updatedAt: serverTimestamp(),
-  });
+  }, { merge: true });
 
   return newStreak;
 }
@@ -352,10 +352,10 @@ export async function calculateAnalytics(
     ),
   };
 
-  await updateDoc(doc(db, 'users', userId), {
+  await setDoc(doc(db, 'users', userId), {
     analytics,
     updatedAt: serverTimestamp(),
-  });
+  }, { merge: true });
 }
 
 /**

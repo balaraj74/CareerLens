@@ -20,13 +20,22 @@ export async function aiInterviewerFollowup(input: AiInterviewerInput): Promise<
     return aiInterviewerFlow(input);
 }
 
-const systemPrompt = `You are "Alex", an expert career coach and interviewer. Your persona is professional, encouraging, and insightful. Your goal is to conduct a realistic and helpful mock interview.
-You will be given the job description, and the entire conversation history.
-Your task is to analyze the user's most recent answer and generate the next logical follow-up question or conversational turn.
-Keep your responses concise, natural, and to the point, ideally 1-2 sentences.
-The interview should progress naturally. After about 5-7 questions, you should conclude the interview.
-When you decide the interview is over, your response MUST be a concluding statement (e.g., "That's all the questions I have for you. You did a great job.") and you MUST set the "isEndOfInterview" flag to true.
-At the very end of the entire interview, you will provide a comprehensive performance report. The report should have a headline "## Performance Report" and include feedback on clarity, confidence, use of examples (like the STAR method), and suggestions for improvement.
+const systemPrompt = `You are "Alex", a friendly and experienced interviewer conducting a conversational interview. 
+
+KEY BEHAVIORS:
+- Listen carefully to what the candidate says and respond DIRECTLY to their specific answers
+- Ask follow-up questions that dig deeper into what they just mentioned
+- Be natural and conversational, like you're having a real dialogue
+- Reference specific details from their previous answers
+- Show genuine interest in their responses
+- Use phrases like "That's interesting...", "Can you tell me more about...", "You mentioned X, could you elaborate..."
+- Keep questions short and focused (1-2 sentences max)
+- Vary your question types: clarifying questions, behavioral questions, situational questions
+- After 5-7 meaningful exchanges, naturally conclude the interview
+
+IMPORTANT: Never ask generic questions that ignore what the candidate just said. Always build on the conversation.
+
+When concluding (after 5-7 questions), say something warm like "Thank you for sharing all of that with me. I think we have a good sense of your background now. Is there anything you'd like to ask me before we wrap up?" Then set isEndOfInterview to true.
 `;
 
 const aiInterviewerFollowupPrompt = ai.definePrompt({
@@ -49,22 +58,54 @@ export const aiInterviewerFlow = ai.defineFlow(
     outputSchema: AiInterviewerFlowOutputSchema,
   },
   async (input) => {
-    const { transcript } = input;
+    const { transcript, jobDescription } = input;
 
-    const history = transcript.map((item: TranscriptItem) => ({
-      role: item.speaker === 'user' ? 'user' : 'model',
-      content: [{ text: item.text }],
-    }));
+    // Build the conversation history with proper context
+    let conversationContext = `You are conducting an interview for the role: ${jobDescription || 'Software Engineer'}.\n\n`;
+    conversationContext += "Conversation so far:\n";
+    
+    transcript.forEach((item: TranscriptItem, index: number) => {
+      if (item.speaker === 'ai') {
+        conversationContext += `Interviewer: ${item.text}\n`;
+      } else {
+        conversationContext += `Candidate: ${item.text}\n`;
+      }
+    });
+
+    // Get the last user response to understand context
+    const lastUserResponse = transcript.filter(item => item.speaker === 'user').pop()?.text || '';
+    
+    // Count how many questions have been asked
+    const questionCount = transcript.filter(item => item.speaker === 'ai').length;
+    
+    // Build a dynamic prompt that responds to what the user actually said
+    const dynamicPrompt = `${conversationContext}
+
+Based on the candidate's last response: "${lastUserResponse}"
+
+${questionCount >= 5 ? 'You have asked several questions. Consider wrapping up the interview soon with a concluding statement.' : 'Generate a thoughtful, natural follow-up question that directly relates to what the candidate just said. Ask for specific examples, clarifications, or dive deeper into their experience.'}
+
+Respond naturally as if you're having a real conversation. Reference specific things the candidate mentioned. Be engaging and conversational.
+
+Question count so far: ${questionCount}
+
+Return a JSON object with:
+- followUp: Your next question or statement (be conversational and specific to their answer)
+- isEndOfInterview: ${questionCount >= 6 ? 'true if you want to conclude, false to continue' : 'false (continue the interview)'}`;
 
     const llmResponse = await ai.generate({
-        prompt: `Job Description: ${input.jobDescription || 'Not provided.'}. Based on the last user response, ask the next question or conclude the interview.`,
-        history,
+        prompt: dynamicPrompt,
         model: 'googleai/gemini-2.5-flash-lite',
-        system: systemPrompt,
+        config: {
+          temperature: 0.8, // Higher temperature for more natural, varied responses
+          topK: 40,
+          topP: 0.95,
+        },
         output: {
+            format: 'json',
             schema: z.object({
-                followUp: z.string().describe("The AI's next question or statement in the conversation."),
-                isEndOfInterview: z.boolean().describe("Set to true only when the interview should be concluded."),
+                followUp: z.string().describe("Your next question or statement, directly responding to what the candidate said."),
+                isEndOfInterview: z.boolean().describe("Set to true only when concluding the interview after 5-7 questions."),
             })
         }
     });
@@ -77,7 +118,8 @@ export const aiInterviewerFlow = ai.defineFlow(
 
     // Return only text and end-of-interview flag. Audio is handled client-side.
     return {
-        ...output,
+        followUp: output.followUp,
+        isEndOfInterview: output.isEndOfInterview,
     };
   }
 );
