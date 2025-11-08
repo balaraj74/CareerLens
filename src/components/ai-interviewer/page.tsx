@@ -51,6 +51,19 @@ export function AiInterviewerPage() {
             userVideoRef.current.srcObject = stream;
         }
     }, [stream]);
+
+    // Recovery mechanism: if we're in an interview, not speaking, not awaiting AI, but not listening - restart
+    useEffect(() => {
+        if (interviewState === 'in_progress' && !isSpeaking && !isAwaitingAI && !listening && browserSupportsSpeechRecognition) {
+            console.log('Recovery: Detected we should be listening but are not. Restarting...');
+            const timer = setTimeout(() => {
+                SpeechRecognition.startListening({ continuous: true })
+                    .then(() => console.log('Recovery listening started'))
+                    .catch(err => console.error('Recovery failed:', err));
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [interviewState, isSpeaking, isAwaitingAI, listening, browserSupportsSpeechRecognition]);
     
     // This effect handles automatically sending the user's response after a pause in speech.
     useEffect(() => {
@@ -58,11 +71,13 @@ export function AiInterviewerPage() {
             clearTimeout(speechTimeoutRef.current);
         }
 
-        // Only auto-send if we have some speech and we're actively listening
-        if (speechTranscript && listening && !isAwaitingAI && !isSpeaking) {
+        // Only auto-send if we have some speech and we're actively listening and in progress
+        if (speechTranscript && listening && !isAwaitingAI && !isSpeaking && interviewState === 'in_progress') {
+            console.log('Setting timeout for user response:', speechTranscript);
             speechTimeoutRef.current = setTimeout(() => {
+                console.log('Timeout triggered, handling user response');
                 handleUserResponse();
-            }, 1500); // Reduced to 1.5 seconds for faster response
+            }, 2000); // 2 seconds pause before sending
         }
 
         return () => {
@@ -71,7 +86,7 @@ export function AiInterviewerPage() {
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [speechTranscript, listening, isAwaitingAI, isSpeaking]);
+    }, [speechTranscript, listening, isAwaitingAI, isSpeaking, interviewState]);
 
     // --- Core Functions ---
     
@@ -99,17 +114,21 @@ export function AiInterviewerPage() {
         setIsAwaitingAI(false);
 
         if (response.success && response.data) {
+            console.log('Interview started, first question:', response.data.firstQuestion.substring(0, 50));
             setTranscript([{ speaker: 'ai', text: response.data.firstQuestion, timestamp: new Date().toISOString() }]);
             speak(response.data.firstQuestion);
         } else {
+            console.error('Failed to start interview:', response.error);
             toast({ variant: 'destructive', title: 'Could not start interview.', description: response.error });
             setInterviewState('idle');
         }
     };
 
     const speak = (text: string, onEndCallback?: () => void) => {
+        console.log('Speaking AI response:', text.substring(0, 50));
         // Stop listening while AI is speaking
         if (listening) {
+          console.log('Stopping listening for AI speech');
           SpeechRecognition.stopListening();
         }
         if (window.speechSynthesis.speaking) {
@@ -125,23 +144,29 @@ export function AiInterviewerPage() {
         utterance.volume = 1.0;
         
         utterance.onstart = () => {
+            console.log('AI started speaking');
             setIsSpeaking(true);
         };
 
         utterance.onend = () => {
+            console.log('AI finished speaking');
             setIsSpeaking(false);
             // Immediately start listening again after AI finishes speaking
             setTimeout(() => {
-                if (browserSupportsSpeechRecognition && !listening) {
-                    SpeechRecognition.startListening({ continuous: true });
-                }
                 if (onEndCallback) {
+                    console.log('Executing callback (might end interview)');
                     onEndCallback();
+                } else if (browserSupportsSpeechRecognition) {
+                    console.log('Restarting listening after AI speech');
+                    SpeechRecognition.startListening({ continuous: true })
+                        .then(() => console.log('Listening restarted successfully'))
+                        .catch(err => console.error('Failed to restart listening:', err));
                 }
-            }, 300); // Small delay to ensure smooth transition
+            }, 500); // Slightly longer delay for smoother transition
         };
         
         utterance.onerror = (e) => {
+            console.error('Speech synthesis error:', e.error);
             setIsSpeaking(false);
              toast({
                 variant: 'destructive',
@@ -150,24 +175,30 @@ export function AiInterviewerPage() {
             });
             // Still restart listening on error
             setTimeout(() => {
-                if (browserSupportsSpeechRecognition && !listening) {
-                    SpeechRecognition.startListening({ continuous: true });
-                }
                 if (onEndCallback) {
                     onEndCallback();
+                } else if (browserSupportsSpeechRecognition) {
+                    console.log('Restarting listening after error');
+                    SpeechRecognition.startListening({ continuous: true })
+                        .catch(err => console.error('Failed to restart listening:', err));
                 }
-            }, 300);
+            }, 500);
         };
 
         window.speechSynthesis.speak(utterance);
     };
 
     const handleUserResponse = async () => {
+        console.log('handleUserResponse called');
         if (speechTimeoutRef.current) {
             clearTimeout(speechTimeoutRef.current);
         }
-        if (!speechTranscript.trim() || isAwaitingAI) return;
+        if (!speechTranscript.trim() || isAwaitingAI) {
+            console.log('Skipping response - empty or already awaiting AI');
+            return;
+        }
 
+        console.log('Stopping listening and processing user response:', speechTranscript);
         SpeechRecognition.stopListening();
         setIsAwaitingAI(true);
 
@@ -177,6 +208,7 @@ export function AiInterviewerPage() {
         const newTranscript: TranscriptItem[] = [...transcript, { speaker: 'user', text: userResponseText, timestamp: new Date().toISOString() }];
         setTranscript(newTranscript);
 
+        console.log('Getting AI followup with transcript length:', newTranscript.length);
         const response = await getAiInterviewerFollowup({
             transcript: newTranscript,
             jobDescription: 'Software Engineer',
@@ -186,18 +218,23 @@ export function AiInterviewerPage() {
         setIsAwaitingAI(false);
 
         if (response.success && response.data) {
+             console.log('AI response received:', response.data.followUp.substring(0, 50));
              setTranscript(prev => [...prev, { speaker: 'ai', text: response.data!.followUp, timestamp: new Date().toISOString() }]);
              
              if (response.data.isEndOfInterview) {
+                 console.log('Interview ending');
                  speak(response.data.followUp, endInterview);
              } else {
+                 console.log('Continuing interview, speaking AI response');
                  speak(response.data.followUp);
              }
         } else {
+            console.error('AI response failed:', response.error);
             toast({ variant: 'destructive', title: 'Error getting response', description: response.error });
             // If AI fails, restart listening
             setTimeout(() => {
                 if (!listening && browserSupportsSpeechRecognition) {
+                    console.log('Restarting listening after error');
                     SpeechRecognition.startListening({ continuous: true });
                 }
             }, 500);

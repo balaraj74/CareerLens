@@ -25,6 +25,7 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CareerEvent | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [stats, setStats] = useState({
     completedToday: 0,
     totalToday: 0,
@@ -149,11 +150,82 @@ export default function CalendarPage() {
   };
 
   const addSuggestionToCalendar = (suggestion: EventSuggestion) => {
-    toast({
-      title: 'Event Added',
-      description: `${suggestion.summary} has been added to your calendar`,
+    // Calculate event time based on suggestion
+    const now = new Date();
+    let startTime = new Date(now);
+    
+    // Set time based on suggested time
+    if (suggestion.suggestedTime === 'morning') {
+      startTime.setHours(9, 0, 0, 0);
+    } else if (suggestion.suggestedTime === 'afternoon') {
+      startTime.setHours(14, 0, 0, 0);
+    } else if (suggestion.suggestedTime === 'evening') {
+      startTime.setHours(18, 0, 0, 0);
+    } else {
+      // Default to next available hour
+      startTime.setHours(now.getHours() + 1, 0, 0, 0);
+    }
+    
+    // If time has passed today, schedule for tomorrow
+    if (startTime < now) {
+      startTime.setDate(startTime.getDate() + 1);
+    }
+    
+    const endTime = new Date(startTime);
+    endTime.setMinutes(endTime.getMinutes() + suggestion.duration);
+    
+    // Create new event from suggestion
+    const newEvent: CareerEvent = {
+      id: `event-${Date.now()}`,
+      summary: suggestion.summary,
+      description: suggestion.description + '\n\n[AI Suggested] ' + suggestion.reasoning,
+      type: suggestion.type,
+      priority: suggestion.priority,
+      completed: false,
+      aiSuggested: true,
+      start: {
+        dateTime: startTime.toISOString(),
+        timeZone: 'UTC',
+      },
+      end: {
+        dateTime: endTime.toISOString(),
+        timeZone: 'UTC',
+      },
+    };
+    
+    // Add to events list
+    console.log('Adding AI suggestion to calendar:', newEvent);
+    setEvents((prev) => {
+      const updated = [...prev, newEvent].sort((a, b) => 
+        new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime()
+      );
+      console.log('Updated events list:', updated.length, 'events');
+      return updated;
     });
+    
+    // If it's for today, add to today's tasks
+    const isToday = startTime.toDateString() === new Date().toDateString();
+    if (isToday) {
+      console.log('Event is for today, adding to today\'s tasks');
+      setTodayTasks((prev) => [...prev, newEvent]);
+      setStats((prev) => ({
+        ...prev,
+        totalToday: prev.totalToday + 1,
+      }));
+    }
+    
+    // Remove from suggestions
     setSuggestions((sug) => sug.filter((s) => s !== suggestion));
+    
+    toast({
+      title: 'Event Added ✅',
+      description: `${suggestion.summary} scheduled for ${startTime.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })}`,
+    });
   };
 
   const handleEventClick = (event: CareerEvent) => {
@@ -199,6 +271,61 @@ export default function CalendarPage() {
         completedToday: Math.max(0, prev.completedToday - 1),
       }));
     }
+  };
+
+  const handleCreateNewEvent = () => {
+    // Create a new event at the selected date or today
+    const startTime = new Date(selectedDate);
+    startTime.setHours(9, 0, 0, 0);
+    
+    const endTime = new Date(startTime);
+    endTime.setHours(10, 0, 0, 0);
+    
+    const newEvent: CareerEvent = {
+      id: `event-${Date.now()}`,
+      summary: 'New Event',
+      description: 'Click to add description',
+      type: 'task',
+      priority: 'medium',
+      completed: false,
+      start: {
+        dateTime: startTime.toISOString(),
+        timeZone: 'UTC',
+      },
+      end: {
+        dateTime: endTime.toISOString(),
+        timeZone: 'UTC',
+      },
+    };
+    
+    console.log('Creating new manual event:', newEvent);
+    setEvents((prev) => {
+      const updated = [...prev, newEvent].sort((a, b) => 
+        new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime()
+      );
+      console.log('Updated events list:', updated.length, 'events');
+      return updated;
+    });
+    
+    // If it's for today, add to today's tasks
+    const isToday = startTime.toDateString() === new Date().toDateString();
+    if (isToday) {
+      console.log('New event is for today, adding to today\'s tasks');
+      setTodayTasks((prev) => [...prev, newEvent]);
+      setStats((prev) => ({
+        ...prev,
+        totalToday: prev.totalToday + 1,
+      }));
+    }
+    
+    // Open the event modal for editing
+    setSelectedEvent(newEvent);
+    setIsEventModalOpen(true);
+    
+    toast({
+      title: 'Event Created ✅',
+      description: 'Click the event to edit details',
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -273,7 +400,10 @@ export default function CalendarPage() {
               <RefreshCw className="w-4 h-4 mr-2" />
               Sync
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button 
+              onClick={handleCreateNewEvent}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               <Plus className="w-4 h-4 mr-2" />
               New Event
             </Button>
