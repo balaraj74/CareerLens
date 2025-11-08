@@ -27,6 +27,15 @@ import {
   type SearchFilters 
 } from '@/lib/services/internet-archive-service';
 import {
+  searchGoogleBooks,
+  getPopularGoogleBooks,
+  getFreeEbooks,
+  GOOGLE_BOOKS_CATEGORIES,
+  GOOGLE_BOOKS_LANGUAGES,
+  type GoogleBook,
+  type GoogleBooksSearchFilters
+} from '@/lib/services/google-books-service';
+import {
   getBookmarkedBooks,
   addBookmark,
   removeBookmark,
@@ -38,6 +47,7 @@ import {
 export default function EBooksPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [books, setBooks] = useState<Book[]>([]);
+  const [googleBooks, setGoogleBooks] = useState<GoogleBook[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -46,7 +56,8 @@ export default function EBooksPage() {
   const [bookmarkedBooks, setBookmarkedBooks] = useState<Book[]>([]);
   const [recommendations, setRecommendations] = useState<Book[]>([]);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'search' | 'bookmarks' | 'trending'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'bookmarks' | 'trending' | 'google'>('search');
+  const [bookSource, setBookSource] = useState<'archive' | 'google' | 'both'>('both');
 
   useEffect(() => {
     loadInitialData();
@@ -55,12 +66,14 @@ export default function EBooksPage() {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const [popular, history] = await Promise.all([
+      const [popular, googlePopular, history] = await Promise.all([
         getPopularBooks(),
+        getPopularGoogleBooks(),
         Promise.resolve(getSearchHistory())
       ]);
       
       setBooks(popular);
+      setGoogleBooks(googlePopular);
       setSearchHistory(history);
       setBookmarkedBooks(getBookmarkedBooks());
       
@@ -85,9 +98,19 @@ export default function EBooksPage() {
       addToSearchHistory(searchQuery);
       setSearchHistory(getSearchHistory());
       
-      const { books: results, total } = await searchBooks(searchQuery, filters, currentPage);
-      setBooks(results);
-      setTotalResults(total);
+      if (bookSource === 'archive' || bookSource === 'both') {
+        const { books: results, total } = await searchBooks(searchQuery, filters, currentPage);
+        setBooks(results);
+        setTotalResults(total);
+      }
+      
+      if (bookSource === 'google' || bookSource === 'both') {
+        const { books: googleResults, totalItems } = await getFreeEbooks(searchQuery, (currentPage - 1) * 20);
+        setGoogleBooks(googleResults);
+        if (bookSource === 'google') {
+          setTotalResults(totalItems);
+        }
+      }
     } catch (error) {
       console.error('Error searching books:', error);
     } finally {
@@ -122,8 +145,47 @@ export default function EBooksPage() {
             </h1>
           </div>
           <p className="text-gray-400 text-lg">
-            Search millions of free books from Internet Archive
+            Search millions of free books from Internet Archive & Google Books
           </p>
+        </motion.div>
+
+        {/* Source Selector */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="flex justify-center gap-2"
+        >
+          <button
+            onClick={() => setBookSource('both')}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              bookSource === 'both'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                : 'bg-white/10 border border-purple-500/30 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            All Sources
+          </button>
+          <button
+            onClick={() => setBookSource('archive')}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              bookSource === 'archive'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                : 'bg-white/10 border border-purple-500/30 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            Internet Archive
+          </button>
+          <button
+            onClick={() => setBookSource('google')}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              bookSource === 'google'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                : 'bg-white/10 border border-purple-500/30 text-gray-300 hover:bg-white/20'
+            }`}
+          >
+            Google Books
+          </button>
         </motion.div>
 
         {/* Search Bar */}
@@ -307,7 +369,60 @@ export default function EBooksPage() {
         )}
 
         {/* Books Grid */}
-        {!loading && displayBooks.length > 0 && (
+        {!loading && (books.length > 0 || googleBooks.length > 0) && activeTab === 'search' && (
+          <div className="space-y-8">
+            {/* Internet Archive Books */}
+            {(bookSource === 'archive' || bookSource === 'both') && books.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <BookOpen className="w-6 h-6 text-purple-400" />
+                  Internet Archive ({books.length})
+                </h2>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                >
+                  {books.map((book, idx) => (
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      isBookmarked={checkIsBookmarked(book.id)}
+                      onBookmark={() => handleBookmark(book)}
+                      delay={idx * 0.05}
+                    />
+                  ))}
+                </motion.div>
+              </div>
+            )}
+
+            {/* Google Books */}
+            {(bookSource === 'google' || bookSource === 'both') && googleBooks.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <BookOpen className="w-6 h-6 text-pink-400" />
+                  Google Books ({googleBooks.length})
+                </h2>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                >
+                  {googleBooks.map((book, idx) => (
+                    <GoogleBookCard
+                      key={book.id}
+                      book={book}
+                      delay={idx * 0.05}
+                    />
+                  ))}
+                </motion.div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Bookmarks Tab */}
+        {!loading && activeTab === 'bookmarks' && displayBooks.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -325,14 +440,33 @@ export default function EBooksPage() {
           </motion.div>
         )}
 
+        {/* Trending Tab */}
+        {!loading && activeTab === 'trending' && books.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {books.map((book, idx) => (
+              <BookCard
+                key={book.id}
+                book={book}
+                isBookmarked={checkIsBookmarked(book.id)}
+                onBookmark={() => handleBookmark(book)}
+                delay={idx * 0.05}
+              />
+            ))}
+          </motion.div>
+        )}
+
         {/* Empty State */}
-        {!loading && displayBooks.length === 0 && (
+        {!loading && displayBooks.length === 0 && googleBooks.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p className="text-lg">
               {activeTab === 'bookmarks' 
                 ? 'No bookmarked books yet. Start exploring!' 
-                : 'No books found. Try a different search.'}
+                : 'No books found. Try a different search or source.'}
             </p>
           </div>
         )}
@@ -461,6 +595,109 @@ function BookCard({
             {book.format[0]}
           </span>
         </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Google Book Card Component
+function GoogleBookCard({ 
+  book, 
+  delay 
+}: { 
+  book: GoogleBook; 
+  delay: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      className="bg-white/5 border border-pink-500/20 rounded-xl overflow-hidden hover:border-pink-500/50 transition-all group"
+    >
+      {/* Book Cover */}
+      <div className="relative h-64 bg-gradient-to-br from-pink-900/20 to-purple-900/20">
+        <img
+          src={book.thumbnail || '/placeholder-book.png'}
+          alt={book.title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/placeholder-book.png';
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+          <div className="flex gap-2">
+            {book.previewLink && (
+              <a
+                href={book.previewLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg text-sm font-semibold flex items-center gap-1"
+              >
+                <Eye className="w-4 h-4" />
+                Preview
+              </a>
+            )}
+            {book.infoLink && (
+              <a
+                href={book.infoLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-semibold flex items-center gap-1"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Info
+              </a>
+            )}
+          </div>
+        </div>
+        {book.isEbook && (
+          <div className="absolute top-2 right-2 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">
+            FREE
+          </div>
+        )}
+      </div>
+
+      {/* Book Info */}
+      <div className="p-4 space-y-2">
+        <h3 className="text-white font-bold line-clamp-2 text-lg">
+          {book.title}
+        </h3>
+        <p className="text-pink-400 text-sm line-clamp-1">
+          {book.authors.join(', ')}
+        </p>
+        {book.description && (
+          <p className="text-gray-400 text-sm line-clamp-2">
+            {book.description}
+          </p>
+        )}
+
+        {/* Metadata */}
+        <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-white/10">
+          {book.averageRating && (
+            <span className="flex items-center gap-1">
+              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+              {book.averageRating.toFixed(1)}
+            </span>
+          )}
+          {book.pageCount && <span>{book.pageCount} pages</span>}
+          {book.publishedDate && (
+            <span>{new Date(book.publishedDate).getFullYear()}</span>
+          )}
+        </div>
+        
+        {book.categories && book.categories.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-2">
+            {book.categories.slice(0, 2).map((cat, idx) => (
+              <span
+                key={idx}
+                className="px-2 py-1 bg-pink-500/20 rounded text-xs text-pink-300"
+              >
+                {cat}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   );
