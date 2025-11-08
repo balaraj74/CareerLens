@@ -231,7 +231,39 @@ export function ResumeEvaluator({ onAnalysisComplete }: ResumeEvaluatorProps) {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p>{error}</p>
+                    
+                    {error.includes('restart') && (
+                      <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs">
+                        <strong className="text-yellow-600">Quick Fix:</strong>
+                        <ol className="list-decimal list-inside mt-1 space-y-1">
+                          <li>Stop the dev server (Ctrl+C in terminal)</li>
+                          <li>Run: <code className="bg-black/20 px-1 rounded">npm run dev</code></li>
+                          <li>Refresh this page and try again</li>
+                        </ol>
+                      </div>
+                    )}
+                    
+                    {error.includes('scanned') && (
+                      <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded text-xs">
+                        <strong className="text-blue-600">Tip:</strong> If your PDF is a scanned image, try:
+                        <ul className="list-disc list-inside mt-1 space-y-1">
+                          <li>Converting it to DOCX format</li>
+                          <li>Copying text and saving as TXT file</li>
+                          <li>Using an OCR tool to extract text first</li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {!error.includes('restart') && !error.includes('scanned') && (
+                      <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded text-xs">
+                        <strong className="text-blue-600">Alternative:</strong> Try uploading as DOCX or TXT format instead.
+                      </div>
+                    )}
+                  </div>
+                </AlertDescription>
               </Alert>
             )}
 

@@ -16,23 +16,29 @@ import {
 } from '@/ai/schemas/ai-interviewer';
 
 export async function generateFirstInterviewQuestion(
-  input: Omit<AiInterviewerInput, 'userProfile'>
+  input: AiInterviewerInput
 ): Promise<AiInterviewerOutput> {
   return aiInterviewerFlow(input);
 }
 
 const prompt = ai.definePrompt({
   name: 'aiInterviewerPrompt',
-  input: { schema: AiInterviewerInputSchema.omit({ userProfile: true }) },
+  input: { schema: AiInterviewerInputSchema },
   output: { schema: AiInterviewerOutputSchema },
   prompt: `
-    You are a professional and friendly HR interviewer for a company called CareerLens.
-    Your task is to start a mock interview with a candidate.
+    You are "Alex", a warm and professional interviewer at CareerLens.
+    You're about to start a conversational interview with a candidate.
 
-    The interview type is: '{{interviewType}}'.
+    Interview type: '{{interviewType}}'
+    Role: {{jobDescription}}
 
-    Generate a warm, welcoming opening line, and then ask the first question.
-    The question should be a classic opener like "Tell me about yourself" or "Why are you interested in this role?".
+    Start with a friendly greeting and a natural opening question. Be conversational and welcoming.
+    Examples of good openers:
+    - "Hi there! Thanks for joining me today. I'd love to start by hearing a bit about yourself and what brings you here."
+    - "Welcome! Before we dive in, could you walk me through your background and what interests you about this role?"
+    - "Great to meet you! Let's start with you telling me about your journey so far and why you're excited about this opportunity."
+
+    Keep it natural and conversational - like you're starting a real conversation, not reading from a script.
 
     Return a single JSON object with the key "firstQuestion".
   `,
@@ -42,7 +48,7 @@ const prompt = ai.definePrompt({
 const aiInterviewerFlow = ai.defineFlow(
   {
     name: 'aiInterviewerFlow',
-    inputSchema: AiInterviewerInputSchema.omit({ userProfile: true }),
+    inputSchema: AiInterviewerInputSchema,
     outputSchema: AiInterviewerOutputSchema,
   },
   async (input) => {

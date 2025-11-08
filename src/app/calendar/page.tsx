@@ -13,6 +13,7 @@ import type { CareerEvent } from '@/lib/google-calendar-service';
 import type { EventSuggestion } from '@/lib/ai-calendar-suggestions';
 import { CalendarGrid } from '@/components/calendar/calendar-grid';
 import { EventDetailModal } from '@/components/calendar/event-detail-modal';
+import { EventEditModal } from '@/components/calendar/event-edit-modal';
 
 export default function CalendarPage() {
   const { user } = useAuth();
@@ -25,6 +26,8 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CareerEvent | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [stats, setStats] = useState({
     completedToday: 0,
     totalToday: 0,
@@ -41,9 +44,11 @@ export default function CalendarPage() {
   const loadCalendarData = async () => {
     setLoading(true);
     try {
-      // Simulate loading calendar events
+      // Simulate loading calendar events with events across different months
       // In production, these would call the actual services
+      const today = new Date();
       const mockEvents: CareerEvent[] = [
+        // Today's events
         {
           id: '1',
           summary: 'React Interview Prep',
@@ -52,11 +57,11 @@ export default function CalendarPage() {
           priority: 'high',
           completed: false,
           start: {
-            dateTime: new Date(new Date().setHours(10, 0, 0, 0)).toISOString(),
+            dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 0, 0).toISOString(),
             timeZone: 'UTC',
           },
           end: {
-            dateTime: new Date(new Date().setHours(11, 0, 0, 0)).toISOString(),
+            dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 11, 0, 0).toISOString(),
             timeZone: 'UTC',
           },
         },
@@ -68,11 +73,11 @@ export default function CalendarPage() {
           priority: 'medium',
           completed: false,
           start: {
-            dateTime: new Date(new Date().setHours(14, 0, 0, 0)).toISOString(),
+            dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0, 0).toISOString(),
             timeZone: 'UTC',
           },
           end: {
-            dateTime: new Date(new Date().setHours(15, 30, 0, 0)).toISOString(),
+            dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 15, 30, 0).toISOString(),
             timeZone: 'UTC',
           },
         },
@@ -84,11 +89,110 @@ export default function CalendarPage() {
           priority: 'high',
           completed: true,
           start: {
-            dateTime: new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
+            dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0, 0).toISOString(),
             timeZone: 'UTC',
           },
           end: {
-            dateTime: new Date(new Date().setHours(9, 30, 0, 0)).toISOString(),
+            dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 30, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+        },
+        // Events for other days this month
+        {
+          id: '4',
+          summary: 'Code Review Session',
+          description: 'Review pull requests with team',
+          type: 'meeting',
+          priority: 'medium',
+          completed: false,
+          start: {
+            dateTime: new Date(today.getFullYear(), today.getMonth(), 15, 11, 0, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+          end: {
+            dateTime: new Date(today.getFullYear(), today.getMonth(), 15, 12, 0, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+        },
+        {
+          id: '5',
+          summary: 'System Design Study',
+          description: 'Learn about microservices architecture',
+          type: 'learning',
+          priority: 'high',
+          completed: false,
+          start: {
+            dateTime: new Date(today.getFullYear(), today.getMonth(), 20, 15, 0, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+          end: {
+            dateTime: new Date(today.getFullYear(), today.getMonth(), 20, 17, 0, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+        },
+        // Events for next month
+        {
+          id: '6',
+          summary: 'Technical Interview',
+          description: 'Final round interview with company',
+          type: 'interview',
+          priority: 'high',
+          completed: false,
+          start: {
+            dateTime: new Date(today.getFullYear(), today.getMonth() + 1, 5, 10, 0, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+          end: {
+            dateTime: new Date(today.getFullYear(), today.getMonth() + 1, 5, 11, 30, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+        },
+        {
+          id: '7',
+          summary: 'Project Deadline',
+          description: 'Submit capstone project',
+          type: 'deadline',
+          priority: 'high',
+          completed: false,
+          start: {
+            dateTime: new Date(today.getFullYear(), today.getMonth() + 1, 15, 23, 59, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+          end: {
+            dateTime: new Date(today.getFullYear(), today.getMonth() + 1, 15, 23, 59, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+        },
+        // Events for previous month
+        {
+          id: '8',
+          summary: 'Completed: Data Structures',
+          description: 'Finished studying arrays and linked lists',
+          type: 'learning',
+          priority: 'medium',
+          completed: true,
+          start: {
+            dateTime: new Date(today.getFullYear(), today.getMonth() - 1, 10, 14, 0, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+          end: {
+            dateTime: new Date(today.getFullYear(), today.getMonth() - 1, 10, 16, 0, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+        },
+        {
+          id: '9',
+          summary: 'Team Building Event',
+          description: 'Virtual team games',
+          type: 'networking',
+          priority: 'low',
+          completed: true,
+          start: {
+            dateTime: new Date(today.getFullYear(), today.getMonth() - 1, 20, 16, 0, 0).toISOString(),
+            timeZone: 'UTC',
+          },
+          end: {
+            dateTime: new Date(today.getFullYear(), today.getMonth() - 1, 20, 17, 30, 0).toISOString(),
             timeZone: 'UTC',
           },
         },
@@ -149,11 +253,82 @@ export default function CalendarPage() {
   };
 
   const addSuggestionToCalendar = (suggestion: EventSuggestion) => {
-    toast({
-      title: 'Event Added',
-      description: `${suggestion.summary} has been added to your calendar`,
+    // Calculate event time based on suggestion
+    const now = new Date();
+    let startTime = new Date(now);
+    
+    // Set time based on suggested time
+    if (suggestion.suggestedTime === 'morning') {
+      startTime.setHours(9, 0, 0, 0);
+    } else if (suggestion.suggestedTime === 'afternoon') {
+      startTime.setHours(14, 0, 0, 0);
+    } else if (suggestion.suggestedTime === 'evening') {
+      startTime.setHours(18, 0, 0, 0);
+    } else {
+      // Default to next available hour
+      startTime.setHours(now.getHours() + 1, 0, 0, 0);
+    }
+    
+    // If time has passed today, schedule for tomorrow
+    if (startTime < now) {
+      startTime.setDate(startTime.getDate() + 1);
+    }
+    
+    const endTime = new Date(startTime);
+    endTime.setMinutes(endTime.getMinutes() + suggestion.duration);
+    
+    // Create new event from suggestion
+    const newEvent: CareerEvent = {
+      id: `event-${Date.now()}`,
+      summary: suggestion.summary,
+      description: suggestion.description + '\n\n[AI Suggested] ' + suggestion.reasoning,
+      type: suggestion.type,
+      priority: suggestion.priority,
+      completed: false,
+      aiSuggested: true,
+      start: {
+        dateTime: startTime.toISOString(),
+        timeZone: 'UTC',
+      },
+      end: {
+        dateTime: endTime.toISOString(),
+        timeZone: 'UTC',
+      },
+    };
+    
+    // Add to events list
+    console.log('Adding AI suggestion to calendar:', newEvent);
+    setEvents((prev) => {
+      const updated = [...prev, newEvent].sort((a, b) => 
+        new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime()
+      );
+      console.log('Updated events list:', updated.length, 'events');
+      return updated;
     });
+    
+    // If it's for today, add to today's tasks
+    const isToday = startTime.toDateString() === new Date().toDateString();
+    if (isToday) {
+      console.log('Event is for today, adding to today\'s tasks');
+      setTodayTasks((prev) => [...prev, newEvent]);
+      setStats((prev) => ({
+        ...prev,
+        totalToday: prev.totalToday + 1,
+      }));
+    }
+    
+    // Remove from suggestions
     setSuggestions((sug) => sug.filter((s) => s !== suggestion));
+    
+    toast({
+      title: 'Event Added ✅',
+      description: `${suggestion.summary} scheduled for ${startTime.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })}`,
+    });
   };
 
   const handleEventClick = (event: CareerEvent) => {
@@ -162,10 +337,56 @@ export default function CalendarPage() {
   };
 
   const handleEventEdit = (event: CareerEvent) => {
-    toast({
-      title: 'Edit Event',
-      description: 'Event editing functionality coming soon!',
-    });
+    setSelectedEvent(event);
+    setIsEventModalOpen(false);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEventSave = (updatedEvent: CareerEvent) => {
+    console.log('Saving event:', updatedEvent);
+    
+    // Check if event already exists (updating) or is new (creating)
+    const existingEvent = events.find((e) => e.id === updatedEvent.id);
+    
+    if (existingEvent) {
+      // UPDATE existing event
+      console.log('Updating existing event');
+      setEvents((prev) =>
+        prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e))
+      );
+      setTodayTasks((prev) =>
+        prev.map((e) => (e.id === updatedEvent.id ? updatedEvent : e))
+      );
+      toast({
+        title: 'Event Updated ✅',
+        description: `${updatedEvent.summary} has been updated`,
+      });
+    } else {
+      // CREATE new event
+      console.log('Creating new event');
+      setEvents((prev) => {
+        const updated = [...prev, updatedEvent].sort((a, b) => 
+          new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime()
+        );
+        return updated;
+      });
+      
+      // If it's for today, add to today's tasks
+      const startTime = new Date(updatedEvent.start.dateTime);
+      const isToday = startTime.toDateString() === new Date().toDateString();
+      if (isToday) {
+        setTodayTasks((prev) => [...prev, updatedEvent]);
+        setStats((prev) => ({
+          ...prev,
+          totalToday: prev.totalToday + 1,
+        }));
+      }
+      
+      toast({
+        title: 'Event Created ✅',
+        description: `${updatedEvent.summary} has been added to your calendar`,
+      });
+    }
   };
 
   const handleEventDelete = (event: CareerEvent) => {
@@ -199,6 +420,40 @@ export default function CalendarPage() {
         completedToday: Math.max(0, prev.completedToday - 1),
       }));
     }
+  };
+
+  const handleCreateNewEvent = () => {
+    // Create a new event at the selected date or today
+    const startTime = new Date(selectedDate);
+    startTime.setHours(9, 0, 0, 0);
+    
+    const endTime = new Date(startTime);
+    endTime.setHours(10, 0, 0, 0);
+    
+    const newEvent: CareerEvent = {
+      id: `event-${Date.now()}`,
+      summary: '',
+      description: '',
+      type: 'task',
+      priority: 'medium',
+      completed: false,
+      start: {
+        dateTime: startTime.toISOString(),
+        timeZone: 'UTC',
+      },
+      end: {
+        dateTime: endTime.toISOString(),
+        timeZone: 'UTC',
+      },
+    };
+    
+    console.log('Creating new event template:', newEvent);
+    
+    // Open the EDIT modal so user can fill in details
+    setSelectedEvent(newEvent);
+    setIsEditModalOpen(true);
+    
+    // Don't add to events array yet - wait for user to save
   };
 
   const getPriorityColor = (priority: string) => {
@@ -273,7 +528,10 @@ export default function CalendarPage() {
               <RefreshCw className="w-4 h-4 mr-2" />
               Sync
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button 
+              onClick={handleCreateNewEvent}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               <Plus className="w-4 h-4 mr-2" />
               New Event
             </Button>
@@ -580,6 +838,17 @@ export default function CalendarPage() {
           onEdit={handleEventEdit}
           onDelete={handleEventDelete}
           onToggleComplete={handleToggleComplete}
+        />
+
+        {/* Event Edit Modal */}
+        <EventEditModal
+          event={selectedEvent}
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedEvent(null);
+          }}
+          onSave={handleEventSave}
         />
       </div>
     </div>
