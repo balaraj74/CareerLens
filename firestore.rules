@@ -2,6 +2,12 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Career Intelligence - public read, system write
+    match /careerIntelligence/{docId} {
+      allow read: if true;
+      allow write: if false; // Client-side writes are not allowed
+    }
+
     // Users can only read and write to their own document in the 'users' collection.
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -114,6 +120,46 @@ service cloud.firestore {
     match /colleges/{collegeId} {
       allow read: if true;
       allow write: if request.auth != null;
+    }
+    
+    // Career Updates - authenticated read, system write
+    match /careerUpdates/{updateId} {
+      allow read: if request.auth != null;
+      allow write: if true; // Allow system to cache career updates
+      
+      // Subcollections under careerUpdates
+      match /jobs/{jobId} {
+        allow read: if request.auth != null;
+        allow write: if true; // Allow system to write job data
+      }
+      
+      match /skills/{skillId} {
+        allow read: if request.auth != null;
+        allow write: if true; // Allow system to write skill data
+      }
+      
+      match /certifications/{certId} {
+        allow read: if request.auth != null;
+        allow write: if true; // Allow system to write certification data
+      }
+    }
+    
+    // Trending Skills - authenticated read, system write
+    match /trendingSkills/{skillId} {
+      allow read: if request.auth != null;
+      allow write: if true; // Allow system to cache skill trends
+    }
+    
+    // Certification Opportunities - authenticated read, system write
+    match /certificationOpportunities/{certId} {
+      allow read: if request.auth != null;
+      allow write: if true; // Allow system to cache certifications
+    }
+    
+    // Job Opportunities - authenticated read, system write
+    match /jobOpportunities/{jobId} {
+      allow read: if request.auth != null;
+      allow write: if true; // Allow system to cache job postings
     }
   }
 }

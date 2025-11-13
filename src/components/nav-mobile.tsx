@@ -18,6 +18,7 @@ import {
   Users,
   GraduationCap,
   UserPlus,
+  TrendingUp,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ import useMeasure from 'react-use-measure';
 const mainNavItems = [
   { href: '/', icon: <LayoutDashboard />, label: 'Dashboard' },
   { href: '/profile', icon: <UserIcon />, label: 'Profile' },
+  { href: '/career-updates', icon: <TrendingUp />, label: 'Updates' },
   { href: '/recommendations', icon: <Briefcase />, label: 'Careers' },
 ];
 

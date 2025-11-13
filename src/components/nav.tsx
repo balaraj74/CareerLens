@@ -20,6 +20,7 @@ import {
   Calendar,
   Users,
   GraduationCap,
+  TrendingUp,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ const allNavItems = [
   { href: '/profile', icon: <UserIcon />, label: 'Profile' },
   { href: '/career-graph', icon: <Activity />, label: 'Career Graph' },
   { href: '/calendar', icon: <Calendar />, label: 'AI Calendar' },
+  { href: '/career-updates', icon: <TrendingUp />, label: 'Career Updates' },
   { href: '/recommendations', icon: <Briefcase />, label: 'Careers' },
   { href: '/skill-gap', icon: <Target />, label: 'Skill Gap' },
   { href: '/roadmap', icon: <BookOpen />, label: 'Roadmap' },

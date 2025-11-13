@@ -37,7 +37,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.healthCheck = exports.notifyUsersTrigger = exports.summarizeDataTrigger = exports.fetchMentorsScheduled = exports.fetchResourcesScheduled = exports.fetchReviewsScheduled = void 0;
+exports.healthCheck = exports.refreshCareerUpdates = exports.fetchCareerUpdates = exports.notifyUsersTrigger = exports.summarizeDataTrigger = exports.fetchMentorsScheduled = exports.fetchResourcesScheduled = exports.fetchReviewsScheduled = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 // Initialize Firebase Admin
@@ -53,6 +53,9 @@ var summarizeData_1 = require("./summarizeData");
 Object.defineProperty(exports, "summarizeDataTrigger", { enumerable: true, get: function () { return summarizeData_1.summarizeDataTrigger; } });
 var notifyUsers_1 = require("./notifyUsers");
 Object.defineProperty(exports, "notifyUsersTrigger", { enumerable: true, get: function () { return notifyUsers_1.notifyUsersTrigger; } });
+var fetchCareerIntelligence_1 = require("./fetchCareerIntelligence");
+Object.defineProperty(exports, "fetchCareerUpdates", { enumerable: true, get: function () { return fetchCareerIntelligence_1.fetchCareerUpdates; } });
+Object.defineProperty(exports, "refreshCareerUpdates", { enumerable: true, get: function () { return fetchCareerIntelligence_1.refreshCareerUpdates; } });
 /**
  * Health check function
  */
@@ -65,7 +68,9 @@ exports.healthCheck = functions.https.onRequest((req, res) => {
             'fetchResourcesScheduled',
             'fetchMentorsScheduled',
             'summarizeDataTrigger',
-            'notifyUsersTrigger'
+            'notifyUsersTrigger',
+            'fetchCareerUpdates',
+            'refreshCareerUpdates'
         ]
     });
 });
