@@ -207,14 +207,29 @@ export function NewsPage() {
 
             {/* Filters and Search */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search news..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 glass-card"
-                />
+              <div className="relative flex-1 flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search news... (Press Enter to search)"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearch();
+                      }
+                    }}
+                    className="pl-10 glass-card"
+                  />
+                </div>
+                <Button
+                  variant="default"
+                  onClick={handleSearch}
+                  disabled={loading}
+                  className="glass-card"
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
               </div>
 
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -376,10 +391,16 @@ function NewsGrid({
                 <Button
                   variant="outline"
                   className="w-full glass-card"
-                  onClick={() => window.open(article.link, '_blank')}
+                  asChild
                 >
-                  Read Full Article
-                  <ExternalLink className="w-4 h-4 ml-2" />
+                  <a
+                    href={article.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Read Full Article
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </a>
                 </Button>
               </CardContent>
             </Card>
