@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LibrarySquare, Map, Loader2, LocateFixed, Star } from 'lucide-react';
+import { LibrarySquare, Map, Loader2, LocateFixed, Star, MapPin, Navigation, Route } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 
 const containerStyle = {
   width: '100%',
-  height: '400px',
+  height: '500px',
   borderRadius: '1rem',
 };
 
@@ -27,13 +27,105 @@ export function LibraryFinderPage() {
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
     libraries: mapLibraries,
+    version: 'weekly', // Use the latest version with new Places API
   });
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [center, setCenter] = useState({ lat: 40.7128, lng: -74.006 }); // NYC
+  const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [libraries, setLibraries] = useState<google.maps.places.PlaceResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [locationPermission, setLocationPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   const [selectedLibrary, setSelectedLibrary] = useState<google.maps.places.PlaceResult | null>(null);
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  }, []);
+
+  // Get distance text for display
+  const getDistanceText = useCallback((library: google.maps.places.PlaceResult): string => {
+    if (!userLocation || !library.geometry?.location) return '';
+    
+    const distance = calculateDistance(
+      userLocation.lat,
+      userLocation.lng,
+      library.geometry.location.lat(),
+      library.geometry.location.lng()
+    );
+    
+    if (distance < 1) {
+      return `${Math.round(distance * 1000)} meters away`;
+    }
+    return `${distance.toFixed(1)} km away`;
+  }, [userLocation, calculateDistance]);
+
+  // Check location permission on mount
+  useEffect(() => {
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        setLocationPermission(result.state as 'prompt' | 'granted' | 'denied');
+        
+        // Auto-get location if already granted
+        if (result.state === 'granted' && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const location = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              };
+              setUserLocation(location);
+              setCenter(location);
+              
+              toast({
+                title: '✅ Location Enabled',
+                description: 'Your location has been found successfully',
+              });
+            },
+            (error) => {
+              console.error('Geolocation error:', error);
+              
+              let errorMessage = 'Unable to determine your location. Please enable location services or try again.';
+              
+              switch (error.code) {
+                case error.PERMISSION_DENIED:
+                  errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
+                  break;
+                case error.POSITION_UNAVAILABLE:
+                  errorMessage = 'Location information is unavailable. Please check your device settings.';
+                  break;
+                case error.TIMEOUT:
+                  errorMessage = 'Location request timed out. Please try again.';
+                  break;
+              }
+              
+              toast({
+                variant: 'destructive',
+                title: '❌ Location Error',
+                description: errorMessage,
+              });
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0,
+            }
+          );
+        }
+      });
+    }
+  }, [toast]);
 
   const onLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
@@ -43,69 +135,197 @@ export function LibraryFinderPage() {
     setMap(null);
   }, []);
 
-  const findLibrariesNearMe = useCallback(() => {
+  const getUserLocation = useCallback(() => {
     if (!navigator.geolocation) {
       toast({
         variant: 'destructive',
-        title: 'Geolocation not supported',
-        description: 'Your browser does not support geolocation.',
+        title: '❌ Geolocation Not Supported',
+        description: 'Your browser does not support location services. Please use a modern browser like Chrome, Firefox, or Safari.',
+      });
+      return Promise.reject('Geolocation not supported');
+    }
+
+    return new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(location);
+          setCenter(location);
+          setLocationPermission('granted');
+          
+          toast({
+            title: '✅ Location Enabled',
+            description: 'Your location has been found successfully',
+          });
+          
+          resolve(location);
+        },
+        (error) => {
+          let errorMessage = 'Unable to access your location.';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
+              setLocationPermission('denied');
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable. Please check your device settings.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out. Please try again.';
+              break;
+          }
+          
+          toast({
+            variant: 'destructive',
+            title: '❌ Location Error',
+            description: errorMessage,
+          });
+          
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    });
+  }, [toast]);
+
+  const searchLibraries = useCallback((location: { lat: number; lng: number }) => {
+    if (!map) {
+      toast({
+        variant: 'destructive',
+        title: '⏳ Map Not Ready',
+        description: 'The map is still loading. Please wait a moment and try again.',
       });
       return;
     }
 
-    if (!map) {
-        toast({
-            variant: 'destructive',
-            title: 'Map not ready',
-            description: 'The map is still loading, please try again in a moment.'
-        });
-        return;
+    if (!window.google || !window.google.maps || !window.google.maps.places) {
+      toast({
+        variant: 'destructive',
+        title: '❌ Places API Not Loaded',
+        description: 'Google Places API is not loaded. Please refresh the page.',
+      });
+      return;
     }
 
     setLoading(true);
     setLibraries([]);
     setSelectedLibrary(null);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const newCenter = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        setCenter(newCenter);
-        map?.panTo(newCenter);
-        map?.setZoom(13);
+    // Pan and zoom to location
+    map.panTo(location);
+    map.setZoom(14);
 
-        const service = new google.maps.places.PlacesService(map);
-        const request: google.maps.places.PlaceSearchRequest = {
-          location: newCenter,
-          radius: 5000, // Search within 5km
-          type: 'library',
-        };
+    // Use legacy Places API (still works with existing enabled API)
+    const service = new google.maps.places.PlacesService(map);
+    const request: google.maps.places.PlaceSearchRequest = {
+      location: location,
+      radius: 5000, // Search within 5km
+      type: 'library',
+      keyword: 'library public',
+    };
 
-        service.nearbySearch(request, (results, status) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-            setLibraries(results);
-          } else {
-            toast({
-              variant: 'destructive',
-              title: 'Search failed',
-              description: 'Could not find libraries nearby. Status: ' + status,
-            });
-          }
-          setLoading(false);
+    service.nearbySearch(request, (results, status) => {
+      setLoading(false);
+      
+      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+        // Sort libraries by distance (nearest first)
+        const sortedResults = results.sort((a, b) => {
+          if (!a.geometry?.location || !b.geometry?.location) return 0;
+          const distanceA = calculateDistance(
+            location.lat,
+            location.lng,
+            a.geometry.location.lat(),
+            a.geometry.location.lng()
+          );
+          const distanceB = calculateDistance(
+            location.lat,
+            location.lng,
+            b.geometry.location.lat(),
+            b.geometry.location.lng()
+          );
+          return distanceA - distanceB;
         });
-      },
-      () => {
+        
+        setLibraries(sortedResults);
+        
+        // Get nearest library distance
+        const nearestDistance = sortedResults[0]?.geometry?.location
+          ? calculateDistance(
+              location.lat,
+              location.lng,
+              sortedResults[0].geometry.location.lat(),
+              sortedResults[0].geometry.location.lng()
+            )
+          : 0;
+        
+        toast({
+          title: '📚 Libraries Found',
+          description: `Found ${results.length} ${results.length === 1 ? 'library' : 'libraries'} within 5km. Nearest is ${nearestDistance < 1 ? Math.round(nearestDistance * 1000) + ' meters' : nearestDistance.toFixed(1) + ' km'} away.`,
+        });
+      } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
         toast({
           variant: 'destructive',
-          title: 'Location error',
-          description: 'Unable to access your current location. Please check your browser permissions.',
+          title: '😔 No Libraries Found',
+          description: 'No libraries found within 5km. Try searching in a different area.',
         });
-        setLoading(false);
+      } else {
+        let errorMessage = 'Could not find libraries nearby.';
+        
+        switch (status) {
+          case google.maps.places.PlacesServiceStatus.REQUEST_DENIED:
+            errorMessage = 'Request denied. Please enable "Places API" in your Google Cloud Console. Visit: https://console.cloud.google.com/apis/library/places-backend.googleapis.com';
+            break;
+          case google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT:
+            errorMessage = 'Query limit exceeded. Please try again later.';
+            break;
+          case google.maps.places.PlacesServiceStatus.INVALID_REQUEST:
+            errorMessage = 'Invalid request. Please try again.';
+            break;
+        }
+        
+        toast({
+          variant: 'destructive',
+          title: '❌ Search Failed',
+          description: errorMessage,
+        });
       }
-    );
-  }, [map, toast]);
+    });
+  }, [map, toast, calculateDistance]);
+
+  const findLibrariesNearMe = useCallback(async () => {
+    try {
+      setLoading(true);
+      const location = await getUserLocation();
+      searchLibraries(location);
+    } catch (error) {
+      setLoading(false);
+    }
+  }, [getUserLocation, searchLibraries]);
+
+  const recenterOnUser = useCallback(() => {
+    if (userLocation && map) {
+      map.panTo(userLocation);
+      map.setZoom(14);
+      toast({
+        title: '📍 Recentered',
+        description: 'Map centered on your location',
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: '❌ Location Not Available',
+        description: 'Please enable location access first',
+      });
+    }
+  }, [userLocation, map, toast]);
 
   const handleLibraryClick = useCallback(
     (library: google.maps.places.PlaceResult) => {
@@ -212,15 +432,35 @@ export function LibraryFinderPage() {
     if (!isLoaded)
       return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
+    // Default center (India - Bangalore) if user location not available
+    const defaultCenter = { lat: 12.9716, lng: 77.5946 };
+
     return (
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={center}
-        zoom={12}
+        center={center || defaultCenter}
+        zoom={center ? 13 : 6}
         onLoad={onLoad}
         onUnmount={onUnmount}
         options={mapOptions}
       >
+        {/* User location marker */}
+        {userLocation && (
+          <MarkerF
+            position={userLocation}
+            icon={{
+              path: google.maps.SymbolPath.CIRCLE,
+              fillColor: '#10B981', // green-500
+              fillOpacity: 0.8,
+              strokeColor: '#FFF',
+              strokeWeight: 3,
+              scale: 8,
+            }}
+            title="Your Location"
+          />
+        )}
+        
+        {/* Library markers */}
         {libraries.map(
           (lib) =>
             lib.geometry?.location && (
@@ -240,21 +480,51 @@ export function LibraryFinderPage() {
                   scale:
                     selectedLibrary?.place_id === lib.place_id ? 10 : 7,
                 }}
+                title={lib.name}
               />
             )
         )}
       </GoogleMap>
     );
-  }, [isLoaded, center, onLoad, onUnmount, mapOptions, libraries, selectedLibrary, handleLibraryClick]);
+  }, [isLoaded, center, userLocation, onLoad, onUnmount, mapOptions, libraries, selectedLibrary, handleLibraryClick]);
 
   if (loadError) {
     return (
       <div className="p-8">
         <Alert variant="destructive">
           <Map className="h-4 w-4" />
-          <AlertTitle>Map Error</AlertTitle>
+          <AlertTitle>❌ Map Error</AlertTitle>
           <AlertDescription>
-            Failed to load Google Maps. Please verify your API key and ensure it is enabled for this project.
+            Failed to load Google Maps. Please verify that:
+            <ul className="mt-2 ml-4 list-disc space-y-2">
+              <li>Google Maps API key is configured in environment variables</li>
+              <li>
+                <strong>Maps JavaScript API</strong> is enabled:{' '}
+                <a 
+                  href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 underline hover:text-blue-300"
+                >
+                  Enable Here
+                </a>
+              </li>
+              <li>
+                <strong>Places API</strong> is enabled:{' '}
+                <a 
+                  href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 underline hover:text-blue-300"
+                >
+                  Enable Here
+                </a>
+              </li>
+              <li>Billing is enabled for your Google Cloud project</li>
+            </ul>
+            <p className="mt-3 text-sm">
+              After enabling APIs, wait 2-3 minutes before refreshing the page.
+            </p>
           </AlertDescription>
         </Alert>
       </div>
@@ -262,7 +532,7 @@ export function LibraryFinderPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -272,32 +542,92 @@ export function LibraryFinderPage() {
           <LibrarySquare className="w-8 h-8 text-primary" />
           Nearest Library Finder
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mt-2">
           Discover quiet places to study and read near you.
         </p>
       </motion.div>
+
+      {/* Location Permission Alert */}
+      {locationPermission === 'denied' && (
+        <Alert variant="destructive">
+          <MapPin className="h-4 w-4" />
+          <AlertTitle>Location Access Denied</AlertTitle>
+          <AlertDescription>
+            Please enable location access in your browser settings to find libraries near you.
+            <br />
+            <span className="text-xs mt-2 block">
+              Chrome: Settings → Privacy and security → Site settings → Location
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Status Card */}
+      {userLocation && (
+        <Card className="glass-card border-green-500/50 bg-green-500/10">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-500 rounded-full p-2">
+                <Navigation className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-green-400">Location Enabled</p>
+                <p className="text-xs text-muted-foreground">
+                  Ready to find nearby libraries
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="glass-card">
         <CardHeader>
           <CardTitle>Find a Library</CardTitle>
           <CardDescription>
-            Use your current location to find libraries nearby.
+            Click the button below to enable location access and find libraries within 5km of your current location.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button
-            size="lg"
-            className="w-full sm:w-auto"
-            onClick={findLibrariesNearMe}
-            disabled={loading || !isLoaded}
-          >
-            {loading ? (
-              <Loader2 className="mr-2 animate-spin" />
-            ) : (
-              <LocateFixed className="mr-2" />
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto flex-1"
+              onClick={findLibrariesNearMe}
+              disabled={loading || !isLoaded}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Searching for Libraries...
+                </>
+              ) : (
+                <>
+                  <LocateFixed className="mr-2 h-4 w-4" />
+                  Find Libraries Near Me
+                </>
+              )}
+            </Button>
+            
+            {userLocation && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={recenterOnUser}
+                disabled={!isLoaded || !map}
+              >
+                <Navigation className="mr-2 h-4 w-4" />
+                Recenter on Me
+              </Button>
             )}
-            Find Libraries Near Me
-          </Button>
+          </div>
+          
+          {!userLocation && !loading && (
+            <p className="text-xs text-muted-foreground">
+              💡 Tip: Make sure location services are enabled on your device and browser.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -310,53 +640,93 @@ export function LibraryFinderPage() {
       </Card>
 
       {libraries.length > 0 && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {libraries.map((lib) => (
-            <Card
-              key={lib.place_id}
-              className={`glass-card hover:-translate-y-1 transition-transform cursor-pointer ${
-                selectedLibrary?.place_id === lib.place_id
-                  ? 'border-primary ring-2 ring-primary shadow-lg shadow-primary/20'
-                  : ''
-              }`}
-               onClick={() => handleLibraryClick(lib)}
-            >
-              <CardHeader>
-                <CardTitle>{lib.name}</CardTitle>
-                <CardDescription>{lib.vicinity}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Star
-                    className={`w-5 h-5 ${
-                      lib.rating && lib.rating > 0
-                        ? 'text-amber-400'
-                        : 'text-muted-foreground'
-                    }`}
-                  />
-                  <span className="text-sm font-medium">
-                    {lib.rating || 'No rating'}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    ({lib.user_ratings_total || 0} reviews)
-                  </span>
-                </div>
-                <Badge
-                  variant={
-                    lib.opening_hours?.open_now ? 'default' : 'destructive'
-                  }
-                  className={
-                    lib.opening_hours?.open_now
-                      ? 'bg-green-500/20 text-green-300 border-green-500/50'
-                      : ''
-                  }
-                >
-                  {lib.opening_hours?.open_now ? 'Open Now' : 'Closed'}
-                </Badge>
-              </CardContent>
-            </Card>
-          ))}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <LibrarySquare className="w-5 h-5 text-primary" />
+            Found {libraries.length} {libraries.length === 1 ? 'Library' : 'Libraries'}
+          </h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {libraries.map((lib) => (
+              <Card
+                key={lib.place_id}
+                className={`glass-card hover:-translate-y-1 transition-all duration-300 cursor-pointer ${
+                  selectedLibrary?.place_id === lib.place_id
+                    ? 'border-primary ring-2 ring-primary shadow-lg shadow-primary/20'
+                    : ''
+                }`}
+                onClick={() => handleLibraryClick(lib)}
+              >
+                <CardHeader>
+                  <CardTitle className="line-clamp-2">{lib.name}</CardTitle>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-1 line-clamp-2">
+                      <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      {lib.vicinity}
+                    </div>
+                    {userLocation && (
+                      <div className="flex items-center gap-1 text-primary font-medium">
+                        <Route className="w-3 h-3 flex-shrink-0" />
+                        {getDistanceText(lib)}
+                      </div>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Star
+                      className={`w-5 h-5 ${
+                        lib.rating && lib.rating > 0
+                          ? 'text-amber-400 fill-amber-400'
+                          : 'text-muted-foreground'
+                      }`}
+                    />
+                    <span className="text-sm font-medium">
+                      {lib.rating ? lib.rating.toFixed(1) : 'No rating'}
+                    </span>
+                    {lib.user_ratings_total && lib.user_ratings_total > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        ({lib.user_ratings_total} reviews)
+                      </span>
+                    )}
+                  </div>
+                  
+                  {lib.geometry?.location && userLocation && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const lat = lib.geometry!.location!.lat();
+                        const lng = lib.geometry!.location!.lng();
+                        const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${lat},${lng}&travelmode=driving`;
+                        window.open(url, '_blank');
+                      }}
+                    >
+                      <Navigation className="w-4 h-4 mr-2" />
+                      Get Directions
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
+      )}
+
+      {/* No libraries message */}
+      {!loading && libraries.length === 0 && userLocation && (
+        <Card className="glass-card">
+          <CardContent className="py-12 text-center">
+            <LibrarySquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">No Libraries Found</h3>
+            <p className="text-sm text-muted-foreground">
+              We couldn't find any libraries within 5km of your location.
+              <br />
+              Try searching in a different area or check back later.
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
