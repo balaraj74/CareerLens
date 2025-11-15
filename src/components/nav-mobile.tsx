@@ -15,6 +15,11 @@ import {
   ChevronUp,
   LibrarySquare,
   Newspaper,
+  Calendar,
+  Users,
+  GraduationCap,
+  UserPlus,
+  TrendingUp,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -25,6 +30,7 @@ import useMeasure from 'react-use-measure';
 const mainNavItems = [
   { href: '/', icon: <LayoutDashboard />, label: 'Dashboard' },
   { href: '/profile', icon: <UserIcon />, label: 'Profile' },
+  { href: '/career-updates', icon: <TrendingUp />, label: 'Updates' },
   { href: '/recommendations', icon: <Briefcase />, label: 'Careers' },
 ];
 
@@ -36,6 +42,10 @@ const toolNavItems = [
   { href: '/learning-helper', icon: <Sparkles />, label: 'AI Helper' },
   { href: '/ai-interviewer', icon: <Bot />, label: 'AI Interviewer' },
   { href: '/library-finder', icon: <LibrarySquare />, label: 'Libraries' },
+  { href: '/calendar', icon: <Calendar />, label: 'AI Calendar' },
+  { href: '/community', icon: <Users />, label: 'Community' },
+  { href: '/resources', icon: <GraduationCap />, label: 'Resources' },
+  { href: '/mentors', icon: <UserPlus />, label: 'Find Mentor' },
   { href: '/ebooks', icon: <BookOpen />, label: 'eBooks' },
   { href: '/news', icon: <Newspaper />, label: 'News' },
 ];
