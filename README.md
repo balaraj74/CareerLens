@@ -30,7 +30,56 @@
 
 ---
 
-## � Recent Updates (November 2025)
+## 🔥 Recent Updates (November 2025)
+
+### **Latest Updates (Security & Feature Enhancements)**
+
+#### **Security Improvements** 🔒
+- **Privacy-First Location Services**: Removed all exact coordinate displays from UI
+- **Project ID Sanitization**: Removed hardcoded Google Cloud project IDs from all files
+- **Secure External Links**: Added `rel="noopener noreferrer"` to prevent reverse tabnabbing
+- **Generic Documentation**: Made all documentation project-agnostic and reusable
+- **Error Logging**: Enhanced geolocation error handling with console logging for debugging
+
+#### **Library Finder Enhancements** 📚
+- **User Location Marker**: Green circle indicator shows your current position on map
+- **Distance Calculation**: Haversine formula calculates accurate distances to each library
+- **Smart Distance Display**: Shows "350 meters away" or "2.3 km away" based on distance
+- **Auto-Sort by Distance**: Libraries automatically sorted nearest first
+- **Recenter Button**: Quick navigation back to your location
+- **Auto-Center on Load**: Map automatically centers when location permission granted
+- **Enhanced Notifications**: Toast messages show nearest library distance
+- **Hydration Fix**: Resolved React hydration errors with proper HTML structure
+- **Deprecated API Cleanup**: Removed `open_now` property warnings
+- **Privacy-Preserving UI**: Location status shows "Ready to find nearby libraries" instead of coordinates
+- **User-Friendly Errors**: Clear error messages for geolocation failures with specific guidance
+
+#### **News Feature Enhancements** 📰
+- **Politics Category Added**: Complete category list now includes Politics filter
+- **Functional Search**: Enter key and search button now trigger API searches
+- **Secure External Links**: "Read Full Article" uses proper anchor tags with security attributes
+- **Better UX**: Loading states and clear user feedback
+
+#### **Community/College Finder Improvements** 🎓
+- **Real-Time Data**: Disabled mock mode (`MOCK_ENABLED = false`) for live Reddit data
+- **Data Source Tracking**: Visual indicators show "Live from Reddit" or "Demo Data"
+- **Fixed Reddit URLs**: Proper post format generation for "View on Reddit" links
+- **CORS Resolution**: Server-side proxy eliminates browser CORS errors
+
+#### **Resume Evaluator Updates** 📄
+- **File Type Restriction**: Only .txt, .doc, .docx accepted (PDF removed)
+- **Clear Warnings**: Updated UI with explicit file type guidance
+- **Better Validation**: Enhanced error messages for unsupported formats
+
+#### **Calendar Feature** 📅
+- **UI Text Update**: Navigation button changed from "Today" to "Month" for clarity
+
+#### **Configuration & Documentation** 📚
+- **Environment Setup**: Detailed .env configuration with API enablement links
+- **Security Best Practices**: Generic URLs without project-specific identifiers
+- **Setup Instructions**: Step-by-step Google Cloud Console guidance
+
+---
 
 ### **New Features Added**
 
@@ -301,10 +350,18 @@
 - **Bookmark Service**: LocalStorage management for saved content
 - Automated background refresh via Cloud Functions
 
-#### 17. **Library Finder**
-- Find nearby libraries and study spaces
-- Google Maps integration
-- Distance calculation and directions
+#### 17. **Library Finder** 🆕
+- **User Location Tracking**: Green circle marker shows your current position
+- **Distance Calculator**: Haversine formula calculates accurate distances
+- **Smart Sorting**: Libraries auto-sorted by proximity (nearest first)
+- **Distance Display**: Shows "350 meters" or "2.3 km away" for each library
+- **Interactive Map**: Google Maps with dark theme and custom markers
+- **Recenter Button**: Quick return to your location
+- **Auto-Center**: Map automatically focuses on your location
+- **Get Directions**: One-click Google Maps navigation
+- **Privacy-First**: No coordinate display in UI, only internal use
+- **Error Handling**: Clear guidance for location permission issues
+- **Responsive Design**: Works on mobile, tablet, and desktop
 
 ### 🎨 **UI/UX Features**
 
@@ -552,6 +609,17 @@ firebase apphosting:rollouts:create <backend-name>
 
 ### **Common Issues**
 
+#### 0. **Geolocation Errors in Library Finder**
+```
+Location permission denied
+```
+**Solution**: 
+- Enable location access in browser settings
+- Chrome: Settings → Privacy and security → Site settings → Location
+- Allow location for localhost:3000
+- Check console for detailed error messages
+- Error messages now provide specific guidance
+
 #### 1. **Firebase Permission Errors**
 ```
 Error: Missing or insufficient permissions
@@ -644,8 +712,8 @@ curl http://localhost:3000/api/reddit-search?college=IIT+Bombay
 
 ## 📊 Project Stats
 
-- **Total Lines of Code**: ~35,000+ lines
-- **Services Built**: 13 production services
+- **Total Lines of Code**: ~38,000+ lines (updated with new features)
+- **Services Built**: 14 production services
   - Reddit API Service (358 lines) - Server-side proxy with mock data
   - Internet Archive Service (180 lines) - Book search API
   - Bookmark Service (100 lines) - LocalStorage management
@@ -659,14 +727,18 @@ curl http://localhost:3000/api/reddit-search?college=IIT+Bombay
   - Google Calendar Service (485 lines)
   - AI Calendar Suggestions (398 lines)
   - Enhanced Profile Service (566 lines) - Fixed Firebase permissions
-- **API Routes**: 3 custom endpoints
-  - `/api/reddit-search` (220 lines) - Reddit proxy
+  - News Service (348 lines) - News aggregation with search
+  - Library Finder Service (736 lines) - Location-based library search
+- **API Routes**: 4 custom endpoints
+  - `/api/reddit-search` (340 lines) - Reddit proxy with real-time data
   - `/api/college-recommendations` (1427 lines) - College search
+  - `/api/news` (95 lines) - NewsAPI proxy
   - `/api/parse-resume` - Resume parsing
 - **Cloud Functions**: 5 automated functions (1,132 lines)
-- **UI Components**: 60+ reusable components
-- **Pages**: 18+ main pages (including `/colleges`, `/ebooks`)
-- **Integration Points**: 9 external APIs (Reddit, Internet Archive, Google Search, etc.)
+- **UI Components**: 65+ reusable components
+- **Pages**: 19+ main pages (including `/colleges`, `/ebooks`, `/news`, `/library-finder`)
+- **Integration Points**: 11 external APIs (Reddit, Internet Archive, Google Search, NewsAPI, Google Maps, Google Places, etc.)
+- **Security Enhancements**: Privacy-first design, no exposed credentials, secure external links
 
 ---
 

@@ -14,6 +14,7 @@ import {
   Bot,
   ChevronUp,
   LibrarySquare,
+  Newspaper,
   Calendar,
   Users,
   GraduationCap,
@@ -46,6 +47,7 @@ const toolNavItems = [
   { href: '/resources', icon: <GraduationCap />, label: 'Resources' },
   { href: '/mentors', icon: <UserPlus />, label: 'Find Mentor' },
   { href: '/ebooks', icon: <BookOpen />, label: 'eBooks' },
+  { href: '/news', icon: <Newspaper />, label: 'News' },
 ];
 
 interface NavProps {
