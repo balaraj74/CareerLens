@@ -3,7 +3,7 @@
 ## ⚠️ Issue
 GitGuardian detected an exposed NewsAPI key in commit `59d186c` in the file `src/app/api/news/route.ts`.
 
-**Exposed Key:** `649784e50c964c6d80cd7e75ddb0d94f`
+**Exposed Key:** Compromised API key — redacted; see commit `59d186c` or GitGuardian incident report
 
 ## 🚨 IMMEDIATE ACTION REQUIRED
 
@@ -11,15 +11,16 @@ GitGuardian detected an exposed NewsAPI key in commit `59d186c` in the file `src
 
 1. Visit [NewsAPI.org Account](https://newsapi.org/account)
 2. Log in to your account
-3. Find the exposed key: `649784e50c964c6d80cd7e75ddb0d94f`
+3. Find the exposed key (check commit `59d186c` or GitGuardian alert for identification)
 4. **Delete or regenerate this API key immediately**
 5. Generate a new API key
 
 ### Step 2: Update Your Local Environment
 
-1. Open your `.env` file:
+1. Open your `.env` file in your project root:
    ```bash
-   nano /media/bharath/CCFEB79CFEB77CF0/ubuntu/CareerLens/CareerLens/.env
+   nano .env
+   # or use your preferred editor: code .env, vim .env, etc.
    ```
 
 2. Replace the old API key with your new one:
