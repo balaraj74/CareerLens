@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const NEWS_API_KEY = '649784e50c964c6d80cd7e75ddb0d94f';
+const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const NEWS_API_BASE_URL = 'https://newsapi.org/v2';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if API key is configured
+    if (!NEWS_API_KEY) {
+      console.error('NEWS_API_KEY environment variable is not set');
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'News API is not configured. Please add NEWS_API_KEY to your environment variables.',
+          articles: []
+        },
+        { status: 500 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const region = searchParams.get('region') || 'indian';
     const category = searchParams.get('category');
