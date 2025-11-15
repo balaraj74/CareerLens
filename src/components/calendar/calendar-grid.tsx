@@ -176,7 +176,7 @@ export function CalendarGrid({
             onClick={() => onMonthChange(new Date())}
             className="text-slate-400 hover:text-white hover:bg-slate-800 px-4"
           >
-            Today
+            Month
           </Button>
           <Button
             size="sm"

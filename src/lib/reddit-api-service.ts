@@ -30,100 +30,57 @@ export interface RedditSearchParams {
 }
 
 /**
- * Fetch posts from Reddit JSON API
+ * Fetch posts from Reddit via our API route (avoids CORS issues)
  */
 export async function fetchRedditPosts(params: RedditSearchParams): Promise<RedditPost[]> {
   const {
     query,
     subreddits = [],
     limit = 25,
-    timeFilter = 'week',
-    sortBy = 'relevance',
   } = params;
 
   try {
-    // Build search query
-    let searchQuery = query;
-    
-    // Add subreddit filter if specified
-    if (subreddits.length > 0) {
-      searchQuery += ` ${subreddits.map(sub => `subreddit:${sub}`).join(' OR ')}`;
+    console.log('Fetching Reddit posts via API route:', query);
+
+    // Use our server-side API route to avoid CORS issues
+    const response = await fetch('/api/reddit-search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        collegeName: query,
+        subreddits: subreddits.length > 0 ? subreddits : undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
     }
 
-    // Reddit JSON API endpoint
-    const url = new URL('https://www.reddit.com/search.json');
-    url.searchParams.set('q', searchQuery);
-    url.searchParams.set('limit', limit.toString());
-    url.searchParams.set('t', timeFilter);
-    url.searchParams.set('sort', sortBy);
-    url.searchParams.set('raw_json', '1');
+    const data = await response.json();
 
-    console.log('Fetching from Reddit:', url.toString());
-
-    // Retry logic for rate limiting
-    let lastError: Error | null = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const response = await fetch(url.toString(), {
-          headers: {
-            'User-Agent': 'CareerLens/1.0 (Educational App)',
-            'Accept': 'application/json',
-          },
-          // Add timeout to prevent hanging
-          signal: AbortSignal.timeout(10000), // 10 second timeout
-        });
-
-        if (!response.ok) {
-          // Handle rate limiting (429)
-          if (response.status === 429) {
-            console.warn(`Reddit rate limit hit (attempt ${attempt}/3). Waiting before retry...`);
-            if (attempt < 3) {
-              await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Exponential backoff
-              continue;
-            }
-          }
-          
-          throw new Error(`Reddit API error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const posts: RedditPost[] = [];
-
-        if (data.data && data.data.children) {
-          for (const child of data.data.children) {
-            const post = child.data;
-            
-            posts.push({
-              id: post.id,
-              title: post.title,
-              text: post.selftext || '',
-              author: post.author,
-              subreddit: post.subreddit,
-              url: `https://reddit.com${post.permalink}`,
-              score: post.score,
-              numComments: post.num_comments,
-              created: post.created_utc * 1000, // Convert to milliseconds
-            });
-          }
-        }
-
-        return posts;
-      } catch (error: any) {
-        lastError = error;
-        console.error(`Reddit fetch attempt ${attempt}/3 failed:`, error.message);
-        
-        // Don't retry on timeout or abort errors
-        if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-          throw new Error('Reddit request timed out. Please try again.');
-        }
-        
-        if (attempt < 3) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        }
-      }
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch Reddit posts');
     }
 
-    throw lastError || new Error('Failed to fetch Reddit posts after 3 attempts');
+    // Convert API response to RedditPost format
+    const posts: RedditPost[] = (data.reviews || []).map((review: any) => ({
+      id: review.id,
+      title: review.post_title,
+      text: review.content,
+      author: review.author,
+      subreddit: review.subreddit,
+      url: review.post_url,
+      score: review.score,
+      numComments: review.num_comments,
+      created: review.created_utc * 1000, // Convert to milliseconds
+      sentiment: review.sentiment,
+      category: review.topics?.[0] || 'General',
+    }));
+
+    console.log(`✅ Fetched ${posts.length} Reddit posts`);
+    return posts;
   } catch (error) {
     console.error('Error fetching Reddit posts:', error);
     throw error;

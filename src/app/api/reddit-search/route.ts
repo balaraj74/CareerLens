@@ -6,12 +6,16 @@ const REDDIT_API_BASE = 'https://www.reddit.com/';
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Reddit is blocking our requests, so use mock data for demo
-const MOCK_ENABLED = true;
+// Set to false to fetch real Reddit data
+const MOCK_ENABLED = false;
 
 export async function POST(request: NextRequest) {
+  let collegeName = '';
+  
   try {
-    const { collegeName, subreddits } = await request.json();
+    const body = await request.json();
+    collegeName = body.collegeName;
+    const subreddits = body.subreddits;
 
     if (!collegeName) {
       return NextResponse.json(
@@ -143,7 +147,8 @@ export async function POST(request: NextRequest) {
       success: true,
       collegeName,
       reviews: limitedReviews,
-      total: limitedReviews.length
+      total: limitedReviews.length,
+      source: 'reddit' // Indicate this is real Reddit data
     };
 
     // Cache the result
@@ -152,10 +157,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('❌ Error in Reddit search API:', error);
+    
+    // If Reddit API fails, we can optionally fall back to mock data with a warning
+    if (!MOCK_ENABLED) {
+      console.warn('⚠️ Reddit API failed, returning empty results. Enable MOCK_ENABLED for demo data.');
+    }
+    
     return NextResponse.json(
       {
+        success: false,
         error: 'Failed to fetch Reddit reviews',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
+        collegeName,
+        reviews: [],
+        total: 0,
+        source: 'error'
       },
       { status: 500 }
     );
@@ -228,13 +244,23 @@ function extractTopics(text: string): string[] {
 }
 
 function generateMockRedditReviews(collegeName: string): any[] {
+  // Generate realistic Reddit post URLs with proper format
+  const generatePostUrl = (subreddit: string, postId: string, title: string) => {
+    const slug = title.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim()
+      .replace(/\s+/g, '_')
+      .substring(0, 50);
+    return `https://reddit.com/r/${subreddit}/comments/${postId}/${slug}/`;
+  };
+
   const reviews = [
     {
       id: `mock_${Date.now()}_1`,
       college_name: collegeName,
-      post_id: 'mock1',
+      post_id: 'abc123xyz',
       post_title: `My experience at ${collegeName}`,
-      post_url: 'https://reddit.com/r/Indian_Academia',
+      post_url: generatePostUrl('Indian_Academia', 'abc123xyz', `My experience at ${collegeName}`),
       author: 'Student123',
       content: `I've been studying at ${collegeName} for 2 years now. The placements are pretty good, especially for CS students. Faculty is knowledgeable but infrastructure could be better. Overall a solid choice!`,
       created_utc: Math.floor(Date.now() / 1000) - 86400 * 30,
@@ -247,9 +273,9 @@ function generateMockRedditReviews(collegeName: string): any[] {
     {
       id: `mock_${Date.now()}_2`,
       college_name: collegeName,
-      post_id: 'mock2',
+      post_id: 'def456uvw',
       post_title: `${collegeName} placement statistics 2024`,
-      post_url: 'https://reddit.com/r/IndianStudents',
+      post_url: generatePostUrl('IndianStudents', 'def456uvw', `${collegeName} placement statistics 2024`),
       author: 'CareerSeeker',
       content: `${collegeName} has shown excellent placement records this year. Average package increased by 15%. Top companies like Google, Microsoft, and Amazon visited campus. Highly recommended for tech students.`,
       created_utc: Math.floor(Date.now() / 1000) - 86400 * 15,
@@ -262,9 +288,9 @@ function generateMockRedditReviews(collegeName: string): any[] {
     {
       id: `mock_${Date.now()}_3`,
       college_name: collegeName,
-      post_id: 'mock3',
+      post_id: 'ghi789rst',
       post_title: `Campus life at ${collegeName}`,
-      post_url: 'https://reddit.com/r/bangalore',
+      post_url: generatePostUrl('bangalore', 'ghi789rst', `Campus life at ${collegeName}`),
       author: 'CampusLife2024',
       content: `The campus culture at ${collegeName} is vibrant with lots of fests and technical events. Great clubs for coding, robotics, and cultural activities. Infrastructure is modern with good labs and library facilities.`,
       created_utc: Math.floor(Date.now() / 1000) - 86400 * 45,
@@ -277,9 +303,9 @@ function generateMockRedditReviews(collegeName: string): any[] {
     {
       id: `mock_${Date.now()}_4`,
       college_name: collegeName,
-      post_id: 'mock4',
+      post_id: 'jkl012mno',
       post_title: `${collegeName} review - honest opinion`,
-      post_url: 'https://reddit.com/r/EngineeringStudents',
+      post_url: generatePostUrl('EngineeringStudents', 'jkl012mno', `${collegeName} review honest opinion`),
       author: 'HonestReviewer',
       content: `${collegeName} is decent but has some issues. The faculty quality varies - some professors are excellent while others are just okay. Fees are on the higher side. However, the placement support is good and campus is well-maintained.`,
       created_utc: Math.floor(Date.now() / 1000) - 86400 * 60,
@@ -292,9 +318,9 @@ function generateMockRedditReviews(collegeName: string): any[] {
     {
       id: `mock_${Date.now()}_5`,
       college_name: collegeName,
-      post_id: 'mock5',
+      post_id: 'pqr345stu',
       post_title: `Thinking of joining ${collegeName}, need advice`,
-      post_url: 'https://reddit.com/r/Indian_Academia',
+      post_url: generatePostUrl('Indian_Academia', 'pqr345stu', `Thinking of joining ${collegeName} need advice`),
       author: 'FutureStudent',
       content: `Considering ${collegeName} for BTech. Heard good things about their placement record and industry connections. The location is great too with good connectivity. Any current students who can share their experience?`,
       created_utc: Math.floor(Date.now() / 1000) - 86400 * 20,

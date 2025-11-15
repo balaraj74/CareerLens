@@ -244,10 +244,9 @@ export async function parseResume(file: File): Promise<ParsedResumeText> {
 export function validateResumeFile(file: File): { valid: boolean; error?: string } {
   const maxSize = 10 * 1024 * 1024; // 10MB
   const allowedTypes = [
-    'application/pdf',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/msword',
-    'text/plain',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+    'application/msword', // .doc
+    'text/plain', // .txt
   ];
   
   if (file.size > maxSize) {
@@ -260,7 +259,7 @@ export function validateResumeFile(file: File): { valid: boolean; error?: string
   if (!allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: 'Please upload a PDF, DOCX, or TXT file',
+      error: 'Only .txt, .doc, or .docx files are accepted. PDF format is not supported.',
     };
   }
   
