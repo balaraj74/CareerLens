@@ -81,19 +81,26 @@ export async function fetchNews(
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch news: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || `Failed to fetch news: ${response.status}`;
+      console.error('News API Error:', errorMessage, errorData);
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
 
     if (!data.success) {
-      throw new Error(data.error || 'Failed to fetch news');
+      const errorMessage = data.error || 'Failed to fetch news';
+      console.error('News API returned error:', errorMessage);
+      throw new Error(errorMessage);
     }
 
-    return data.articles;
+    return data.articles || [];
   } catch (error) {
     console.error('Error fetching news:', error);
-    throw error;
+    // Return empty array to prevent page crash
+    // User will see a "No articles found" message
+    return [];
   }
 }
 
@@ -118,13 +125,18 @@ export async function searchNewsArticles(
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to search news: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || `Failed to search news: ${response.status}`;
+      console.error('News Search Error:', errorMessage, errorData);
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
 
     if (!data.success) {
-      throw new Error(data.error || 'Failed to search news');
+      const errorMessage = data.error || 'Failed to search news';
+      console.error('News Search returned error:', errorMessage);
+      throw new Error(errorMessage);
     }
 
     return data.articles;

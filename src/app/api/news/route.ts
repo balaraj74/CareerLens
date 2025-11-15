@@ -87,12 +87,26 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('News API Error:', error);
+    console.error('News API Error Details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      error: error,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
+    // Return a more helpful error message
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Failed to fetch news from NewsAPI';
+    
     return NextResponse.json(
       { 
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch news',
-        articles: [] 
+        error: errorMessage,
+        articles: [],
+        debug: process.env.NODE_ENV === 'development' ? {
+          apiKeyPresent: !!NEWS_API_KEY,
+          errorType: error instanceof Error ? error.constructor.name : typeof error
+        } : undefined
       },
       { status: 500 }
     );
