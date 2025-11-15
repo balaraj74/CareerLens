@@ -14,6 +14,7 @@ import {
   Bot,
   ChevronUp,
   LibrarySquare,
+  Newspaper,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ const toolNavItems = [
   { href: '/ai-interviewer', icon: <Bot />, label: 'AI Interviewer' },
   { href: '/library-finder', icon: <LibrarySquare />, label: 'Libraries' },
   { href: '/ebooks', icon: <BookOpen />, label: 'eBooks' },
+  { href: '/news', icon: <Newspaper />, label: 'News' },
 ];
 
 interface NavProps {
