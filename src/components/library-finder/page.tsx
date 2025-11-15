@@ -3,7 +3,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LibrarySquare, Map, Loader2, LocateFixed, Star, MapPin, Navigation } from 'lucide-react';
+import { LibrarySquare, Map, Loader2, LocateFixed, Star, MapPin, Navigation, Route } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,6 +38,39 @@ export function LibraryFinderPage() {
   const [locationPermission, setLocationPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
   const [selectedLibrary, setSelectedLibrary] = useState<google.maps.places.PlaceResult | null>(null);
 
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  }, []);
+
+  // Get distance text for display
+  const getDistanceText = useCallback((library: google.maps.places.PlaceResult): string => {
+    if (!userLocation || !library.geometry?.location) return '';
+    
+    const distance = calculateDistance(
+      userLocation.lat,
+      userLocation.lng,
+      library.geometry.location.lat(),
+      library.geometry.location.lng()
+    );
+    
+    if (distance < 1) {
+      return `${Math.round(distance * 1000)} meters away`;
+    }
+    return `${distance.toFixed(1)} km away`;
+  }, [userLocation, calculateDistance]);
+
   // Check location permission on mount
   useEffect(() => {
     if (navigator.permissions) {
@@ -45,12 +78,34 @@ export function LibraryFinderPage() {
         setLocationPermission(result.state as 'prompt' | 'granted' | 'denied');
         
         // Auto-get location if already granted
-        if (result.state === 'granted') {
-          getUserLocation();
+        if (result.state === 'granted' && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const location = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              };
+              setUserLocation(location);
+              setCenter(location);
+              
+              toast({
+                title: '✅ Location Enabled',
+                description: `Found your location: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
+              });
+            },
+            (error) => {
+              console.error('Location error:', error);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0,
+            }
+          );
         }
       });
     }
-  }, []);
+  }, [toast]);
 
   const onLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
@@ -161,10 +216,39 @@ export function LibraryFinderPage() {
       setLoading(false);
       
       if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-        setLibraries(results);
+        // Sort libraries by distance (nearest first)
+        const sortedResults = results.sort((a, b) => {
+          if (!a.geometry?.location || !b.geometry?.location) return 0;
+          const distanceA = calculateDistance(
+            location.lat,
+            location.lng,
+            a.geometry.location.lat(),
+            a.geometry.location.lng()
+          );
+          const distanceB = calculateDistance(
+            location.lat,
+            location.lng,
+            b.geometry.location.lat(),
+            b.geometry.location.lng()
+          );
+          return distanceA - distanceB;
+        });
+        
+        setLibraries(sortedResults);
+        
+        // Get nearest library distance
+        const nearestDistance = sortedResults[0]?.geometry?.location
+          ? calculateDistance(
+              location.lat,
+              location.lng,
+              sortedResults[0].geometry.location.lat(),
+              sortedResults[0].geometry.location.lng()
+            )
+          : 0;
+        
         toast({
           title: '📚 Libraries Found',
-          description: `Found ${results.length} ${results.length === 1 ? 'library' : 'libraries'} within 5km of your location.`,
+          description: `Found ${results.length} ${results.length === 1 ? 'library' : 'libraries'} within 5km. Nearest is ${nearestDistance < 1 ? Math.round(nearestDistance * 1000) + ' meters' : nearestDistance.toFixed(1) + ' km'} away.`,
         });
       } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
         toast({
@@ -194,7 +278,7 @@ export function LibraryFinderPage() {
         });
       }
     });
-  }, [map, toast]);
+  }, [map, toast, calculateDistance]);
 
   const findLibrariesNearMe = useCallback(async () => {
     try {
@@ -205,6 +289,23 @@ export function LibraryFinderPage() {
       setLoading(false);
     }
   }, [getUserLocation, searchLibraries]);
+
+  const recenterOnUser = useCallback(() => {
+    if (userLocation && map) {
+      map.panTo(userLocation);
+      map.setZoom(14);
+      toast({
+        title: '📍 Recentered',
+        description: 'Map centered on your location',
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: '❌ Location Not Available',
+        description: 'Please enable location access first',
+      });
+    }
+  }, [userLocation, map, toast]);
 
   const handleLibraryClick = useCallback(
     (library: google.maps.places.PlaceResult) => {
@@ -468,24 +569,39 @@ export function LibraryFinderPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            size="lg"
-            className="w-full sm:w-auto"
-            onClick={findLibrariesNearMe}
-            disabled={loading || !isLoaded}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Searching for Libraries...
-              </>
-            ) : (
-              <>
-                <LocateFixed className="mr-2 h-4 w-4" />
-                Find Libraries Near Me
-              </>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto flex-1"
+              onClick={findLibrariesNearMe}
+              disabled={loading || !isLoaded}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Searching for Libraries...
+                </>
+              ) : (
+                <>
+                  <LocateFixed className="mr-2 h-4 w-4" />
+                  Find Libraries Near Me
+                </>
+              )}
+            </Button>
+            
+            {userLocation && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={recenterOnUser}
+                disabled={!isLoaded || !map}
+              >
+                <Navigation className="mr-2 h-4 w-4" />
+                Recenter on Me
+              </Button>
             )}
-          </Button>
+          </div>
           
           {!userLocation && !loading && (
             <p className="text-xs text-muted-foreground">
@@ -522,10 +638,18 @@ export function LibraryFinderPage() {
               >
                 <CardHeader>
                   <CardTitle className="line-clamp-2">{lib.name}</CardTitle>
-                  <CardDescription className="line-clamp-2 flex items-start gap-1">
-                    <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                    {lib.vicinity}
-                  </CardDescription>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-1 line-clamp-2">
+                      <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      {lib.vicinity}
+                    </div>
+                    {userLocation && (
+                      <div className="flex items-center gap-1 text-primary font-medium">
+                        <Route className="w-3 h-3 flex-shrink-0" />
+                        {getDistanceText(lib)}
+                      </div>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
@@ -546,21 +670,6 @@ export function LibraryFinderPage() {
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    {lib.opening_hours?.open_now !== undefined && (
-                      <Badge
-                        variant={lib.opening_hours?.open_now ? 'default' : 'destructive'}
-                        className={
-                          lib.opening_hours?.open_now
-                            ? 'bg-green-500/20 text-green-300 border-green-500/50'
-                            : ''
-                        }
-                      >
-                        {lib.opening_hours?.open_now ? '🟢 Open Now' : '🔴 Closed'}
-                      </Badge>
-                    )}
-                  </div>
-
                   {lib.geometry?.location && userLocation && (
                     <Button
                       variant="outline"
