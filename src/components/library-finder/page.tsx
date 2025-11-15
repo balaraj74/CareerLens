@@ -90,11 +90,31 @@ export function LibraryFinderPage() {
               
               toast({
                 title: '✅ Location Enabled',
-                description: `Found your location: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
+                description: 'Your location has been found successfully',
               });
             },
             (error) => {
-              console.error('Location error:', error);
+              console.error('Geolocation error:', error);
+              
+              let errorMessage = 'Unable to determine your location. Please enable location services or try again.';
+              
+              switch (error.code) {
+                case error.PERMISSION_DENIED:
+                  errorMessage = 'Location access denied. Please enable location permissions in your browser settings.';
+                  break;
+                case error.POSITION_UNAVAILABLE:
+                  errorMessage = 'Location information is unavailable. Please check your device settings.';
+                  break;
+                case error.TIMEOUT:
+                  errorMessage = 'Location request timed out. Please try again.';
+                  break;
+              }
+              
+              toast({
+                variant: 'destructive',
+                title: '❌ Location Error',
+                description: errorMessage,
+              });
             },
             {
               enableHighAccuracy: true,
@@ -138,7 +158,7 @@ export function LibraryFinderPage() {
           
           toast({
             title: '✅ Location Enabled',
-            description: `Found your location: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
+            description: 'Your location has been found successfully',
           });
           
           resolve(location);
@@ -261,7 +281,7 @@ export function LibraryFinderPage() {
         
         switch (status) {
           case google.maps.places.PlacesServiceStatus.REQUEST_DENIED:
-            errorMessage = 'Request denied. Please enable "Places API" in Google Cloud Console at: https://console.cloud.google.com/apis/library/places-backend.googleapis.com?project=202306950137';
+            errorMessage = 'Request denied. Please enable "Places API" in your Google Cloud Console. Visit: https://console.cloud.google.com/apis/library/places-backend.googleapis.com';
             break;
           case google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT:
             errorMessage = 'Query limit exceeded. Please try again later.';
@@ -481,7 +501,7 @@ export function LibraryFinderPage() {
               <li>
                 <strong>Maps JavaScript API</strong> is enabled:{' '}
                 <a 
-                  href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com?project=202306950137"
+                  href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 underline hover:text-blue-300"
@@ -492,7 +512,7 @@ export function LibraryFinderPage() {
               <li>
                 <strong>Places API</strong> is enabled:{' '}
                 <a 
-                  href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com?project=202306950137"
+                  href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 underline hover:text-blue-300"
@@ -553,7 +573,7 @@ export function LibraryFinderPage() {
               <div>
                 <p className="font-semibold text-green-400">Location Enabled</p>
                 <p className="text-xs text-muted-foreground">
-                  {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
+                  Ready to find nearby libraries
                 </p>
               </div>
             </div>

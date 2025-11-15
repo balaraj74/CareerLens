@@ -48,6 +48,7 @@ export const GLOBAL_NEWS_SOURCES: NewsSource[] = [
 export const NEWS_CATEGORIES = [
   { value: 'all', label: 'All Categories' },
   { value: 'general', label: 'General' },
+  { value: 'politics', label: 'Politics' },
   { value: 'business', label: 'Business' },
   { value: 'technology', label: 'Technology' },
   { value: 'sports', label: 'Sports' },

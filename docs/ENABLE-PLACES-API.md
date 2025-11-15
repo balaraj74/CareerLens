@@ -2,9 +2,9 @@
 
 ## ⚠️ Current Issue
 
-The Library Finder feature is showing this error:
+The Library Finder feature may show this error:
 ```
-Places API has not been used in project 202306950137 before or it is disabled
+Places API has not been used in project before or it is disabled
 ```
 
 ## ✅ Solution: Enable Places API
@@ -13,12 +13,12 @@ Places API has not been used in project 202306950137 before or it is disabled
 
 Click this direct link to enable Places API:
 ```
-https://console.cloud.google.com/apis/library/places-backend.googleapis.com?project=202306950137
+https://console.cloud.google.com/apis/library/places-backend.googleapis.com
 ```
 
 Or manually:
 1. Go to: https://console.cloud.google.com/
-2. Select project: **careerlens-1** (ID: 202306950137)
+2. Select your project
 3. Navigate to: **APIs & Services** → **Library**
 4. Search for: **"Places API"**
 
@@ -36,13 +36,13 @@ Make sure these APIs are also enabled:
 #### **1. Maps JavaScript API**
 Direct link:
 ```
-https://console.cloud.google.com/apis/library/maps-backend.googleapis.com?project=202306950137
+https://console.cloud.google.com/apis/library/maps-backend.googleapis.com
 ```
 
 #### **2. Geolocation API** (for location detection)
 Direct link:
 ```
-https://console.cloud.google.com/apis/library/geolocation.googleapis.com?project=202306950137
+https://console.cloud.google.com/apis/library/geolocation.googleapis.com
 ```
 
 ### **Step 4: Wait for Propagation**
@@ -61,16 +61,13 @@ https://console.cloud.google.com/apis/library/geolocation.googleapis.com?project
 
 ## 🔑 API Key Configuration
 
-Your API key is already configured in `.env`:
-```env
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCCovOlhJubYYE5iZ5I2AGk_roWOUVa5LU
-```
+Your API key should be configured in `.env` file.
 
 ### **Restrict API Key (Security Best Practice)**
 
 To prevent unauthorized use:
 
-1. Go to: https://console.cloud.google.com/apis/credentials?project=202306950137
+1. Go to: https://console.cloud.google.com/apis/credentials
 2. Click on your API key
 3. Under **"API restrictions"**, select **"Restrict key"**
 4. Check these APIs:
@@ -78,11 +75,11 @@ To prevent unauthorized use:
    - ✅ Places API
    - ✅ Geolocation API
 5. Under **"Application restrictions"**, select **"HTTP referrers"**
-6. Add these referrers:
+6. Add your allowed domains:
    ```
    http://localhost:3000/*
-   https://careerlens-1.web.app/*
-   https://careerlens--careerlens-1.us-central1.hosted.app/*
+   https://your-domain.web.app/*
+   https://your-domain.firebaseapp.com/*
    ```
 7. Click **"Save"**
 
@@ -98,7 +95,7 @@ Google Maps Platform requires billing to be enabled, but offers:
 
 ### **Enable Billing:**
 
-1. Go to: https://console.cloud.google.com/billing?project=202306950137
+1. Go to: https://console.cloud.google.com/billing
 2. Link a billing account
 3. Set up budget alerts (recommended):
    - Budget: $10/month
@@ -126,7 +123,7 @@ Google Maps Platform requires billing to be enabled, but offers:
 ### **"Quota exceeded" error**
 
 **Solution:**
-1. Check quota limits: https://console.cloud.google.com/apis/api/places-backend.googleapis.com/quotas?project=202306950137
+1. Check quota limits: https://console.cloud.google.com/apis/api/places-backend.googleapis.com/quotas
 2. Increase quotas if needed
 3. Wait for quota reset (resets daily)
 
@@ -165,11 +162,11 @@ Before testing, verify:
 
 Monitor your API usage:
 ```
-https://console.cloud.google.com/apis/api/places-backend.googleapis.com/metrics?project=202306950137
+https://console.cloud.google.com/apis/api/places-backend.googleapis.com/metrics
 ```
 
 Set up alerts:
-1. Go to: https://console.cloud.google.com/monitoring?project=202306950137
+1. Go to: https://console.cloud.google.com/monitoring
 2. Create alert policy
 3. Metric: API requests
 4. Threshold: 80% of quota
@@ -183,14 +180,14 @@ Set up alerts:
 - **Places API Documentation:** https://developers.google.com/maps/documentation/places/web-service
 - **Maps JavaScript API:** https://developers.google.com/maps/documentation/javascript
 - **Pricing Calculator:** https://mapsplatform.google.com/pricing/
-- **Billing Dashboard:** https://console.cloud.google.com/billing?project=202306950137
+- **Billing Dashboard:** https://console.cloud.google.com/billing
 
 ---
 
 ## 📝 Summary
 
 **Quick Steps:**
-1. ✅ Enable Places API: https://console.cloud.google.com/apis/library/places-backend.googleapis.com?project=202306950137
+1. ✅ Enable Places API: https://console.cloud.google.com/apis/library/places-backend.googleapis.com
 2. ⏰ Wait 2-3 minutes
 3. 🔄 Refresh browser
 4. 🧪 Test at: http://localhost:3000/library-finder
@@ -204,5 +201,4 @@ Set up alerts:
 ---
 
 **Last Updated:** November 15, 2025
-**Project:** CareerLens (careerlens-1)
-**Project ID:** 202306950137
+**Project:** CareerLens
