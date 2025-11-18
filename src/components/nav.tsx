@@ -21,6 +21,7 @@ import {
   Users,
   GraduationCap,
   TrendingUp,
+  Newspaper,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,7 @@ const allNavItems = [
   { href: '/ai-interviewer', icon: <Bot />, label: 'AI Interviewer' },
   { href: '/library-finder', icon: <LibrarySquare />, label: 'Libraries' },
   { href: '/ebooks', icon: <BookOpen />, label: 'eBooks' },
+  { href: '/news', icon: <Newspaper />, label: 'News' },
   { href: '/community', icon: <Users />, label: 'Community' },
   { href: '/resources', icon: <GraduationCap />, label: 'Resources' },
   { href: '/mentors', icon: <MessageSquare />, label: 'Find Mentor' },

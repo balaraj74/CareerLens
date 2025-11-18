@@ -166,7 +166,8 @@ export function ResumeEvaluator({ onAnalysisComplete }: ResumeEvaluatorProps) {
               AI Resume Evaluator
             </CardTitle>
             <CardDescription>
-              Upload your resume for instant AI analysis with ATS optimization, keyword insights, and improvement suggestions
+              Upload your resume for instant AI analysis with ATS optimization, keyword insights, and improvement suggestions.
+              <span className="block mt-1 text-yellow-600 font-medium">Note: Only .txt, .doc, or .docx files are accepted. PDF format is not supported.</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -186,7 +187,7 @@ export function ResumeEvaluator({ onAnalysisComplete }: ResumeEvaluatorProps) {
               <input
                 id="file-upload"
                 type="file"
-                accept=".pdf,.docx,.doc,.txt"
+                accept=".txt,.doc,.docx"
                 onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
                 className="hidden"
               />
@@ -221,7 +222,10 @@ export function ResumeEvaluator({ onAnalysisComplete }: ResumeEvaluatorProps) {
                 </div>
                 
                 <p className="text-xs text-muted-foreground">
-                  Supports PDF, DOCX, and TXT files (max 10MB)
+                  Supports TXT, DOC, and DOCX files only (max 10MB)
+                </p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  ⚠️ PDF files are not supported. Please upload .txt or .doc/.docx format.
                 </p>
               </div>
             </div>
@@ -259,7 +263,7 @@ export function ResumeEvaluator({ onAnalysisComplete }: ResumeEvaluatorProps) {
                     
                     {!error.includes('restart') && !error.includes('scanned') && (
                       <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded text-xs">
-                        <strong className="text-blue-600">Alternative:</strong> Try uploading as DOCX or TXT format instead.
+                        <strong className="text-blue-600">Required Format:</strong> Please upload your resume as .txt, .doc, or .docx file. PDF format is not supported.
                       </div>
                     )}
                   </div>
