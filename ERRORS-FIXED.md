@@ -127,10 +127,10 @@ Replace the invalid key with your new API key:
 
 ```bash
 # BEFORE (INVALID)
-NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY=AQ.Ab8RN6IHFdJSriK9XXnh7I0Ys5xKTaWnCfwIG4ZGE2QLY5IvoA
+NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY=invalid_format_key
 
-# AFTER (VALID FORMAT - use your actual key)
-NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# AFTER (VALID FORMAT - use your actual key from Google Cloud Console)
+NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY=your_actual_api_key_here
 ```
 
 ### Step 5: Restart Dev Server
@@ -217,15 +217,15 @@ npm run dev
 
 **Valid Keys** ✅:
 ```bash
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAZRQLIieXFytt1ztD8uE6TeaqeT4ggBAs ✅
-GOOGLE_GENAI_API_KEY=AIzaSyA_T0pm3WOMczHprNbE8wrKrPu9scXsPUc ✅
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCCovOlhJubYYE5iZ5I2AGk_roWOUVa5LU ✅
-NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID=6495457f6bd0c4747 ✅
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key ✅
+GOOGLE_GENAI_API_KEY=your_gemini_api_key ✅
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key ✅
+NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id ✅
 ```
 
 **Invalid Keys** ❌:
 ```bash
-NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY=AQ.Ab8RN6IHFdJSriK9XXnh7I0Ys5xKTaWnCfwIG4ZGE2QLY5IvoA ❌
+NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY=invalid_format_key ❌
 ```
 
 ---

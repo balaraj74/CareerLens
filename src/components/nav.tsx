@@ -50,6 +50,7 @@ const allNavItems = [
   { href: '/news', icon: <Newspaper />, label: 'News' },
   { href: '/community', icon: <Users />, label: 'Community' },
   { href: '/resources', icon: <GraduationCap />, label: 'Resources' },
+  { href: '/mentors', icon: <MessageSquare />, label: 'Find Mentor' },
 ];
 
 interface NavProps {
