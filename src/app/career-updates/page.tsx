@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot as firestoreOnSnapshot } from 'firebase/firestore';
+import CareerUpdatesWidget from '@/components/CareerUpdatesWidget';
 
 interface SummaryItem {
   title: string;
@@ -43,19 +44,36 @@ export default function CareerUpdatesPage() {
     setLoading(true);
     setError(null);
     
-    const docRef = doc(db, 'careerIntelligence', 'latest');
+    // Listen to the latest career update from our Real-Time Intel Engine
+    const q = query(collection(db, 'careerUpdates'), orderBy('timestamp', 'desc'), limit(1));
     
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const data = docSnapshot.data();
-          setSummary(data.summary);
-          setLastUpdate(data.timestamp?.toDate() || new Date());
-          setError(null);
+    const unsubscribe = firestoreOnSnapshot(
+      q,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const data = snapshot.docs[0].data();
+          // Map the new data structure to existing UI
+          if (data.summary) {
+            setSummary({
+              trendingSkills: data.summary.trendingSkills?.map((s: any) => ({
+                title: s.skill || s.title,
+                summary: s.evidence?.[0] || `${s.changePct}% growth`
+              })) || [],
+              certifications: data.summary.certifications?.map((c: any) => ({
+                title: c.name || c.title,
+                summary: `${c.platform} - ${c.url || ''}`
+              })) || [],
+              opportunities: data.summary.opportunities || [],
+              aiInsights: data.summary.jobs?.map((j: any) => ({
+                title: j.title,
+                summary: `${j.count} openings in ${j.city}`
+              })) || []
+            });
+            setLastUpdate(data.timestamp?.toDate?.() || new Date());
+            setError(null);
+          }
         } else {
-          // Show mock data immediately if no data exists
-          console.log('No data in Firestore, using mock data');
+          console.log('No data in careerUpdates, using mock data');
           setSummary(getMockSummary());
           setLastUpdate(new Date());
           setError("Showing demo data. Click 'Refresh Now' to fetch live updates.");
@@ -64,7 +82,6 @@ export default function CareerUpdatesPage() {
       },
       (err) => {
         console.error('Firestore error:', err);
-        // Show mock data on error
         setSummary(getMockSummary());
         setLastUpdate(new Date());
         setError(`Using demo data. ${err.message}`);
@@ -101,24 +118,12 @@ export default function CareerUpdatesPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    setError(null);
+    setError('Data refreshes automatically from Cloud Functions every 6 hours. Live data is displayed below!');
     
-    try {
-      const response = await fetch('/api/refresh-career-updates');
-      const data = await response.json();
-      
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to refresh data.');
-      }
-      
-      // The onSnapshot listener will automatically update the UI
-      
-    } catch (error: any) {
-      console.error('Error refreshing data:', error);
-      setError(`Failed to refresh updates: ${error.message}`);
-    } finally {
+    // Just show a message - the onSnapshot listener will automatically update the UI
+    setTimeout(() => {
       setRefreshing(false);
-    }
+    }, 1000);
   };
 
   const renderContent = () => {
@@ -223,6 +228,11 @@ export default function CareerUpdatesPage() {
         </div>
 
         {renderContent()}
+        
+        {/* Real-Time Career Intel Widget */}
+        <div className="mt-8">
+          <CareerUpdatesWidget />
+        </div>
         
       </div>
     </div>

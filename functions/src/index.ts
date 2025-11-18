@@ -15,7 +15,7 @@ export { fetchResourcesScheduled } from './fetchResources';
 export { fetchMentorsScheduled } from './fetchMentors';
 export { summarizeDataTrigger } from './summarizeData';
 export { notifyUsersTrigger } from './notifyUsers';
-export { fetchCareerUpdates, refreshCareerUpdates } from './fetchCareerIntelligence';
+export { fetchCareerUpdates } from './fetchCareerIntelligence';
 
 /**
  * Health check function
