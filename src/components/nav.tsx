@@ -35,6 +35,7 @@ import { Logo } from './icons';
 const allNavItems = [
   { href: '/', icon: <LayoutDashboard />, label: 'Dashboard' },
   { href: '/profile', icon: <UserIcon />, label: 'Profile' },
+  { href: '/career-navigator', icon: <GraduationCap />, label: 'Career Navigator' },
   { href: '/career-graph', icon: <Activity />, label: 'Career Graph' },
   { href: '/calendar', icon: <Calendar />, label: 'AI Calendar' },
   { href: '/career-updates', icon: <TrendingUp />, label: 'Career Updates' },
