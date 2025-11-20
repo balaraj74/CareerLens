@@ -102,10 +102,15 @@ export default function EnglishHelperPage() {
   // Request camera and microphone permissions
   const requestPermissions = async () => {
     try {
+      console.log('🎥 Requesting camera and microphone permissions...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
+      console.log('✅ Permissions granted!');
+      console.log('🎤 Microphone track:', stream.getAudioTracks()[0]?.label);
+      console.log('📹 Camera track:', stream.getVideoTracks()[0]?.label);
+      
       mediaStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -114,8 +119,8 @@ export default function EnglishHelperPage() {
       setIsCameraActive(true);
       setIsMicActive(true);
     } catch (error) {
-      console.error('Permission denied:', error);
-      alert('Camera and microphone access is required for this feature.');
+      console.error('❌ Permission denied:', error);
+      alert('Camera and microphone access is required for this feature. Please allow access in your browser settings.');
     }
   };
 
