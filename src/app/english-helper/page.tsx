@@ -116,7 +116,7 @@ export default function EnglishHelperPage() {
     }
   };
 
-  // Initialize speech recognition
+  // Initialize speech recognition with auto-submission
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -126,15 +126,41 @@ export default function EnglishHelperPage() {
         recognitionRef.current.interimResults = true;
         recognitionRef.current.lang = 'en-US';
 
+        let silenceTimer: NodeJS.Timeout;
+        let finalTranscript = '';
+
         recognitionRef.current.onstart = () => {
           isRecognitionRunning.current = true;
         };
 
         recognitionRef.current.onresult = (event: any) => {
-          const transcript = Array.from(event.results)
-            .map((result: any) => result[0].transcript)
-            .join('');
-          setCurrentUserText(transcript);
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcriptPart = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcriptPart + ' ';
+            } else {
+              interimTranscript += transcriptPart;
+            }
+          }
+
+          // Show current speech (final + interim)
+          setCurrentUserText(finalTranscript + interimTranscript);
+
+          // Clear previous silence timer
+          if (silenceTimer) clearTimeout(silenceTimer);
+
+          // Auto-submit after 2 seconds of silence
+          if (finalTranscript.trim()) {
+            silenceTimer = setTimeout(() => {
+              if (finalTranscript.trim()) {
+                submitSpeech(finalTranscript.trim());
+                finalTranscript = '';
+                setCurrentUserText('');
+              }
+            }, 2000);
+          }
         };
 
         recognitionRef.current.onend = () => {
@@ -151,6 +177,12 @@ export default function EnglishHelperPage() {
         recognitionRef.current.onerror = (event: any) => {
           console.error('Speech recognition error:', event.error);
           isRecognitionRunning.current = false;
+          
+          // Don't restart if it's a permission error
+          if (event.error === 'not-allowed') {
+            setIsMicActive(false);
+            alert('Microphone access is required. Please grant permission.');
+          }
         };
       }
     }
@@ -236,19 +268,86 @@ export default function EnglishHelperPage() {
   };
 
   // Submit user speech for AI response
-  const submitSpeech = async () => {
-    if (!currentUserText.trim()) return;
+  const submitSpeech = async (textToSubmit?: string) => {
+    const userText = textToSubmit || currentUserText;
+    if (!userText.trim()) return;
 
     const userMessage = {
       speaker: 'user' as const,
-      text: currentUserText,
+      text: userText,
       timestamp: new Date(),
     };
     setTranscript(prev => [...prev, userMessage]);
 
-    // Simulate AI response (in production, call your AI API)
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(currentUserText, topic);
+    try {
+      // Call Gemini AI API
+      const response = await fetch('/api/english-helper', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userMessage: userText,
+          conversationHistory: transcript.map(t => `${t.speaker}: ${t.text}`).join('\n'),
+          topic,
+          proficiency,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.response) {
+        // Add AI response to transcript
+        const aiMessage = {
+          speaker: 'ai' as const,
+          text: data.response,
+          timestamp: new Date(),
+        };
+        setTranscript(prev => [...prev, aiMessage]);
+        speakText(data.response);
+
+        // Process feedback from AI
+        if (data.feedback && data.feedback.length > 0) {
+          const formattedFeedback = data.feedback.map((item: any) => ({
+            type: item.type || 'info',
+            message: item.message,
+            severity: item.severity || 'info',
+          }));
+          setFeedback(formattedFeedback);
+        } else {
+          // Generate local feedback if AI didn't provide
+          const newFeedback = generateFeedback(userText);
+          setFeedback(newFeedback);
+        }
+      } else {
+        // Fallback to mock response if AI fails
+        const aiResponse = generateAIResponse(userText, topic);
+        const aiMessage = {
+          speaker: 'ai' as const,
+          text: aiResponse,
+          timestamp: new Date(),
+        };
+        setTranscript(prev => [...prev, aiMessage]);
+        speakText(aiResponse);
+        
+        const newFeedback = generateFeedback(userText);
+        setFeedback(newFeedback);
+      }
+
+      // Update stats
+      setSessionStats(prev => ({
+        ...prev,
+        wordsSpoken: prev.wordsSpoken + userText.split(' ').length,
+      }));
+    } catch (error) {
+      console.error('Error calling AI:', error);
+      
+      // Fallback to mock response on error
+      const aiResponse = generateAIResponse(userText, topic);
       const aiMessage = {
         speaker: 'ai' as const,
         text: aiResponse,
@@ -256,17 +355,15 @@ export default function EnglishHelperPage() {
       };
       setTranscript(prev => [...prev, aiMessage]);
       speakText(aiResponse);
-
-      // Generate feedback
-      const newFeedback = generateFeedback(currentUserText);
+      
+      const newFeedback = generateFeedback(userText);
       setFeedback(newFeedback);
-
-      // Update stats
+      
       setSessionStats(prev => ({
         ...prev,
-        wordsSpoken: prev.wordsSpoken + currentUserText.split(' ').length,
+        wordsSpoken: prev.wordsSpoken + userText.split(' ').length,
       }));
-    }, 1000);
+    }
 
     setCurrentUserText('');
   };
@@ -462,11 +559,14 @@ export default function EnglishHelperPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="mt-4 p-4 bg-primary/10 rounded-lg"
                   >
-                    <p className="text-sm text-muted-foreground mb-1">You're saying:</p>
+                    <p className="text-sm text-muted-foreground mb-1 flex items-center gap-2">
+                      <Mic className="h-4 w-4 text-red-500 animate-pulse" />
+                      Listening...
+                    </p>
                     <p className="font-medium">{currentUserText}</p>
-                    <Button size="sm" onClick={submitSpeech} className="mt-2">
-                      Submit
-                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      💡 Pause for 2 seconds to automatically send to AI
+                    </p>
                   </motion.div>
                 )}
               </CardContent>
