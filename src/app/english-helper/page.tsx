@@ -78,6 +78,30 @@ export default function EnglishHelperPage() {
   const [accent, setAccent] = useState<Accent>('american');
   const [showSettings, setShowSettings] = useState(false);
 
+  // Persist settings to localStorage so options survive reloads/restarts
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('english-helper-settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.proficiency) setProficiency(parsed.proficiency);
+        if (parsed.topic) setTopic(parsed.topic);
+        if (parsed.accent) setAccent(parsed.accent);
+      }
+    } catch (e) {
+      console.warn('Could not read saved settings', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const toSave = { proficiency, topic, accent };
+      window.localStorage.setItem('english-helper-settings', JSON.stringify(toSave));
+    } catch (e) {
+      console.warn('Could not save settings', e);
+    }
+  }, [proficiency, topic, accent]);
+
   // Conversation state
   const [transcript, setTranscript] = useState<Array<{ speaker: 'user' | 'ai'; text: string; timestamp: Date }>>([]);
   const [currentUserText, setCurrentUserText] = useState('');
