@@ -15,7 +15,7 @@ import type {
   EnglishHelperStarter, 
   EnglishHelperFollowupInput, 
   EnglishHelperFollowup 
-} from '@/ai/flows/english-helper';
+} from '@/ai/schemas/english-helper';
 import { 
   suggestProjects, 
   generateProjectPlan, 
