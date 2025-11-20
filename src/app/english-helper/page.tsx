@@ -67,6 +67,7 @@ export default function EnglishHelperPage() {
   const [isMicActive, setIsMicActive] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   // User settings
   const [proficiency, setProficiency] = useState<ProficiencyLevel>('intermediate');
@@ -130,10 +131,17 @@ export default function EnglishHelperPage() {
 
         recognitionRef.current.onstart = () => {
           isRecognitionRunning.current = true;
-          console.log('Speech recognition started');
+          setIsListening(true);
+          console.log('✅ Speech recognition started - LISTENING TO YOU NOW');
         };
 
         recognitionRef.current.onresult = (event: any) => {
+          // Skip if AI is currently speaking to avoid picking up AI voice
+          if (isAISpeaking) {
+            console.log('Ignoring recognition during AI speech');
+            return;
+          }
+
           let interimTranscript = '';
           let finalTranscript = '';
           
@@ -149,11 +157,13 @@ export default function EnglishHelperPage() {
           
           // Update displayed text with both final and interim
           const fullText = (finalTranscript + interimTranscript).trim();
+          console.log('Speech recognized:', fullText);
           setCurrentUserText(fullText);
           currentTextRef.current = fullText;
           
           // If we got final results, set up auto-submit timer (2 seconds of silence)
           if (finalTranscript.trim()) {
+            console.log('Final transcript received:', finalTranscript);
             // Clear any existing timer
             if (silenceTimerRef.current) {
               clearTimeout(silenceTimerRef.current);
@@ -163,6 +173,7 @@ export default function EnglishHelperPage() {
             silenceTimerRef.current = setTimeout(() => {
               const textToSubmit = currentTextRef.current;
               if (textToSubmit.trim()) {
+                console.log('Auto-submitting after silence:', textToSubmit);
                 // Trigger submit via state update
                 setCurrentUserText(prev => {
                   if (prev.trim()) {
@@ -178,17 +189,18 @@ export default function EnglishHelperPage() {
 
         recognitionRef.current.onend = () => {
           isRecognitionRunning.current = false;
-          console.log('Speech recognition ended');
+          setIsListening(false);
+          console.log('⏸️ Speech recognition ended');
           // Auto-restart if mic is active, session is running, and AI is not speaking
           if (isMicActive && isSessionActive && !isAISpeaking) {
             setTimeout(() => {
               try {
                 if (!isRecognitionRunning.current) {
                   recognitionRef.current.start();
-                  console.log('Restarting recognition...');
+                  console.log('🔄 Restarting recognition...');
                 }
               } catch (error) {
-                console.log('Recognition restart failed:', error);
+                console.log('❌ Recognition restart failed:', error);
               }
             }, 100);
           }
@@ -298,27 +310,54 @@ export default function EnglishHelperPage() {
   // Text-to-speech for AI responses
   const speakText = (text: string) => {
     if ('speechSynthesis' in window) {
+      console.log('AI starting to speak:', text.substring(0, 50) + '...');
+      
       // Stop speech recognition while AI is speaking
       setIsAISpeaking(true);
       if (recognitionRef.current && isRecognitionRunning.current) {
         try {
           recognitionRef.current.stop();
+          console.log('Recognition stopped for AI speech');
         } catch (error) {
           console.log('Error stopping recognition:', error);
         }
+      }
+
+      // Temporarily mute microphone to prevent echo/feedback
+      const wasMicActive = isMicActive;
+      if (mediaStreamRef.current && wasMicActive) {
+        mediaStreamRef.current.getAudioTracks().forEach(track => {
+          track.enabled = false;
+        });
       }
       
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = accent === 'american' ? 'en-US' : accent === 'british' ? 'en-GB' : 'en-AU';
       utterance.rate = 0.9;
+      
+      utterance.onstart = () => {
+        console.log('AI speech started');
+      };
+
       utterance.onend = () => {
+        console.log('AI speech ended');
+        
+        // Re-enable microphone
+        if (mediaStreamRef.current && wasMicActive) {
+          mediaStreamRef.current.getAudioTracks().forEach(track => {
+            track.enabled = true;
+          });
+        }
+
         setIsAISpeaking(false);
+        
         // Resume speech recognition after AI finishes speaking
-        if (isMicActive && isSessionActive && recognitionRef.current) {
+        if (wasMicActive && isSessionActive && recognitionRef.current) {
           setTimeout(() => {
             try {
               if (!isRecognitionRunning.current) {
                 recognitionRef.current.start();
+                console.log('Recognition restarted after AI speech');
               }
             } catch (error) {
               console.log('Error restarting recognition after AI speech:', error);
@@ -326,6 +365,19 @@ export default function EnglishHelperPage() {
           }, 500);
         }
       };
+
+      utterance.onerror = (error) => {
+        console.error('Speech synthesis error:', error);
+        setIsAISpeaking(false);
+        
+        // Re-enable microphone on error
+        if (mediaStreamRef.current && wasMicActive) {
+          mediaStreamRef.current.getAudioTracks().forEach(track => {
+            track.enabled = true;
+          });
+        }
+      };
+
       speechSynthesis.speak(utterance);
     }
   };
@@ -566,6 +618,26 @@ export default function EnglishHelperPage() {
                     </>
                   )}
                 </div>
+
+                {/* Listening Indicator */}
+                {isListening && !currentUserText && !isAISpeaking && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                        className="w-3 h-3 bg-green-500 rounded-full"
+                      />
+                      <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                        🎤 Listening... Speak now!
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Current Speech */}
                 {currentUserText && (
