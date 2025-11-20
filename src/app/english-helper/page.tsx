@@ -66,6 +66,7 @@ export default function EnglishHelperPage() {
   const isSessionActiveRef = useRef(false);
   const isMicActiveRef = useRef(false);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoRestartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Session state
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -330,19 +331,31 @@ export default function EnglishHelperPage() {
           console.log('⏸️ Speech recognition ended');
           console.log('📊 State - Mic:', isMicActiveRef.current, 'Session:', isSessionActiveRef.current, 'AI Speaking:', isAISpeakingRef.current);
           
-          // Quick restart for smooth hands-free conversation
-          setTimeout(() => {
-            if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current && !isRecognitionRunning.current) {
-              try {
-                recognitionRef.current?.start();
-                console.log('🔄 Recognition auto-restarted');
-              } catch (error: any) {
-                if (!error.message?.includes('already started')) {
-                  console.log('⚠️ Auto-restart attempt:', error.message);
+          // Clear any pending auto-restart
+          if (autoRestartTimeoutRef.current) {
+            clearTimeout(autoRestartTimeoutRef.current);
+            autoRestartTimeoutRef.current = null;
+          }
+          
+          // Only restart if session is active and we're not in the middle of something
+          if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current) {
+            // Schedule auto-restart with delay to prevent rapid loops
+            autoRestartTimeoutRef.current = setTimeout(() => {
+              // Double-check conditions before actually restarting
+              if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current && !isRecognitionRunning.current) {
+                try {
+                  recognitionRef.current?.start();
+                  console.log('🔄 Recognition auto-restarted');
+                } catch (error: any) {
+                  if (!error.message?.includes('already started')) {
+                    console.log('⚠️ Auto-restart error:', error.message);
+                  }
                 }
+              } else {
+                console.log('⏭️ Auto-restart cancelled - conditions changed');
               }
-            }
-          }, 100); // Minimal delay for smooth conversation
+            }, 300);
+          }
         };
 
         recognitionRef.current.onerror = (event: any) => {
@@ -361,19 +374,14 @@ export default function EnglishHelperPage() {
             clearTimeout(silenceTimerRef.current);
           }
           
-          // Quick restart on no-speech for smooth hands-free conversation
+          // Only restart on no-speech error (user didn't speak)
+          // Don't restart on abort (happens during normal stop/start cycle)
           if (event.error === 'no-speech') {
-            console.log('🔄 No speech detected, restarting immediately...');
-            setTimeout(() => {
-              if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current && !isRecognitionRunning.current) {
-                try {
-                  recognitionRef.current?.start();
-                  console.log('✅ Recognition restarted after no-speech');
-                } catch (error: any) {
-                  console.log('⚠️ No-speech recovery attempt:', error.message);
-                }
-              }
-            }, 100); // Immediate restart
+            console.log('🔄 No speech detected, restarting...');
+            safeRestartRecognition(500); // Use safe restart with debouncing
+          } else if (event.error === 'aborted') {
+            // Aborted is normal during restart - don't restart again
+            console.log('⏭️ Aborted - waiting for manual restart');
           }
         };
       }
@@ -491,6 +499,11 @@ export default function EnglishHelperPage() {
       clearTimeout(restartTimeoutRef.current);
       restartTimeoutRef.current = null;
     }
+    if (autoRestartTimeoutRef.current) {
+      clearTimeout(autoRestartTimeoutRef.current);
+      autoRestartTimeoutRef.current = null;
+      console.log('Cleared auto-restart timeout');
+    }
     
     // Stop speech recognition
     if (recognitionRef.current && isRecognitionRunning.current) {
@@ -586,13 +599,8 @@ export default function EnglishHelperPage() {
                 recognitionRef.current?.stop();
               }
               
-              // Start fresh after brief delay
-              setTimeout(() => {
-                if (!isRecognitionRunning.current && !isAISpeakingRef.current) {
-                  recognitionRef.current?.start();
-                  console.log('🚀 Recognition forcefully restarted for smooth conversation');
-                }
-              }, 100);
+              // Use safe restart to prevent rapid restart loops
+              safeRestartRecognition(400);
             } catch (error: any) {
               console.log('⚠️ Restart attempt:', error.message);
             }
@@ -613,19 +621,8 @@ export default function EnglishHelperPage() {
           console.log('🎤 Microphone re-enabled after error');
         }
         
-        // Immediate restart on error for smooth conversation
-        setTimeout(() => {
-          if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current) {
-            try {
-              if (!isRecognitionRunning.current) {
-                recognitionRef.current?.start();
-                console.log('🔄 Recognition restarted after error');
-              }
-            } catch (error: any) {
-              console.log('⚠️ Error restart attempt:', error.message);
-            }
-          }
-        }, 200);
+        // Restart after AI speech ends using safe restart
+        safeRestartRecognition(400);
       };
 
       speechSynthesis.speak(utterance);
@@ -757,6 +754,32 @@ export default function EnglishHelperPage() {
       window.removeEventListener('autosubmit', handleAutoSubmit);
     };
   }, [submitSpeech, isAISpeaking]);
+
+  // Cleanup all resources on component unmount
+  useEffect(() => {
+    return () => {
+      console.log('🧹 Cleaning up English Helper component...');
+      
+      // Clear all timeouts
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (restartTimeoutRef.current) clearTimeout(restartTimeoutRef.current);
+      if (autoRestartTimeoutRef.current) clearTimeout(autoRestartTimeoutRef.current);
+      
+      // Stop recognition
+      if (recognitionRef.current && isRecognitionRunning.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore errors on cleanup
+        }
+      }
+      
+      // Stop media stream
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   // Generate AI response (mock - replace with actual AI API)
   const generateAIResponse = (userText: string, topic: ConversationTopic): string => {
