@@ -9,6 +9,13 @@ import { generateInterviewQuestions } from '@/ai/flows/generate-interview-questi
 import { processPdf } from '@/ai/flows/learning-helper';
 import { generateFirstInterviewQuestion } from '@/ai/flows/ai-interviewer';
 import { aiInterviewerFollowup as genkitAiInterviewerFollowup } from '@/ai/flows/ai-interviewer-flow';
+import { getEnglishHelperStarter, getEnglishHelperFollowup } from '@/ai/flows/english-helper';
+import type { 
+  EnglishHelperInput, 
+  EnglishHelperStarter, 
+  EnglishHelperFollowupInput, 
+  EnglishHelperFollowup 
+} from '@/ai/flows/english-helper';
 import { 
   suggestProjects, 
   generateProjectPlan, 
@@ -211,5 +218,30 @@ export async function getProjectCompletionAnalysis(input: {
   } catch (error: any) {
     console.error(error);
     return { success: false, error: error.message || 'Failed to analyze project completion.' };
+  }
+}
+
+// English Helper Actions
+export async function getEnglishHelperStarterPrompt(
+  input: EnglishHelperInput
+): Promise<{ success: boolean; data?: EnglishHelperStarter; error?: string }> {
+  try {
+    const result = await getEnglishHelperStarter(input);
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to generate English Helper starter.' };
+  }
+}
+
+export async function getEnglishHelperFollowupResponse(
+  input: EnglishHelperFollowupInput
+): Promise<{ success: boolean; data?: EnglishHelperFollowup; error?: string }> {
+  try {
+    const result = await getEnglishHelperFollowup(input);
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to get English Helper followup.' };
   }
 }
