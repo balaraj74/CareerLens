@@ -1,0 +1,16 @@
+{
+  "name": "careerlens-career-updates",
+  "version": "1.0.0",
+  "description": "Real-Time Career Intel Engine for CareerLens",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.3.0",
+    "@google-cloud/firestore": "^7.0.0",
+    "@google-cloud/secret-manager": "^6.1.1",
+    "@google-cloud/vertexai": "^1.1.0",
+    "node-fetch": "^2.7.0"
+  }
+}

@@ -1,9 +1,10 @@
 
-import { onSchedule } from "firebase-functions/v2/scheduler";
-import { onRequest } from "firebase-functions/v2/https";
+import { onMessagePublished } from "firebase-functions/v2/pubsub";
+import * as admin from 'firebase-admin';
 import fetch from "node-fetch";
 import { getFirestore } from "firebase-admin/firestore";
 import { VertexAI } from "@google-cloud/vertexai";
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import * as logger from "firebase-functions/logger";
 
@@ -16,177 +17,150 @@ if (!process.env.FIREBASE_CONFIG) {
 }
 
 const db = getFirestore();
+const secretClient = new SecretManagerServiceClient();
 const vertex = new VertexAI({ project: "careerlens-1", location: "us-central1" });
 
-async function fetchAndSummarizeData() {
-  // Use free Reddit API and mock data since News API requires a key
-  const sources = [
-    "https://www.reddit.com/r/cscareerquestions/hot.json?limit=10",
-    "https://www.reddit.com/r/learnprogramming/hot.json?limit=10",
-    "https://www.reddit.com/r/webdev/hot.json?limit=10",
-    "https://www.reddit.com/r/programming/hot.json?limit=5"
-  ];
-
-  let allData: any[] = [];
-  for (const url of sources) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'CareerLens/1.0'
-        }
-      });
-      if (res.ok) {
-        const json: any = await res.json();
-        if (json.data && json.data.children) {
-          allData.push(...json.data.children.map((child: any) => ({
-            title: child.data.title,
-            url: child.data.url,
-            subreddit: child.data.subreddit,
-            score: child.data.score,
-            selftext: child.data.selftext?.substring(0, 500)
-          })));
-        }
-      } else {
-        logger.error(`Failed to fetch ${url}: ${res.statusText}`);
-      }
-    } catch (error) {
-      logger.error(`Error fetching ${url}:`, error);
-    }
-  }
-
-  if (allData.length === 0) {
-    logger.log("No data fetched, using fallback data.");
-    // Provide fallback mock data
-    allData = [
-      { title: "AI and Machine Learning Skills in High Demand for 2025", subreddit: "cscareerquestions" },
-      { title: "Best Cloud Certifications for Career Growth", subreddit: "learnprogramming" },
-      { title: "Remote Work Opportunities for Full Stack Developers", subreddit: "webdev" }
-    ];
-  }
-
-  // Summarize using Gemini
-  const model = vertex.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const summaryPrompt = `
-    Summarize the latest tech/career/job/certification discussions from Reddit below.
-    Group them into exactly 4 categories:
-    - trendingSkills: Top 4-5 skills and technologies being discussed
-    - certifications: Top 3-4 certifications mentioned
-    - opportunities: Top 3-4 job/career opportunities discussed  
-    - aiInsights: Top 3-4 AI-powered insights or predictions
-    
-    For each item, provide:
-    - title: A catchy, concise title (max 10 words)
-    - summary: A brief 1-2 sentence summary (max 50 words)
-    
-    Return ONLY valid JSON in this exact format:
-    {
-      "trendingSkills": [{"title": "...", "summary": "..."}],
-      "certifications": [{"title": "...", "summary": "..."}],
-      "opportunities": [{"title": "...", "summary": "..."}],
-      "aiInsights": [{"title": "...", "summary": "..."}]
-    }
-    
-    Reddit posts:
-    ${JSON.stringify(allData.slice(0, 20))}
-  `;
-
+// Helper to get secrets
+async function getSecret(name: string): Promise<string> {
   try {
-    const summarized = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: summaryPrompt }] }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2048,
-      }
+    const [version] = await secretClient.accessSecretVersion({
+      name: `projects/${process.env.GCP_PROJECT || 'careerlens-1'}/secrets/${name}/versions/latest`,
     });
-
-    // Extract the JSON string from the response
-    const responseText = summarized.response.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    logger.log('Raw Gemini response:', responseText);
-    
-    // Extract JSON from markdown code blocks if present
-    let jsonString = responseText;
-    if (responseText.includes('```json')) {
-      jsonString = responseText.substring(
-        responseText.indexOf('```json') + 7,
-        responseText.lastIndexOf('```')
-      ).trim();
-    } else if (responseText.includes('```')) {
-      jsonString = responseText.substring(
-        responseText.indexOf('```') + 3,
-        responseText.lastIndexOf('```')
-      ).trim();
-    } else {
-      // Try to find JSON object
-      const start = responseText.indexOf('{');
-      const end = responseText.lastIndexOf('}') + 1;
-      if (start >= 0 && end > start) {
-        jsonString = responseText.substring(start, end);
-      }
-    }
-    
-    const summaryJson = JSON.parse(jsonString);
-    logger.log('Parsed summary:', summaryJson);
-
-    await db.collection("careerIntelligence").doc("latest").set({
-      summary: summaryJson,
-      timestamp: new Date(),
-    });
-
-    logger.log("Successfully fetched and summarized career intelligence data.");
-    return summaryJson;
+    return version.payload?.data?.toString() || '';
   } catch (error) {
-    logger.error("Error summarizing data with Vertex AI or saving to Firestore:", error);
-    
-    // Fallback to mock data if AI fails
-    const fallbackSummary = {
-      trendingSkills: [
-        { title: "React & Next.js Frameworks", summary: "Modern web development continues to favor React ecosystem with Next.js gaining massive adoption." },
-        { title: "Python for AI/ML", summary: "Python remains the dominant language for artificial intelligence and machine learning applications." },
-        { title: "Cloud Computing (AWS/Azure/GCP)", summary: "Cloud infrastructure skills are essential, with multi-cloud expertise becoming increasingly valuable." },
-        { title: "TypeScript Adoption", summary: "TypeScript usage is growing rapidly, becoming the preferred choice for large-scale applications." }
-      ],
-      certifications: [
-        { title: "AWS Solutions Architect", summary: "One of the most sought-after certifications, validating cloud architecture expertise." },
-        { title: "Google Professional Cloud Architect", summary: "Demonstrates ability to design and manage Google Cloud solutions effectively." },
-        { title: "Azure Developer Associate", summary: "Proves proficiency in developing cloud applications on Microsoft Azure platform." }
-      ],
-      opportunities: [
-        { title: "Full Stack Developer Roles", summary: "High demand for developers skilled in both frontend and backend technologies." },
-        { title: "DevOps Engineers", summary: "Companies actively hiring for CI/CD pipeline and infrastructure automation expertise." },
-        { title: "AI/ML Engineer Positions", summary: "Explosive growth in roles focused on machine learning model development and deployment." }
-      ],
-      aiInsights: [
-        { title: "Remote Work is Here to Stay", summary: "Tech industry embracing permanent remote and hybrid work models globally." },
-        { title: "AI Augmenting Developer Productivity", summary: "AI coding assistants like GitHub Copilot transforming how developers write code." },
-        { title: "Emphasis on Soft Skills", summary: "Communication and collaboration skills becoming as important as technical abilities." }
-      ]
-    };
-    
-    await db.collection("careerIntelligence").doc("latest").set({
-      summary: fallbackSummary,
-      timestamp: new Date(),
-      fallback: true
-    });
-    
-    logger.log("Used fallback data due to AI error");
-    return fallbackSummary;
+    logger.warn(`Could not access secret ${name}, using fallback/mock mode.`);
+    return '';
   }
 }
 
-export const fetchCareerUpdates = onSchedule("every 12 hours", async () => {
+async function fetchNews(apiKey: string, query: string) {
+  if (!apiKey) return { articles: [] };
+  const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&pageSize=10&sortBy=publishedAt&apiKey=${apiKey}`;
   try {
-    await fetchAndSummarizeData();
-  } catch (error) {
-    logger.error("Error in scheduled career update:", error);
+    const r = await fetch(url);
+    return await r.json();
+  } catch (e) {
+    logger.error("Error fetching news", e);
+    return { articles: [] };
   }
-});
+}
 
-export const refreshCareerUpdates = onRequest(async (req, res) => {
+async function fetchReddit(subreddit: string) {
+  const url = `https://www.reddit.com/r/${subreddit}/hot.json?limit=10`;
   try {
-    await fetchAndSummarizeData();
-    res.json({ success: true, message: "Successfully refreshed career intelligence data." });
-  } catch (error) {
-    logger.error("Error in manual career update refresh:", error);
-    res.status(500).json({ success: false, message: "Failed to refresh career intelligence data." });
+    const r = await fetch(url, { headers: { 'User-Agent': 'CareerLens/1.0' } });
+    return await r.json();
+  } catch (e) {
+    logger.error(`Error fetching reddit ${subreddit}`, e);
+    return {};
+  }
+}
+
+async function summarizeWithVertexAI(text: string) {
+  const model = vertex.getGenerativeModel({ model: "gemini-1.5-flash" });
+  
+  const prompt = `
+    You are an expert career analyst. Given the raw news and forum data below, output only valid JSON with these fields:
+    {
+      "trendingSkills": [{"skill":"AI","changePct":23,"evidence":["..."]}],
+      "jobs":[{"title":"ML Engineer","city":"Bengaluru","count":1200,"exampleLinks":["..."]}],
+      "certifications":[{"name":"Generative AI Developer","platform":"Coursera","url":"..."}],
+      "opportunities":[{"title": "...", "summary": "..."}],
+      "insights":"one-line highlight",
+      "metrics": { "aiMlGrowthPct": 0, "reactOpenings": 0, "topCity": "..." }
+    }
+    
+    Analyze the following raw data and extract real trends. If data is sparse, infer reasonable trends based on the content.
+    
+    RAW DATA:
+    ${text.substring(0, 30000)} 
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.candidates?.[0].content.parts[0].text || "{}";
+    
+    // Clean up markdown code blocks if present
+    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    logger.error("Vertex AI summarization failed", e);
+    return {
+      trendingSkills: [],
+      jobs: [],
+      certifications: [],
+      opportunities: [],
+      insights: "Data analysis unavailable at the moment.",
+      metrics: {}
+    };
+  }
+}
+
+export const fetchCareerUpdates = onMessagePublished({
+  topic: "career-updates-trigger",
+  timeoutSeconds: 540,
+  memory: "1GiB"
+}, async (event) => {
+  try {
+    logger.info("Starting career updates fetch...");
+
+    // 1. Load secrets
+    const newsApiKey = await getSecret("NEWS_API_KEY");
+
+    // 2. Fetch from multiple sources (parallel)
+    const [news, redditCs, redditWebDev] = await Promise.all([
+      fetchNews(newsApiKey, "AI careers OR data scientist OR machine learning"),
+      fetchReddit("cscareerquestions"),
+      fetchReddit("webdev")
+    ]);
+
+    // 3. Save raw payloads
+    const rawBatch = db.batch();
+    const rawRef = db.collection('rawFetches').doc();
+    rawBatch.set(rawRef, {
+      source: 'combined',
+      payload: { 
+        newsCount: (news as any)?.articles?.length, 
+        redditCsCount: (redditCs as any)?.data?.children?.length 
+      },
+      fetchedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    await rawBatch.commit();
+
+    // 4. Normalize & prepare text
+    const combinedText = JSON.stringify({
+      news: (news as any)?.articles?.map((a: any) => a.title + " - " + a.description).slice(0, 10) || [],
+      reddit: [
+        ...((redditCs as any)?.data?.children?.map((c: any) => c.data.title + " " + c.data.selftext) || []),
+        ...((redditWebDev as any)?.data?.children?.map((c: any) => c.data.title + " " + c.data.selftext) || [])
+      ].slice(0, 20)
+    });
+
+    // 5. Summarize
+    const summary = await summarizeWithVertexAI(combinedText);
+
+    // 6. Write snapshot
+    const snapshot = {
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      summary,
+      meta: { sources: ['newsapi', 'reddit'] },
+      metrics: summary.metrics || {}
+    };
+    
+    await db.collection('careerUpdates').add(snapshot);
+    
+    // 7. Update aggregated metrics
+    if (summary.metrics?.topCity) {
+      await db.collection('jobCountsBySkill').doc('global_metrics').set({
+        latest: summary.metrics,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+
+    logger.info('Career updates fetched & stored successfully.');
+  } catch (err) {
+    logger.error('fetchCareerUpdates error:', err);
+    throw err;
   }
 });

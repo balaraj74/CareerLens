@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerLens - Automated Google Search Setup</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .step h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .step p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 10px 10px 0;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        .input-group label {
+            display: block;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .code-box {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+        .progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background: #e0e0e0;
+            margin: 0 5px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #666;
+        }
+        .progress-step.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .progress-step.completed {
+            background: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 CareerLens Real-Time Intel Setup</h1>
+        <p class="subtitle">Automated setup for Google Custom Search API - Get 10x more career data!</p>
+        
+        <div class="progress">
+            <div class="progress-step active">1. Enable API</div>
+            <div class="progress-step">2. Create Engine</div>
+            <div class="progress-step">3. Get Keys</div>
+            <div class="progress-step">4. Deploy</div>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="step">
+            <h2>📌 Step 1: Enable Google Custom Search API</h2>
+            <p>Click the button below to open the API library and enable the Custom Search API:</p>
+            <a href="https://console.cloud.google.com/apis/library/customsearch.googleapis.com?project=careerlens-1" 
+               target="_blank" class="btn" onclick="markStep1()">
+                ✅ Enable Custom Search API
+            </a>
+            <p style="margin-top: 15px; color: #888; font-size: 0.9em;">
+                💡 In the new tab, just click the blue "ENABLE" button and wait 10 seconds.
+            </p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step">
+            <h2>🔍 Step 2: Create Custom Search Engine</h2>
+            <p>Create a programmable search engine that searches the entire web:</p>
+            <a href="https://programmablesearchengine.google.com/controlpanel/create" 
+               target="_blank" class="btn" onclick="markStep2()">
+                🎯 Create Search Engine
+            </a>
+            <p style="margin-top: 15px;"><strong>Configuration:</strong></p>
+            <ul style="margin-left: 20px; color: #666; line-height: 1.8;">
+                <li>Name: <code>CareerLens Real-Time Intel</code></li>
+                <li>What to search: <strong>"Search the entire web"</strong></li>
+                <li>Click "CREATE"</li>
+                <li><strong>Copy your Search Engine ID</strong> (looks like: a1b2c3d4e5f6g7h8i)</li>
+            </ul>
+            
+            <div class="input-group">
+                <label>📋 Paste your Search Engine ID here:</label>
+                <input type="text" id="searchEngineId" placeholder="e.g., a1b2c3d4e5f6g7h8i" />
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step">
+            <h2>🔑 Step 3: Create API Key</h2>
+            <p>Create an API key to access the Custom Search API:</p>
+            <a href="https://console.cloud.google.com/apis/credentials?project=careerlens-1" 
+               target="_blank" class="btn" onclick="markStep3()">
+                🔐 Create API Key
+            </a>
+            <p style="margin-top: 15px;"><strong>Steps:</strong></p>
+            <ul style="margin-left: 20px; color: #666; line-height: 1.8;">
+                <li>Click "+ CREATE CREDENTIALS" → "API key"</li>
+                <li><strong>Copy the API key immediately</strong></li>
+                <li>Optional: Click "RESTRICT KEY" → Select "Custom Search API"</li>
+            </ul>
+            
+            <div class="input-group">
+                <label>📋 Paste your API Key here:</label>
+                <input type="password" id="apiKey" placeholder="AIza..." />
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step warning">
+            <h2>💾 Step 4: Generate Secret Manager Commands</h2>
+            <p>Click below to generate the commands you need to run:</p>
+            <button class="btn btn-secondary" onclick="generateCommands()">
+                🎯 Generate Commands
+            </button>
+            
+            <div id="commandsOutput" style="display: none; margin-top: 20px;">
+                <p><strong>Copy and run these commands in Google Cloud Shell:</strong></p>
+                <a href="https://console.cloud.google.com/home/dashboard?project=careerlens-1&cloudshell=true" 
+                   target="_blank" class="btn">
+                    ☁️ Open Cloud Shell
+                </a>
+                <div class="code-box" id="commandsBox"></div>
+                <button class="btn" onclick="copyCommands()">📋 Copy All Commands</button>
+            </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="step success">
+            <h2>🚀 Step 5: Deploy Enhanced Function</h2>
+            <p>Once secrets are created, update your Cloud Function:</p>
+            <a href="https://console.cloud.google.com/run/detail/us-central1/fetchcareerupdates/source?project=careerlens-1" 
+               target="_blank" class="btn">
+                ⚡ Update Cloud Function
+            </a>
+            <p style="margin-top: 15px;"><strong>In the function editor:</strong></p>
+            <ol style="margin-left: 20px; color: #155724; line-height: 1.8;">
+                <li>Copy content from <code>cloud-function-enhanced.js</code></li>
+                <li>Replace the <code>index.js</code> content</li>
+                <li>Click "Save and redeploy"</li>
+                <li>Wait 2-3 minutes for deployment</li>
+            </ol>
+        </div>
+
+        <!-- Final Step -->
+        <div class="step success">
+            <h2>✅ Final Step: Test Your Setup</h2>
+            <p>Trigger the function manually to see the enhanced data:</p>
+            <a href="https://console.cloud.google.com/cloudpubsub/topic/detail/career-updates-trigger?project=careerlens-1" 
+               target="_blank" class="btn">
+                🧪 Test via Pub/Sub
+            </a>
+            <p style="margin-top: 15px;">In Pub/Sub → Click "MESSAGES" tab → "PUBLISH MESSAGE" → Message body: <code>{"task":"fetch"}</code></p>
+            <p style="margin-top: 10px;">Then check logs:</p>
+            <a href="https://console.cloud.google.com/run/detail/us-central1/fetchcareerupdates/logs?project=careerlens-1" 
+               target="_blank" class="btn btn-secondary">
+                📊 View Logs
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function markStep1() {
+            document.querySelectorAll('.progress-step')[0].classList.add('completed');
+            document.querySelectorAll('.progress-step')[1].classList.add('active');
+        }
+        
+        function markStep2() {
+            document.querySelectorAll('.progress-step')[1].classList.add('completed');
+            document.querySelectorAll('.progress-step')[2].classList.add('active');
+        }
+        
+        function markStep3() {
+            document.querySelectorAll('.progress-step')[2].classList.add('completed');
+            document.querySelectorAll('.progress-step')[3].classList.add('active');
+        }
+
+        function generateCommands() {
+            const apiKey = document.getElementById('apiKey').value;
+            const searchEngineId = document.getElementById('searchEngineId').value;
+            
+            if (!apiKey || !searchEngineId) {
+                alert('Please fill in both API Key and Search Engine ID first!');
+                return;
+            }
+
+            const commands = `# Store Google Custom Search API Key
+echo -n '${apiKey}' | gcloud secrets create GOOGLE_CUSTOM_SEARCH_API_KEY \\
+  --data-file=- \\
+  --project=careerlens-1 \\
+  --replication-policy="automatic"
+
+# Store Search Engine ID
+echo -n '${searchEngineId}' | gcloud secrets create GOOGLE_SEARCH_ENGINE_ID \\
+  --data-file=- \\
+  --project=careerlens-1 \\
+  --replication-policy="automatic"
+
+# Grant access to service account
+gcloud secrets add-iam-policy-binding GOOGLE_CUSTOM_SEARCH_API_KEY \\
+  --member="serviceAccount:careerlens-1@appspot.gserviceaccount.com" \\
+  --role="roles/secretmanager.secretAccessor" \\
+  --project=careerlens-1
+
+gcloud secrets add-iam-policy-binding GOOGLE_SEARCH_ENGINE_ID \\
+  --member="serviceAccount:careerlens-1@appspot.gserviceaccount.com" \\
+  --role="roles/secretmanager.secretAccessor" \\
+  --project=careerlens-1
+
+echo "✅ Secrets created successfully!"`;
+
+            document.getElementById('commandsBox').textContent = commands;
+            document.getElementById('commandsOutput').style.display = 'block';
+            markStep3();
+        }
+
+        function copyCommands() {
+            const commands = document.getElementById('commandsBox').textContent;
+            navigator.clipboard.writeText(commands).then(() => {
+                alert('✅ Commands copied to clipboard! Paste them in Cloud Shell.');
+            });
+        }
+    </script>
+</body>
+</html>

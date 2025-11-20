@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Verification</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .checklist {
+            margin: 20px 0;
+        }
+        .check-item {
+            background: #f8f9fa;
+            border-left: 4px solid #ccc;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        .check-item.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .check-item.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .check-item.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 10px 10px 0;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .code-box {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .status {
+            font-size: 1.5em;
+            margin: 10px 0;
+        }
+        .links {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Deployment Verification Checklist</h1>
+        
+        <div class="checklist">
+            <div class="check-item warning">
+                <h2>❓ Step 1: Did you deploy the enhanced function?</h2>
+                <p>The enhanced function code must be deployed to Cloud Run, not just saved locally.</p>
+                <div style="margin-top: 15px;">
+                    <strong>What you should have done:</strong>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li>Opened Cloud Run console</li>
+                        <li>Clicked "EDIT & DEPLOY NEW REVISION"</li>
+                        <li>Replaced index.js content with cloud-function-enhanced.js</li>
+                        <li>Clicked "DEPLOY" and waited for completion</li>
+                    </ol>
+                </div>
+                <a href="https://console.cloud.google.com/run/detail/us-central1/fetchcareerupdates/source?project=careerlens-1" 
+                   target="_blank" class="btn">
+                    🚀 Deploy Now
+                </a>
+            </div>
+
+            <div class="check-item warning">
+                <h2>❓ Step 2: Did you create the API secrets?</h2>
+                <p>The enhanced function needs these secrets to fetch from Google:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><code>GOOGLE_CUSTOM_SEARCH_API_KEY</code></li>
+                    <li><code>GOOGLE_SEARCH_ENGINE_ID</code></li>
+                </ul>
+                <a href="https://console.cloud.google.com/security/secret-manager?project=careerlens-1" 
+                   target="_blank" class="btn">
+                    🔑 Check Secrets
+                </a>
+                <a href="file:///home/balaraj/CareerLens/setup-google-search.html" 
+                   class="btn">
+                    📝 Setup Guide
+                </a>
+            </div>
+
+            <div class="check-item warning">
+                <h2>❓ Step 3: Did you trigger a test?</h2>
+                <p>After deployment, you need to manually trigger the function to fetch new data.</p>
+                <a href="https://console.cloud.google.com/cloudpubsub/topic/detail/career-updates-trigger?project=careerlens-1" 
+                   target="_blank" class="btn">
+                    🧪 Test via Pub/Sub
+                </a>
+                <p style="margin-top: 10px; color: #666;">
+                    Click "MESSAGES" → "PUBLISH MESSAGE" → Body: <code>{"task":"fetch"}</code>
+                </p>
+            </div>
+
+            <div class="check-item">
+                <h2>📊 Step 4: Check the Logs</h2>
+                <p>Look for this in the logs (means enhanced version is working):</p>
+                <div class="code-box">✅ Fetched: 40 Google results, 75 Reddit posts, 15 news articles</div>
+                
+                <p style="margin-top: 10px;">NOT this (means old version still running):</p>
+                <div class="code-box" style="background: #3d0000;">Data sources: Google (0), Reddit (0), News (0)</div>
+                
+                <a href="https://console.cloud.google.com/run/detail/us-central1/fetchcareerupdates/logs?project=careerlens-1" 
+                   target="_blank" class="btn">
+                    📋 View Logs
+                </a>
+            </div>
+        </div>
+
+        <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+        <h2 style="color: #667eea; margin-bottom: 20px;">🎯 Quick Actions</h2>
+        
+        <div class="links">
+            <h3>If Function Not Deployed:</h3>
+            <ol style="margin-left: 20px; line-height: 2;">
+                <li>
+                    <a href="https://console.cloud.google.com/run/detail/us-central1/fetchcareerupdates/source?project=careerlens-1" target="_blank">
+                        Open Cloud Run Source Editor
+                    </a>
+                </li>
+                <li>Click "EDIT & DEPLOY NEW REVISION"</li>
+                <li>Copy content from: <code>/home/balaraj/CareerLens/cloud-function-enhanced.js</code></li>
+                <li>Paste into index.js (replace all old code)</li>
+                <li>Click "DEPLOY" and wait 2-3 minutes</li>
+            </ol>
+        </div>
+
+        <div class="links" style="margin-top: 30px;">
+            <h3>If Secrets Not Created:</h3>
+            <ol style="margin-left: 20px; line-height: 2;">
+                <li>
+                    <a href="https://console.cloud.google.com/apis/library/customsearch.googleapis.com?project=careerlens-1" target="_blank">
+                        Enable Custom Search API
+                    </a>
+                </li>
+                <li>
+                    <a href="https://programmablesearchengine.google.com/controlpanel/create" target="_blank">
+                        Create Search Engine
+                    </a> (save the ID)
+                </li>
+                <li>
+                    <a href="https://console.cloud.google.com/apis/credentials?project=careerlens-1" target="_blank">
+                        Create API Key
+                    </a> (save the key)
+                </li>
+                <li>
+                    <a href="https://console.cloud.google.com/home/dashboard?project=careerlens-1&cloudshell=true" target="_blank">
+                        Open Cloud Shell
+                    </a> and run:
+                    <div class="code-box" style="font-size: 0.8em;">
+echo -n 'YOUR_API_KEY' | gcloud secrets create GOOGLE_CUSTOM_SEARCH_API_KEY --data-file=- --project=careerlens-1
+
+echo -n 'YOUR_SEARCH_ENGINE_ID' | gcloud secrets create GOOGLE_SEARCH_ENGINE_ID --data-file=- --project=careerlens-1
+
+gcloud secrets add-iam-policy-binding GOOGLE_CUSTOM_SEARCH_API_KEY \
+  --member="serviceAccount:careerlens-1@appspot.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=careerlens-1
+
+gcloud secrets add-iam-policy-binding GOOGLE_SEARCH_ENGINE_ID \
+  --member="serviceAccount:careerlens-1@appspot.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=careerlens-1
+                    </div>
+                </li>
+            </ol>
+        </div>
+
+        <div class="links" style="margin-top: 30px;">
+            <h3>After Both Done:</h3>
+            <ol style="margin-left: 20px; line-height: 2;">
+                <li>
+                    <a href="https://console.cloud.google.com/cloudpubsub/topic/detail/career-updates-trigger?project=careerlens-1" target="_blank">
+                        Trigger via Pub/Sub
+                    </a> with message: <code>{"task":"fetch"}</code>
+                </li>
+                <li>
+                    <a href="https://console.cloud.google.com/run/detail/us-central1/fetchcareerupdates/logs?project=careerlens-1" target="_blank">
+                        Check Logs
+                    </a> for success message
+                </li>
+                <li>
+                    <a href="http://localhost:3001/test-data" target="_blank">
+                        View Test Data Page
+                    </a> (should show 40+ Google, 75+ Reddit, 10+ News)
+                </li>
+                <li>
+                    <a href="http://localhost:3001/career-updates" target="_blank">
+                        View Career Updates Page
+                    </a> (should show real data)
+                </li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

@@ -7,6 +7,18 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false; // Client-side writes are not allowed
     }
+    
+    // Career Updates - Real-Time Intel Engine (public read, Cloud Functions write)
+    match /careerUpdates/{docId} {
+      allow read: if true; // Public read access for demo
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Raw Fetches - authenticated users only
+    match /rawFetches/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only Cloud Functions can write
+    }
 
     // Users can only read and write to their own document in the 'users' collection.
     match /users/{userId} {
