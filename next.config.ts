@@ -1,4 +1,4 @@
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 import path from 'path';
 
 const nextConfig: NextConfig = {
@@ -40,6 +40,11 @@ const nextConfig: NextConfig = {
   },
   devIndicators: {
     buildActivity: false,
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // Increase from default 1mb to 10mb for PDF uploads
+    },
   },
   output: 'standalone',
   distDir: '.next',

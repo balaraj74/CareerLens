@@ -25,10 +25,6 @@ import {
   Bell,
   Settings,
   Mic,
-  Volume2,
-  VolumeX,
-  Sun,
-  Moon,
   Download,
   FileText,
   ArrowRight,
@@ -60,6 +56,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export function DynamicDashboard() {
   const { user } = useAuth();
@@ -67,11 +64,15 @@ export function DynamicDashboard() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<EnhancedUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [showAIChat, setShowAIChat] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [typingComplete, setTypingComplete] = useState(false);
+  const [copilotMessage, setCopilotMessage] = useState('');
+  const [actionUrl, setActionUrl] = useState('');
+  const [actionLabel, setActionLabel] = useState('');
+  const [isCopilotLoading, setIsCopilotLoading] = useState(false);
+
+  const router = useRouter();
 
   const { scrollYProgress } = useScroll();
   const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
@@ -120,6 +121,55 @@ export function DynamicDashboard() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (profile) {
+      fetchCopilotMessage(profile);
+    }
+  }, [profile]);
+
+  const fetchCopilotMessage = async (userProfile: EnhancedUserProfile) => {
+    setIsCopilotLoading(true);
+    try {
+      // Send only necessary data to avoid payload issues
+      const simplifiedProfile = {
+        name: userProfile.name,
+        title: userProfile.title,
+        level: userProfile.level,
+        skills: userProfile.skills,
+        analytics: userProfile.analytics,
+      };
+
+      const res = await fetch('/api/copilot/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: simplifiedProfile }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Copilot API Error Details:', errorData);
+        throw new Error(`API Error: ${res.status} - ${errorData.details || 'Unknown error'}`);
+      }
+
+      const data = await res.json();
+      console.log('Copilot API Response:', data);
+
+      if (data.message) {
+        setCopilotMessage(data.message);
+        setActionUrl(data.actionUrl || '/ai-career-hub');
+        setActionLabel(data.actionLabel || 'Explore Career Hub');
+      }
+    } catch (err) {
+      console.error('Failed to fetch copilot message', err);
+      // Fallback UI if API fails
+      setCopilotMessage("I'm ready to help you advance your career! Check out the AI Career Hub for personalized recommendations.");
+      setActionUrl('/ai-career-hub');
+      setActionLabel('Open Career Hub');
+    } finally {
+      setIsCopilotLoading(false);
     }
   };
 
@@ -240,13 +290,7 @@ export function DynamicDashboard() {
   const currentCareerNode = careerPathNodes.find((n) => n.level === profile.level);
 
   return (
-    <div
-      className={`min-h-screen relative overflow-x-hidden transition-colors duration-500 ${
-        isDarkMode
-          ? 'bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900'
-          : 'bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200'
-      }`}
-    >
+    <div className="relative w-full overflow-x-hidden bg-background text-foreground transition-colors duration-500">
       {/* Animated Background with Parallax */}
       <motion.div
         className="fixed inset-0 pointer-events-none overflow-hidden"
@@ -256,9 +300,7 @@ export function DynamicDashboard() {
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
-            className={`absolute w-1 h-1 rounded-full ${
-              isDarkMode ? 'bg-blue-400/30' : 'bg-blue-600/20'
-            }`}
+            className="absolute w-1 h-1 rounded-full bg-primary/20"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -277,7 +319,7 @@ export function DynamicDashboard() {
 
         {/* Gradient Orbs */}
         <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -285,7 +327,7 @@ export function DynamicDashboard() {
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl"
           animate={{
             scale: [1.2, 1, 1.2],
             opacity: [0.5, 0.3, 0.5],
@@ -293,94 +335,6 @@ export function DynamicDashboard() {
           transition={{ duration: 10, repeat: Infinity }}
         />
       </motion.div>
-
-      {/* Top Navigation Bar */}
-      <motion.nav
-        className={`sticky top-0 z-50 backdrop-blur-xl border-b ${
-          isDarkMode
-            ? 'bg-slate-900/80 border-blue-500/20'
-            : 'bg-white/80 border-blue-200'
-        }`}
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ type: 'spring', stiffness: 100 }}
-      >
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <motion.div
-              className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              CareerLens
-            </motion.div>
-            <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-              <motion.div
-                className="w-2 h-2 rounded-full bg-green-400 mr-2"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              AI Active
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className={
-                isDarkMode
-                  ? 'text-blue-300 hover:text-blue-200'
-                  : 'text-blue-600 hover:text-blue-700'
-              }
-            >
-              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-              className={
-                isDarkMode
-                  ? 'text-blue-300 hover:text-blue-200'
-                  : 'text-blue-600 hover:text-blue-700'
-              }
-            >
-              {isSoundEnabled ? (
-                <Volume2 className="w-5 h-5" />
-              ) : (
-                <VolumeX className="w-5 h-5" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={
-                isDarkMode
-                  ? 'text-blue-300 hover:text-blue-200'
-                  : 'text-blue-600 hover:text-blue-700'
-              }
-            >
-              <Bell className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              asChild
-              className={
-                isDarkMode
-                  ? 'text-blue-300 hover:text-blue-200'
-                  : 'text-blue-600 hover:text-blue-700'
-              }
-            >
-              <Link href="/profile">
-                <Settings className="w-5 h-5" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </motion.nav>
 
       {/* Main Content */}
       <div className="relative max-w-7xl mx-auto px-4 py-8 space-y-8">
@@ -390,23 +344,13 @@ export function DynamicDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card
-            className={`${
-              isDarkMode
-                ? 'bg-gradient-to-br from-blue-900/40 to-purple-900/40 border-blue-500/30'
-                : 'bg-gradient-to-br from-blue-100/60 to-purple-100/60 border-blue-300'
-            } backdrop-blur-xl p-8 relative overflow-hidden`}
-          >
+          <Card className="glass-card bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20 p-8 relative overflow-hidden">
             {/* Animated Grid Background */}
             <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
 
             <div className="relative flex items-start justify-between">
               <div className="flex-1">
-                <motion.h1
-                  className={`text-4xl md:text-5xl font-bold mb-2 ${
-                    isDarkMode ? 'text-white' : 'text-slate-900'
-                  }`}
-                >
+                <motion.h1 className="text-4xl md:text-5xl font-bold mb-2 text-foreground">
                   {greeting}
                   {!typingComplete && (
                     <motion.span
@@ -421,9 +365,7 @@ export function DynamicDashboard() {
                 <AnimatePresence>
                   {typingComplete && (
                     <motion.div
-                      className={`text-lg ${
-                        isDarkMode ? 'text-blue-200' : 'text-blue-700'
-                      } flex items-center gap-2`}
+                      className="text-lg text-primary flex items-center gap-2"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
@@ -470,13 +412,7 @@ export function DynamicDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card
-            className={`${
-              isDarkMode
-                ? 'bg-gradient-to-br from-purple-900/40 to-pink-900/40 border-purple-500/30'
-                : 'bg-gradient-to-br from-purple-100/60 to-pink-100/60 border-purple-300'
-            } backdrop-blur-xl p-6 relative overflow-hidden`}
-          >
+          <Card className="glass-card bg-gradient-to-br from-accent/10 to-pink-500/10 border-accent/20 p-6 relative overflow-hidden">
             <div className="flex flex-col md:flex-row items-center gap-8">
               {/* Circular XP Ring */}
               <div className="relative">
@@ -488,7 +424,7 @@ export function DynamicDashboard() {
                     stroke="currentColor"
                     strokeWidth="12"
                     fill="none"
-                    className={isDarkMode ? 'text-slate-700' : 'text-slate-300'}
+                    className="text-muted"
                   />
                   <motion.circle
                     cx="96"
@@ -522,16 +458,12 @@ export function DynamicDashboard() {
                     {profile.level}
                   </motion.div>
                   <div
-                    className={`text-sm ${
-                      isDarkMode ? 'text-purple-300' : 'text-purple-700'
-                    }`}
+                    className="text-sm text-accent-foreground/80"
                   >
                     Level
                   </div>
                   <div
-                    className={`text-xs ${
-                      isDarkMode ? 'text-purple-400' : 'text-purple-600'
-                    } mt-2`}
+                    className="text-xs text-accent-foreground/60 mt-2"
                   >
                     {Math.round(xpPercentage)}% to Level {profile.level + 1}
                   </div>
@@ -553,9 +485,7 @@ export function DynamicDashboard() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3
-                      className={`text-2xl font-bold ${
-                        isDarkMode ? 'text-white' : 'text-slate-900'
-                      }`}
+                      className="text-2xl font-bold text-foreground"
                     >
                       {profile.title || `${profile.careerStage} Career Explorer`}
                     </h3>
@@ -564,9 +494,7 @@ export function DynamicDashboard() {
                     </Badge>
                   </div>
                   <p
-                    className={`${
-                      isDarkMode ? 'text-purple-200' : 'text-purple-700'
-                    }`}
+                    className="text-accent-foreground/80"
                   >
                     🎯 {xpToNextLevel} XP left to level up!
                   </p>
@@ -576,22 +504,18 @@ export function DynamicDashboard() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span
-                      className={isDarkMode ? 'text-purple-300' : 'text-purple-700'}
+                      className="text-accent-foreground/80"
                     >
                       Experience Points
                     </span>
                     <span
-                      className={`font-mono ${
-                        isDarkMode ? 'text-pink-300' : 'text-pink-700'
-                      }`}
+                      className="font-mono text-pink-500"
                     >
                       {profile.currentXP} / {profile.nextLevelXP} XP
                     </span>
                   </div>
                   <div
-                    className={`relative h-4 rounded-full overflow-hidden ${
-                      isDarkMode ? 'bg-slate-800' : 'bg-slate-200'
-                    }`}
+                    className="relative h-4 rounded-full overflow-hidden bg-secondary"
                   >
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600"
@@ -610,61 +534,43 @@ export function DynamicDashboard() {
                 {/* Mini Stats */}
                 <div className="grid grid-cols-3 gap-4">
                   <div
-                    className={`${
-                      isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'
-                    } rounded-lg p-3 text-center`}
+                    className="bg-secondary/50 rounded-lg p-3 text-center"
                   >
                     <div
-                      className={`text-2xl font-bold ${
-                        isDarkMode ? 'text-purple-400' : 'text-purple-600'
-                      }`}
+                      className="text-2xl font-bold text-accent"
                     >
                       {profile.analytics.totalProjects}
                     </div>
                     <div
-                      className={`text-xs ${
-                        isDarkMode ? 'text-purple-300' : 'text-purple-600'
-                      }`}
+                      className="text-xs text-accent/80"
                     >
                       Projects
                     </div>
                   </div>
                   <div
-                    className={`${
-                      isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'
-                    } rounded-lg p-3 text-center`}
+                    className="bg-secondary/50 rounded-lg p-3 text-center"
                   >
                     <div
-                      className={`text-2xl font-bold ${
-                        isDarkMode ? 'text-pink-400' : 'text-pink-600'
-                      }`}
+                      className="text-2xl font-bold text-pink-500"
                     >
                       {profile.analytics.totalSkills}
                     </div>
                     <div
-                      className={`text-xs ${
-                        isDarkMode ? 'text-pink-300' : 'text-pink-600'
-                      }`}
+                      className="text-xs text-pink-500/80"
                     >
                       Skills
                     </div>
                   </div>
                   <div
-                    className={`${
-                      isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'
-                    } rounded-lg p-3 text-center`}
+                    className="bg-secondary/50 rounded-lg p-3 text-center"
                   >
                     <div
-                      className={`text-2xl font-bold ${
-                        isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                      }`}
+                      className="text-2xl font-bold text-primary"
                     >
                       {profile.streak}d
                     </div>
                     <div
-                      className={`text-xs ${
-                        isDarkMode ? 'text-blue-300' : 'text-blue-600'
-                      }`}
+                      className="text-xs text-primary/80"
                     >
                       Streak
                     </div>
@@ -687,13 +593,7 @@ export function DynamicDashboard() {
               whileHover={{ rotateY: 5, scale: 1.02 }}
               style={{ transformStyle: 'preserve-3d' }}
             >
-              <Card
-                className={`${
-                  isDarkMode
-                    ? 'bg-gradient-to-br from-cyan-900/40 to-blue-900/40 border-cyan-500/30'
-                    : 'bg-gradient-to-br from-cyan-100/60 to-blue-100/60 border-cyan-300'
-                } backdrop-blur-xl p-6 cursor-pointer group relative overflow-hidden`}
-              >
+              <Card className="glass-card bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/20 p-6 cursor-pointer group relative overflow-hidden">
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10"
                   animate={{
@@ -705,18 +605,10 @@ export function DynamicDashboard() {
 
                 <div className="relative">
                   <div className="flex items-center justify-between mb-4">
-                    <h3
-                      className={`text-lg font-bold ${
-                        isDarkMode ? 'text-cyan-200' : 'text-cyan-800'
-                      }`}
-                    >
+                    <h3 className="text-lg font-bold text-cyan-500">
                       AI Resume Score
                     </h3>
-                    <FileText
-                      className={`w-5 h-5 ${
-                        isDarkMode ? 'text-cyan-400' : 'text-cyan-600'
-                      }`}
-                    />
+                    <FileText className="w-5 h-5 text-primary" />
                   </div>
 
                   <div className="flex items-center justify-center mb-4">
@@ -731,9 +623,7 @@ export function DynamicDashboard() {
                   </div>
 
                   <div
-                    className={`text-sm ${
-                      isDarkMode ? 'text-cyan-300' : 'text-cyan-700'
-                    } text-center mb-4`}
+                    className="text-sm text-primary/80 text-center mb-4"
                   >
                     {profile.analytics.resumeScore >= 80 ? (
                       <span className="font-semibold">Excellent!</span>
@@ -762,25 +652,15 @@ export function DynamicDashboard() {
               whileHover={{ rotateY: 5, scale: 1.02 }}
               style={{ transformStyle: 'preserve-3d' }}
             >
-              <Card
-                className={`${
-                  isDarkMode
-                    ? 'bg-gradient-to-br from-green-900/40 to-emerald-900/40 border-green-500/30'
-                    : 'bg-gradient-to-br from-green-100/60 to-emerald-100/60 border-green-300'
-                } backdrop-blur-xl p-6 cursor-pointer group`}
-              >
+              <Card className="glass-card bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 p-6 cursor-pointer group">
                 <div className="flex items-center justify-between mb-4">
                   <h3
-                    className={`text-lg font-bold ${
-                      isDarkMode ? 'text-green-200' : 'text-green-800'
-                    }`}
+                    className="text-lg font-bold text-green-500"
                   >
                     Job Match
                   </h3>
                   <Target
-                    className={`w-5 h-5 ${
-                      isDarkMode ? 'text-green-400' : 'text-green-600'
-                    }`}
+                    className="w-5 h-5 text-green-500"
                   />
                 </div>
 
@@ -796,9 +676,7 @@ export function DynamicDashboard() {
                 </div>
 
                 <div
-                  className={`text-sm ${
-                    isDarkMode ? 'text-green-300' : 'text-green-700'
-                  } text-center`}
+                  className="text-sm text-green-500/80 text-center"
                 >
                   High match for <strong>{profile.title || 'your target'}</strong> roles
                 </div>
@@ -811,25 +689,15 @@ export function DynamicDashboard() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <Card
-                className={`${
-                  isDarkMode
-                    ? 'bg-gradient-to-br from-purple-900/40 to-pink-900/40 border-purple-500/30'
-                    : 'bg-gradient-to-br from-purple-100/60 to-pink-100/60 border-purple-300'
-                } backdrop-blur-xl p-6`}
-              >
+              <Card className="glass-card bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3
-                    className={`text-lg font-bold ${
-                      isDarkMode ? 'text-purple-200' : 'text-purple-800'
-                    }`}
+                    className="text-lg font-bold text-purple-500"
                   >
                     Top Skills
                   </h3>
                   <Zap
-                    className={`w-5 h-5 ${
-                      isDarkMode ? 'text-purple-400' : 'text-purple-600'
-                    }`}
+                    className="w-5 h-5 text-purple-500"
                   />
                 </div>
 
@@ -844,26 +712,21 @@ export function DynamicDashboard() {
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span
-                            className={`text-sm font-medium ${
-                              isDarkMode ? 'text-purple-200' : 'text-purple-800'
-                            }`}
+                            className="text-sm font-medium text-purple-500"
                           >
                             {skill.name}
                           </span>
                           <div className="flex items-center gap-1">
                             <span
-                              className={`text-xs ${
-                                isDarkMode ? 'text-purple-300' : 'text-purple-700'
-                              }`}
+                              className="text-xs text-purple-500/80"
                             >
                               {skill.confidence}%
                             </span>
                             <TrendingUp
-                              className={`w-3 h-3 ${
-                                skill.trend === 'up'
-                                  ? 'text-green-400'
-                                  : 'text-yellow-400'
-                              }`}
+                              className={`w-3 h-3 ${skill.trend === 'up'
+                                ? 'text-green-400'
+                                : 'text-yellow-400'
+                                }`}
                             />
                           </div>
                         </div>
@@ -889,18 +752,10 @@ export function DynamicDashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                <Card
-                  className={`${
-                    isDarkMode
-                      ? 'bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-500/30'
-                      : 'bg-gradient-to-br from-blue-100/60 to-indigo-100/60 border-blue-300'
-                  } backdrop-blur-xl p-6`}
-                >
+                <Card className="glass-card bg-gradient-to-br from-primary/10 to-indigo-500/10 border-primary/20 p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3
-                      className={`text-xl font-bold ${
-                        isDarkMode ? 'text-blue-200' : 'text-blue-800'
-                      }`}
+                      className="text-xl font-bold text-primary"
                     >
                       🚀 Suggested Projects
                     </h3>
@@ -924,23 +779,16 @@ export function DynamicDashboard() {
                         transition={{ delay: 0.6 + idx * 0.1 }}
                         whileHover={{ scale: 1.03, y: -5 }}
                       >
-                        <Card
-                          className={`${
-                            isDarkMode
-                              ? 'bg-slate-800/50 border-blue-500/20'
-                              : 'bg-white/50 border-blue-300'
-                          } p-4 h-full relative overflow-hidden group cursor-pointer`}
-                        >
+                        <Card className="bg-secondary/50 border-primary/20 p-4 h-full relative overflow-hidden group cursor-pointer">
                           <div className="relative">
                             <div className="flex items-start justify-between mb-3">
                               <Badge
-                                className={`${
-                                  project.difficulty === 'Beginner'
-                                    ? 'bg-green-500/20 text-green-300 border-green-500/30'
-                                    : project.difficulty === 'Intermediate'
+                                className={`${project.difficulty === 'Beginner'
+                                  ? 'bg-green-500/20 text-green-300 border-green-500/30'
+                                  : project.difficulty === 'Intermediate'
                                     ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
                                     : 'bg-red-500/20 text-red-300 border-red-500/30'
-                                }`}
+                                  }`}
                               >
                                 {project.difficulty}
                               </Badge>
@@ -950,16 +798,12 @@ export function DynamicDashboard() {
                             </div>
 
                             <h4
-                              className={`text-lg font-bold mb-2 ${
-                                isDarkMode ? 'text-blue-200' : 'text-blue-800'
-                              }`}
+                              className="text-lg font-bold mb-2 text-primary"
                             >
                               {project.title}
                             </h4>
                             <p
-                              className={`text-sm mb-3 ${
-                                isDarkMode ? 'text-blue-300' : 'text-blue-700'
-                              }`}
+                              className="text-sm mb-3 text-primary/80"
                             >
                               {project.description}
                             </p>
@@ -969,11 +813,7 @@ export function DynamicDashboard() {
                                 <Badge
                                   key={tech}
                                   variant="outline"
-                                  className={`text-xs ${
-                                    isDarkMode
-                                      ? 'border-blue-500/30 text-blue-300'
-                                      : 'border-blue-400 text-blue-700'
-                                  }`}
+                                  className="text-xs border-primary/30 text-primary"
                                 >
                                   {tech}
                                 </Badge>
@@ -982,9 +822,7 @@ export function DynamicDashboard() {
 
                             <div className="flex items-center justify-between">
                               <span
-                                className={`text-xs ${
-                                  isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                                }`}
+                                className="text-xs text-primary"
                               >
                                 ⏱️ {project.estimatedTime}
                               </span>
@@ -1011,17 +849,9 @@ export function DynamicDashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
             >
-              <Card
-                className={`${
-                  isDarkMode
-                    ? 'bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-500/30'
-                    : 'bg-gradient-to-br from-indigo-100/60 to-purple-100/60 border-indigo-300'
-                } backdrop-blur-xl p-6`}
-              >
+              <Card className="glass-card bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20 p-6">
                 <h3
-                  className={`text-xl font-bold mb-6 ${
-                    isDarkMode ? 'text-indigo-200' : 'text-indigo-800'
-                  }`}
+                  className="text-xl font-bold mb-6 text-indigo-500"
                 >
                   🛤️ Career Path Timeline
                 </h3>
@@ -1042,22 +872,21 @@ export function DynamicDashboard() {
                       >
                         <div className="relative z-10 flex flex-col items-center">
                           <motion.div
-                            className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl ${
-                              node.status === 'completed'
-                                ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                                : node.status === 'current'
+                            className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl ${node.status === 'completed'
+                              ? 'bg-gradient-to-br from-green-500 to-emerald-600'
+                              : node.status === 'current'
                                 ? 'bg-gradient-to-br from-blue-500 to-purple-600'
                                 : 'bg-gradient-to-br from-slate-600 to-slate-700'
-                            } shadow-lg`}
+                              } shadow-lg`}
                             animate={
                               node.status === 'current'
                                 ? {
-                                    boxShadow: [
-                                      '0 0 20px rgba(59, 130, 246, 0.5)',
-                                      '0 0 40px rgba(59, 130, 246, 0.8)',
-                                      '0 0 20px rgba(59, 130, 246, 0.5)',
-                                    ],
-                                  }
+                                  boxShadow: [
+                                    '0 0 20px rgba(59, 130, 246, 0.5)',
+                                    '0 0 40px rgba(59, 130, 246, 0.8)',
+                                    '0 0 20px rgba(59, 130, 246, 0.5)',
+                                  ],
+                                }
                                 : {}
                             }
                             transition={
@@ -1074,16 +903,12 @@ export function DynamicDashboard() {
                           </motion.div>
 
                           <div
-                            className={`text-xs mt-2 text-center font-medium ${
-                              isDarkMode ? 'text-indigo-200' : 'text-indigo-800'
-                            }`}
+                            className="text-xs mt-2 text-center font-medium text-indigo-500"
                           >
                             {node.title}
                           </div>
                           <div
-                            className={`text-xs ${
-                              isDarkMode ? 'text-indigo-400' : 'text-indigo-600'
-                            }`}
+                            className="text-xs text-indigo-500/80"
                           >
                             Lv {node.level}
                           </div>
@@ -1110,18 +935,10 @@ export function DynamicDashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
             >
-              <Card
-                className={`${
-                  isDarkMode
-                    ? 'bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-emerald-500/30'
-                    : 'bg-gradient-to-br from-emerald-100/60 to-teal-100/60 border-emerald-300'
-                } backdrop-blur-xl p-6`}
-              >
+              <Card className="glass-card bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3
-                    className={`text-xl font-bold ${
-                      isDarkMode ? 'text-emerald-200' : 'text-emerald-800'
-                    }`}
+                    className="text-xl font-bold text-emerald-500"
                   >
                     ✅ Today's Goals
                   </h3>
@@ -1135,22 +952,17 @@ export function DynamicDashboard() {
                   {profile.dailyGoals.map((goal, idx) => (
                     <motion.div
                       key={goal.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg ${
-                        isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'
-                      } ${goal.completed && 'opacity-50'}`}
+                      className={`flex items-center gap-3 p-3 rounded-lg bg-secondary/50 ${goal.completed && 'opacity-50'}`}
                       initial={{ opacity: 0, x: 10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 1.0 + idx * 0.1 }}
                       whileHover={{ x: 5 }}
                     >
                       <motion.button
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          goal.completed
-                            ? 'bg-emerald-500 border-emerald-500'
-                            : isDarkMode
-                            ? 'border-emerald-400 hover:bg-emerald-500/20'
-                            : 'border-emerald-600 hover:bg-emerald-100'
-                        }`}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${goal.completed
+                          ? 'bg-emerald-500 border-emerald-500'
+                          : 'border-emerald-500 hover:bg-emerald-500/20'
+                          }`}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => !goal.completed && handleCompleteGoal(goal.id)}
@@ -1161,13 +973,10 @@ export function DynamicDashboard() {
                         )}
                       </motion.button>
                       <span
-                        className={`flex-1 ${
-                          goal.completed
-                            ? 'line-through'
-                            : isDarkMode
-                            ? 'text-emerald-200'
-                            : 'text-emerald-800'
-                        }`}
+                        className={`flex-1 ${goal.completed
+                          ? 'line-through'
+                          : 'text-emerald-500'
+                          }`}
                       >
                         {goal.text}
                       </span>
@@ -1192,13 +1001,7 @@ export function DynamicDashboard() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
           >
-            <Card
-              className={`${
-                isDarkMode
-                  ? 'bg-slate-900/95 border-cyan-500/30'
-                  : 'bg-white/95 border-cyan-300'
-              } backdrop-blur-xl p-4 shadow-2xl`}
-            >
+            <Card className="glass-card bg-background/95 border-primary/30 p-4 shadow-2xl">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <motion.div
@@ -1215,11 +1018,7 @@ export function DynamicDashboard() {
                     <Brain className="w-5 h-5 text-white" />
                   </motion.div>
                   <div>
-                    <div
-                      className={`font-bold ${
-                        isDarkMode ? 'text-cyan-200' : 'text-cyan-800'
-                      }`}
-                    >
+                    <div className="font-bold text-primary">
                       AI Copilot
                     </div>
                     <div className="flex items-center gap-1 text-xs text-green-400">
@@ -1236,42 +1035,48 @@ export function DynamicDashboard() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowAIChat(false)}
-                  className={isDarkMode ? 'text-cyan-300' : 'text-cyan-700'}
+                  className="text-primary hover:text-primary/80"
                 >
                   ×
                 </Button>
               </div>
 
               <div
-                className={`${
-                  isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100/50'
-                } rounded-lg p-3 mb-3`}
+                className="bg-secondary/50 rounded-lg p-3 mb-3"
               >
-                <p
-                  className={`text-sm ${
-                    isDarkMode ? 'text-cyan-100' : 'text-cyan-900'
-                  }`}
+                <div
+                  className="text-sm text-primary/90"
                 >
-                  {profile.analytics.resumeScore < 70
-                    ? `Hi ${profile.name?.split(' ')[0]}! Your resume score is ${
-                        profile.analytics.resumeScore
-                      }%. Let's work on improving it to unlock more opportunities!`
-                    : profile.analytics.totalProjects === 0
-                    ? `Ready to start your first project? I recommend the "${
-                        suggestedProjects[0]?.title || 'AI Salary Predictor'
-                      }" to boost your skills!`
-                    : `Great progress! Keep building projects to level up faster. You're ${xpToNextLevel} XP away from Level ${
-                        profile.level + 1
-                      }!`}
-                </p>
+                  {isCopilotLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <span>Analyzing your profile...</span>
+                    </div>
+                  ) : copilotMessage ? (
+                    copilotMessage
+                  ) : (
+                    profile.analytics.resumeScore < 70
+                      ? `Hi ${profile.name?.split(' ')[0]}! Your resume score is ${profile.analytics.resumeScore}%. Let's work on improving it to unlock more opportunities!`
+                      : profile.analytics.totalProjects === 0
+                        ? `Ready to start your first project? I recommend the "${suggestedProjects[0]?.title || 'AI Salary Predictor'}" to boost your skills!`
+                        : `Great progress! Keep building projects to level up faster. You're ${xpToNextLevel} XP away from Level ${profile.level + 1}!`
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2">
                 <Button
-                  asChild
                   className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-sm"
+                  onClick={() => {
+                    if (actionUrl) {
+                      router.push(actionUrl);
+                    } else {
+                      profile && fetchCopilotMessage(profile);
+                    }
+                  }}
+                  disabled={isCopilotLoading}
                 >
-                  <Link href="/recommendations">Get Guidance</Link>
+                  {isCopilotLoading ? 'Thinking...' : actionLabel || 'Get Guidance'}
                 </Button>
                 <Button
                   variant="outline"
@@ -1311,6 +1116,6 @@ export function DynamicDashboard() {
           transition={{ duration: 2, repeat: Infinity }}
         />
       </motion.button>
-    </div>
+    </div >
   );
 }

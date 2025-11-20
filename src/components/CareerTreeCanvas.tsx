@@ -34,25 +34,23 @@ interface CareerTreeCanvasProps {
 }
 
 const nodeColors: Record<string, { bg: string; border: string; glow: string }> = {
-  root: { bg: '#6366f1', border: '#818cf8', glow: '#6366f1' },
-  stream: { bg: '#8b5cf6', border: '#a78bfa', glow: '#8b5cf6' },
-  subject: { bg: '#3b82f6', border: '#60a5fa', glow: '#3b82f6' },
-  exam: { bg: '#ef4444', border: '#f87171', glow: '#ef4444' },
-  degree: { bg: '#14b8a6', border: '#2dd4bf', glow: '#14b8a6' },
-  career: { bg: '#10b981', border: '#34d399', glow: '#10b981' },
-  course: { bg: '#f59e0b', border: '#fbbf24', glow: '#f59e0b' },
+  root: { bg: 'hsl(var(--chart-1))', border: 'hsl(var(--chart-1))', glow: 'hsl(var(--chart-1))' },
+  stream: { bg: 'hsl(var(--chart-2))', border: 'hsl(var(--chart-2))', glow: 'hsl(var(--chart-2))' },
+  subject: { bg: 'hsl(var(--chart-3))', border: 'hsl(var(--chart-3))', glow: 'hsl(var(--chart-3))' },
+  exam: { bg: 'hsl(var(--chart-4))', border: 'hsl(var(--chart-4))', glow: 'hsl(var(--chart-4))' },
+  degree: { bg: 'hsl(var(--chart-5))', border: 'hsl(var(--chart-5))', glow: 'hsl(var(--chart-5))' },
+  career: { bg: 'hsl(var(--chart-1))', border: 'hsl(var(--chart-1))', glow: 'hsl(var(--chart-1))' },
+  course: { bg: 'hsl(var(--chart-2))', border: 'hsl(var(--chart-2))', glow: 'hsl(var(--chart-2))' },
 };
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: direction, ranksep: 150, nodesep: 100 });
+    dagreGraph.setGraph({ rankdir: direction, ranksep: window.innerWidth < 768 ? 100 : 150, nodesep: window.innerWidth < 768 ? 80 : 100 });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 250, height: 120 });
-  });
-
-  edges.forEach((edge) => {
+    dagreGraph.setNode(node.id, { width: window.innerWidth < 768 ? 200 : 250, height: window.innerWidth < 768 ? 100 : 120 });
+  });  edges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target);
   });
 
@@ -142,8 +140,8 @@ export default function CareerTreeCanvas({
           boxShadow: isSelected
             ? `0 0 30px ${colors.glow}99, 0 8px 16px rgba(0,0,0,0.4)`
             : `0 4px 12px rgba(0,0,0,0.3)`,
-          width: 250,
-          height: 120,
+          width: window.innerWidth < 768 ? 200 : 250,
+          height: window.innerWidth < 768 ? 100 : 120,
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer',
         },
@@ -168,7 +166,7 @@ export default function CareerTreeCanvas({
         type: 'smoothstep',
         animated: true,
         style: {
-          stroke: colors?.border || '#94a3b8',
+          stroke: colors?.border || 'hsl(var(--border))',
           strokeWidth: 2.5,
         },
         labelStyle: {
