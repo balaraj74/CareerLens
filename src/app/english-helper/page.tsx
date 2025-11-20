@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic,
@@ -60,6 +60,7 @@ export default function EnglishHelperPage() {
   const recognitionRef = useRef<any>(null);
   const isRecognitionRunning = useRef(false);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const currentTextRef = useRef<string>('');
 
   // Session state
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -129,6 +130,7 @@ export default function EnglishHelperPage() {
 
         recognitionRef.current.onstart = () => {
           isRecognitionRunning.current = true;
+          console.log('Speech recognition started');
         };
 
         recognitionRef.current.onresult = (event: any) => {
@@ -148,9 +150,10 @@ export default function EnglishHelperPage() {
           // Update displayed text with both final and interim
           const fullText = (finalTranscript + interimTranscript).trim();
           setCurrentUserText(fullText);
+          currentTextRef.current = fullText;
           
           // If we got final results, set up auto-submit timer (2 seconds of silence)
-          if (finalTranscript) {
+          if (finalTranscript.trim()) {
             // Clear any existing timer
             if (silenceTimerRef.current) {
               clearTimeout(silenceTimerRef.current);
@@ -158,8 +161,16 @@ export default function EnglishHelperPage() {
             
             // Set new timer for 2 seconds of silence
             silenceTimerRef.current = setTimeout(() => {
-              if (fullText.trim() && !isAISpeaking) {
-                submitSpeech();
+              const textToSubmit = currentTextRef.current;
+              if (textToSubmit.trim()) {
+                // Trigger submit via state update
+                setCurrentUserText(prev => {
+                  if (prev.trim()) {
+                    // Create a flag to trigger submission
+                    window.dispatchEvent(new CustomEvent('autosubmit', { detail: prev }));
+                  }
+                  return prev;
+                });
               }
             }, 2000);
           }
@@ -167,15 +178,17 @@ export default function EnglishHelperPage() {
 
         recognitionRef.current.onend = () => {
           isRecognitionRunning.current = false;
+          console.log('Speech recognition ended');
           // Auto-restart if mic is active, session is running, and AI is not speaking
           if (isMicActive && isSessionActive && !isAISpeaking) {
             setTimeout(() => {
               try {
                 if (!isRecognitionRunning.current) {
                   recognitionRef.current.start();
+                  console.log('Restarting recognition...');
                 }
               } catch (error) {
-                console.log('Recognition restart failed, already running');
+                console.log('Recognition restart failed:', error);
               }
             }, 100);
           }
@@ -188,6 +201,22 @@ export default function EnglishHelperPage() {
           if (silenceTimerRef.current) {
             clearTimeout(silenceTimerRef.current);
           }
+          
+          // Auto-restart on certain errors
+          if (event.error === 'no-speech' || event.error === 'aborted') {
+            if (isMicActive && isSessionActive && !isAISpeaking) {
+              setTimeout(() => {
+                try {
+                  if (!isRecognitionRunning.current) {
+                    recognitionRef.current.start();
+                    console.log('Restarting after error...');
+                  }
+                } catch (error) {
+                  console.log('Could not restart after error:', error);
+                }
+              }, 500);
+            }
+          }
         };
       }
     }
@@ -197,7 +226,7 @@ export default function EnglishHelperPage() {
         clearTimeout(silenceTimerRef.current);
       }
     };
-  }, [isAISpeaking]);
+  }, [isMicActive, isSessionActive, isAISpeaking]);
 
   // Start/stop speech recognition
   useEffect(() => {
@@ -302,19 +331,23 @@ export default function EnglishHelperPage() {
   };
 
   // Submit user speech for AI response
-  const submitSpeech = async () => {
-    if (!currentUserText.trim()) return;
+  const submitSpeech = useCallback(async (textOverride?: string) => {
+    const textToSubmit = textOverride || currentUserText;
+    if (!textToSubmit.trim() || isAISpeaking) return;
+
+    setCurrentUserText(''); // Clear immediately to prevent double submission
+    currentTextRef.current = '';
 
     const userMessage = {
       speaker: 'user' as const,
-      text: currentUserText,
+      text: textToSubmit,
       timestamp: new Date(),
     };
     setTranscript(prev => [...prev, userMessage]);
 
     // Simulate AI response (in production, call your AI API)
     setTimeout(() => {
-      const aiResponse = generateAIResponse(currentUserText, topic);
+      const aiResponse = generateAIResponse(textToSubmit, topic);
       const aiMessage = {
         speaker: 'ai' as const,
         text: aiResponse,
@@ -324,18 +357,31 @@ export default function EnglishHelperPage() {
       speakText(aiResponse);
 
       // Generate feedback
-      const newFeedback = generateFeedback(currentUserText);
+      const newFeedback = generateFeedback(textToSubmit);
       setFeedback(newFeedback);
 
       // Update stats
       setSessionStats(prev => ({
         ...prev,
-        wordsSpoken: prev.wordsSpoken + currentUserText.split(' ').length,
+        wordsSpoken: prev.wordsSpoken + textToSubmit.split(' ').length,
       }));
     }, 1000);
+  }, [currentUserText, isAISpeaking, topic]);
 
-    setCurrentUserText('');
-  };
+  // Listen for autosubmit events
+  useEffect(() => {
+    const handleAutoSubmit = (event: any) => {
+      const textToSubmit = event.detail;
+      if (textToSubmit && !isAISpeaking) {
+        submitSpeech(textToSubmit);
+      }
+    };
+
+    window.addEventListener('autosubmit', handleAutoSubmit);
+    return () => {
+      window.removeEventListener('autosubmit', handleAutoSubmit);
+    };
+  }, [submitSpeech, isAISpeaking]);
 
   // Generate AI response (mock - replace with actual AI API)
   const generateAIResponse = (userText: string, topic: ConversationTopic): string => {
