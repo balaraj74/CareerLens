@@ -530,9 +530,9 @@ export default function EnglishHelperPage() {
                   >
                     <p className="text-sm text-muted-foreground mb-1">You're saying:</p>
                     <p className="font-medium">{currentUserText}</p>
-                    <Button size="sm" onClick={submitSpeech} className="mt-2">
-                      Submit
-                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2 italic">
+                      Will submit automatically when you pause...
+                    </p>
                   </motion.div>
                 )}
               </CardContent>
