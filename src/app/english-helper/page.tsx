@@ -66,6 +66,7 @@ export default function EnglishHelperPage() {
   const isSessionActiveRef = useRef(false);
   const isMicActiveRef = useRef(false);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoRestartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Session state
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -121,6 +122,8 @@ export default function EnglishHelperPage() {
   // UI state
   const [showSummary, setShowSummary] = useState(false);
   const [permissionsGranted, setPermissionsGranted] = useState(false);
+  const [browserSupported, setBrowserSupported] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     if (!user) {
@@ -182,6 +185,16 @@ export default function EnglishHelperPage() {
         mediaStreamRef.current = null;
       }
       
+      // Check if running in secure context (HTTPS or localhost)
+      if (!window.isSecureContext) {
+        throw new Error('This feature requires a secure context (HTTPS). Please access the site via HTTPS.');
+      }
+      
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Your browser does not support camera/microphone access. Please use Chrome, Edge, or Safari.');
+      }
+      
       console.log('🎥 Requesting camera and microphone permissions...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -201,9 +214,21 @@ export default function EnglishHelperPage() {
       isMicActiveRef.current = true;
       
       console.log('🎬 Media devices ready for session');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Permission denied:', error);
-      alert('Camera and microphone access is required for this feature. Please allow access in your browser settings.');
+      let errorMsg = 'Camera and microphone access is required for this feature.';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMsg += ' Please allow access in your browser settings and reload the page.';
+      } else if (error.name === 'NotFoundError') {
+        errorMsg += ' No camera or microphone found. Please connect a device.';
+      } else if (error.name === 'NotReadableError') {
+        errorMsg += ' Your camera or microphone is already in use by another application.';
+      } else if (error.message?.includes('secure')) {
+        errorMsg = 'This feature requires HTTPS. Please access the site via a secure connection.';
+      }
+      
+      alert(errorMsg);
       throw error; // Re-throw to prevent session from starting
     }
   };
@@ -211,7 +236,31 @@ export default function EnglishHelperPage() {
   // Initialize speech recognition with hands-free auto-submit
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Check for secure context (HTTPS)
+      if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+        setBrowserSupported(false);
+        setErrorMessage('⚠️ This feature requires HTTPS. Please access the site via a secure connection.');
+        console.error('❌ Not a secure context - HTTPS required');
+        return;
+      }
+      
+      // Check for Web Speech API
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        setBrowserSupported(false);
+        setErrorMessage('⚠️ Your browser does not support speech recognition. Please use Chrome, Edge, or Safari.');
+        console.error('❌ Web Speech API not supported in this browser');
+        return;
+      }
+      
+      // Check for getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setBrowserSupported(false);
+        setErrorMessage('⚠️ Your browser does not support camera/microphone access. Please use a modern browser.');
+        console.error('❌ getUserMedia not supported');
+        return;
+      }
+      
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = true;
@@ -226,7 +275,7 @@ export default function EnglishHelperPage() {
 
         recognitionRef.current.onresult = (event: any) => {
           // Skip if AI is currently speaking to avoid picking up AI voice
-          if (isAISpeaking) {
+          if (isAISpeakingRef.current) {
             console.log('Ignoring recognition during AI speech');
             return;
           }
@@ -282,19 +331,31 @@ export default function EnglishHelperPage() {
           console.log('⏸️ Speech recognition ended');
           console.log('📊 State - Mic:', isMicActiveRef.current, 'Session:', isSessionActiveRef.current, 'AI Speaking:', isAISpeakingRef.current);
           
-          // Quick restart for smooth hands-free conversation
-          setTimeout(() => {
-            if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current && !isRecognitionRunning.current) {
-              try {
-                recognitionRef.current?.start();
-                console.log('🔄 Recognition auto-restarted');
-              } catch (error: any) {
-                if (!error.message?.includes('already started')) {
-                  console.log('⚠️ Auto-restart attempt:', error.message);
+          // Clear any pending auto-restart
+          if (autoRestartTimeoutRef.current) {
+            clearTimeout(autoRestartTimeoutRef.current);
+            autoRestartTimeoutRef.current = null;
+          }
+          
+          // Only restart if session is active and we're not in the middle of something
+          if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current) {
+            // Schedule auto-restart with delay to prevent rapid loops
+            autoRestartTimeoutRef.current = setTimeout(() => {
+              // Double-check conditions before actually restarting
+              if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current && !isRecognitionRunning.current) {
+                try {
+                  recognitionRef.current?.start();
+                  console.log('🔄 Recognition auto-restarted');
+                } catch (error: any) {
+                  if (!error.message?.includes('already started')) {
+                    console.log('⚠️ Auto-restart error:', error.message);
+                  }
                 }
+              } else {
+                console.log('⏭️ Auto-restart cancelled - conditions changed');
               }
-            }
-          }, 100); // Minimal delay for smooth conversation
+            }, 300);
+          }
         };
 
         recognitionRef.current.onerror = (event: any) => {
@@ -313,19 +374,14 @@ export default function EnglishHelperPage() {
             clearTimeout(silenceTimerRef.current);
           }
           
-          // Quick restart on no-speech for smooth hands-free conversation
+          // Only restart on no-speech error (user didn't speak)
+          // Don't restart on abort (happens during normal stop/start cycle)
           if (event.error === 'no-speech') {
-            console.log('🔄 No speech detected, restarting immediately...');
-            setTimeout(() => {
-              if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current && !isRecognitionRunning.current) {
-                try {
-                  recognitionRef.current?.start();
-                  console.log('✅ Recognition restarted after no-speech');
-                } catch (error: any) {
-                  console.log('⚠️ No-speech recovery attempt:', error.message);
-                }
-              }
-            }, 100); // Immediate restart
+            console.log('🔄 No speech detected, restarting...');
+            safeRestartRecognition(500); // Use safe restart with debouncing
+          } else if (event.error === 'aborted') {
+            // Aborted is normal during restart - don't restart again
+            console.log('⏭️ Aborted - waiting for manual restart');
           }
         };
       }
@@ -443,6 +499,11 @@ export default function EnglishHelperPage() {
       clearTimeout(restartTimeoutRef.current);
       restartTimeoutRef.current = null;
     }
+    if (autoRestartTimeoutRef.current) {
+      clearTimeout(autoRestartTimeoutRef.current);
+      autoRestartTimeoutRef.current = null;
+      console.log('Cleared auto-restart timeout');
+    }
     
     // Stop speech recognition
     if (recognitionRef.current && isRecognitionRunning.current) {
@@ -538,13 +599,8 @@ export default function EnglishHelperPage() {
                 recognitionRef.current?.stop();
               }
               
-              // Start fresh after brief delay
-              setTimeout(() => {
-                if (!isRecognitionRunning.current && !isAISpeakingRef.current) {
-                  recognitionRef.current?.start();
-                  console.log('🚀 Recognition forcefully restarted for smooth conversation');
-                }
-              }, 100);
+              // Use safe restart to prevent rapid restart loops
+              safeRestartRecognition(400);
             } catch (error: any) {
               console.log('⚠️ Restart attempt:', error.message);
             }
@@ -565,19 +621,8 @@ export default function EnglishHelperPage() {
           console.log('🎤 Microphone re-enabled after error');
         }
         
-        // Immediate restart on error for smooth conversation
-        setTimeout(() => {
-          if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current) {
-            try {
-              if (!isRecognitionRunning.current) {
-                recognitionRef.current?.start();
-                console.log('🔄 Recognition restarted after error');
-              }
-            } catch (error: any) {
-              console.log('⚠️ Error restart attempt:', error.message);
-            }
-          }
-        }, 200);
+        // Restart after AI speech ends using safe restart
+        safeRestartRecognition(400);
       };
 
       speechSynthesis.speak(utterance);
@@ -710,6 +755,32 @@ export default function EnglishHelperPage() {
     };
   }, [submitSpeech, isAISpeaking]);
 
+  // Cleanup all resources on component unmount
+  useEffect(() => {
+    return () => {
+      console.log('🧹 Cleaning up English Helper component...');
+      
+      // Clear all timeouts
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (restartTimeoutRef.current) clearTimeout(restartTimeoutRef.current);
+      if (autoRestartTimeoutRef.current) clearTimeout(autoRestartTimeoutRef.current);
+      
+      // Stop recognition
+      if (recognitionRef.current && isRecognitionRunning.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore errors on cleanup
+        }
+      }
+      
+      // Stop media stream
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   // Generate AI response (mock - replace with actual AI API)
   const generateAIResponse = (userText: string, topic: ConversationTopic): string => {
     const responses: Record<ConversationTopic, string[]> = {
@@ -799,6 +870,31 @@ export default function EnglishHelperPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Browser Compatibility Warning */}
+        {!browserSupported && errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-destructive/10 border-2 border-destructive/50 rounded-lg p-4"
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-destructive flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-destructive mb-1">Feature Not Available</h3>
+                <p className="text-sm text-muted-foreground">{errorMessage}</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  <strong>Requirements:</strong>
+                  <ul className="list-disc list-inside mt-1">
+                    <li>HTTPS connection (or localhost for development)</li>
+                    <li>Modern browser (Chrome, Edge, or Safari recommended)</li>
+                    <li>Microphone and camera permissions</li>
+                  </ul>
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -860,10 +956,11 @@ export default function EnglishHelperPage() {
                     <Button
                       size="lg"
                       onClick={startSession}
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                      disabled={!browserSupported}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Play className="w-5 h-5 mr-2" />
-                      Start Practice Session
+                      {browserSupported ? 'Start Practice Session' : 'Browser Not Supported'}
                     </Button>
                   ) : (
                     <>
