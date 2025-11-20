@@ -61,6 +61,9 @@ export default function EnglishHelperPage() {
   const isRecognitionRunning = useRef(false);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const currentTextRef = useRef<string>('');
+  const isAISpeakingRef = useRef(false);
+  const isSessionActiveRef = useRef(false);
+  const isMicActiveRef = useRef(false);
 
   // Session state
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -98,6 +101,19 @@ export default function EnglishHelperPage() {
       router.push('/login');
     }
   }, [user, router]);
+
+  // Sync refs with state for use in event handlers
+  useEffect(() => {
+    isAISpeakingRef.current = isAISpeaking;
+  }, [isAISpeaking]);
+
+  useEffect(() => {
+    isSessionActiveRef.current = isSessionActive;
+  }, [isSessionActive]);
+
+  useEffect(() => {
+    isMicActiveRef.current = isMicActive;
+  }, [isMicActive]);
 
   // Request camera and microphone permissions
   const requestPermissions = async () => {
@@ -196,18 +212,23 @@ export default function EnglishHelperPage() {
           isRecognitionRunning.current = false;
           setIsListening(false);
           console.log('⏸️ Speech recognition ended');
+          console.log('📊 State check - Mic:', isMicActiveRef.current, 'Session:', isSessionActiveRef.current, 'AI Speaking:', isAISpeakingRef.current);
+          
           // Auto-restart if mic is active, session is running, and AI is not speaking
-          if (isMicActive && isSessionActive && !isAISpeaking) {
+          if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current) {
+            console.log('✅ Conditions met, restarting in 500ms...');
             setTimeout(() => {
               try {
-                if (!isRecognitionRunning.current) {
+                if (!isRecognitionRunning.current && !isAISpeakingRef.current) {
                   recognitionRef.current.start();
-                  console.log('🔄 Restarting recognition...');
+                  console.log('🔄 Recognition restarted successfully!');
                 }
               } catch (error) {
                 console.log('❌ Recognition restart failed:', error);
               }
-            }, 100);
+            }, 500);
+          } else {
+            console.log('❌ Not restarting - conditions not met');
           }
         };
 
@@ -221,15 +242,15 @@ export default function EnglishHelperPage() {
           
           // Auto-restart on certain errors
           if (event.error === 'no-speech' || event.error === 'aborted') {
-            if (isMicActive && isSessionActive && !isAISpeaking) {
+            if (isMicActiveRef.current && isSessionActiveRef.current && !isAISpeakingRef.current) {
               setTimeout(() => {
                 try {
-                  if (!isRecognitionRunning.current) {
+                  if (!isRecognitionRunning.current && !isAISpeakingRef.current) {
                     recognitionRef.current.start();
-                    console.log('Restarting after error...');
+                    console.log('🔄 Restarting after error...');
                   }
                 } catch (error) {
-                  console.log('Could not restart after error:', error);
+                  console.log('❌ Could not restart after error:', error);
                 }
               }, 500);
             }
@@ -345,41 +366,67 @@ export default function EnglishHelperPage() {
       };
 
       utterance.onend = () => {
-        console.log('AI speech ended');
+        console.log('🎤 AI speech ended');
         
         // Re-enable microphone
         if (mediaStreamRef.current && wasMicActive) {
           mediaStreamRef.current.getAudioTracks().forEach(track => {
             track.enabled = true;
           });
+          console.log('🎤 Microphone re-enabled');
         }
 
         setIsAISpeaking(false);
+        isAISpeakingRef.current = false;
+        
+        console.log('📊 After AI speech - Mic:', isMicActiveRef.current, 'Session:', isSessionActiveRef.current);
         
         // Resume speech recognition after AI finishes speaking
-        if (wasMicActive && isSessionActive && recognitionRef.current) {
+        if (isMicActiveRef.current && isSessionActiveRef.current && recognitionRef.current) {
+          console.log('⏰ Setting timeout to restart recognition...');
           setTimeout(() => {
             try {
               if (!isRecognitionRunning.current) {
+                console.log('▶️ Starting recognition after AI speech...');
                 recognitionRef.current.start();
-                console.log('Recognition restarted after AI speech');
+                console.log('✅ Recognition restarted after AI speech');
+              } else {
+                console.log('⚠️ Recognition already running');
               }
             } catch (error) {
-              console.log('Error restarting recognition after AI speech:', error);
+              console.log('❌ Error restarting recognition after AI speech:', error);
             }
-          }, 500);
+          }, 800);
+        } else {
+          console.log('❌ Not restarting recognition - Mic:', isMicActiveRef.current, 'Session:', isSessionActiveRef.current);
         }
       };
 
       utterance.onerror = (error) => {
-        console.error('Speech synthesis error:', error);
+        console.error('❌ Speech synthesis error:', error);
         setIsAISpeaking(false);
+        isAISpeakingRef.current = false;
         
         // Re-enable microphone on error
         if (mediaStreamRef.current && wasMicActive) {
           mediaStreamRef.current.getAudioTracks().forEach(track => {
             track.enabled = true;
           });
+          console.log('🎤 Microphone re-enabled after error');
+        }
+        
+        // Resume speech recognition on error
+        if (isMicActiveRef.current && isSessionActiveRef.current && recognitionRef.current) {
+          setTimeout(() => {
+            try {
+              if (!isRecognitionRunning.current) {
+                recognitionRef.current.start();
+                console.log('✅ Recognition restarted after synthesis error');
+              }
+            } catch (error) {
+              console.log('❌ Error restarting recognition after synthesis error:', error);
+            }
+          }, 500);
         }
       };
 
