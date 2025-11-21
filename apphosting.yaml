@@ -48,13 +48,17 @@ env:
   - variable: BIGQUERY_DATASET_ID
     value: career_data
   
-  # News & Search APIs (Optional - Comment out if not configured)
-  # - variable: NEWS_API_KEY
-  #   secret: NEWS_API_KEY
+  # News & Search APIs (Uncomment and set secrets to enable)
+  - variable: NEWS_API_KEY
+    secret: NEWS_API_KEY
   # - variable: GOOGLE_CUSTOM_SEARCH_API_KEY
   #   secret: GOOGLE_CUSTOM_SEARCH_API_KEY
   # - variable: GOOGLE_CUSTOM_SEARCH_ENGINE_ID
   #   secret: GOOGLE_CUSTOM_SEARCH_ENGINE_ID
+  
+  # Google Maps API (Required for Library Finder)
+  - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    value: AIzaSyCCovOlhJubYYE5iZ5I2AGk_roWOUVa5LU
   
   # Reddit API (Optional - Comment out if not configured)
   # - variable: REDDIT_CLIENT_ID

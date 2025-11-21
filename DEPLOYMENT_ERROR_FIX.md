@@ -1,8 +1,12 @@
 # 🔧 Firebase Deployment Error - Quick Fix Guide
 
-## ❌ Error: Misconfigured secret
+## ❌ Common Errors After Deployment
 
-You're seeing this error because Firebase App Hosting is looking for secrets that haven't been created yet.
+### 1. Features not working in production (but work locally)
+- **News Page**: Shows "No Articles Found"
+- **Library Finder**: Google Maps error
+
+This happens when environment variables/secrets are missing in Firebase.
 
 ## ✅ Solution: Set Up Required Secrets
 
@@ -20,14 +24,20 @@ This interactive script will guide you through setting up all secrets.
 #### Step 1: Set Required Secrets (MUST HAVE)
 
 ```bash
-# Gemini API Key (Required for AI features)
+# 1. Gemini API Key (Required for AI features)
 firebase apphosting:secrets:set GEMINI_API_KEY
 # Paste your key from: https://aistudio.google.com/app/apikey
 
-# Set the same key for GOOGLE_GENAI_API_KEY
+# 2. Set the same key for GOOGLE_GENAI_API_KEY
 firebase apphosting:secrets:set GOOGLE_GENAI_API_KEY
 # Use the same Gemini API key
+
+# 3. News API Key (Required for News feature)
+firebase apphosting:secrets:set NEWS_API_KEY
+# Get free API key from: https://newsapi.org/register
 ```
+
+**Note**: Google Maps API key is already configured in `apphosting.yaml` as a public variable.
 
 #### Step 2: Set Optional Secrets (Comment out if skipping)
 

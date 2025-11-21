@@ -94,6 +94,7 @@ echo -e "${GREEN}═════════════════════
 
 set_secret "GEMINI_API_KEY" "Get from: https://aistudio.google.com/app/apikey" "required" || exit 1
 set_secret "GOOGLE_GENAI_API_KEY" "Same as GEMINI_API_KEY (can paste same value)" "required" || exit 1
+set_secret "NEWS_API_KEY" "Get from: https://newsapi.org/register (Free tier available)" "required" || exit 1
 
 # Optional but recommended secrets
 echo ""
