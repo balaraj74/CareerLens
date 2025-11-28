@@ -3,14 +3,17 @@
 <div align="center">
 
 ![CareerLens Banner](https://img.shields.io/badge/CareerLens-AI%20Career%20Platform-blue?style=for-the-badge)
-[![Next.js](https://img.shields.io/badge/Next.js-15.3.3-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5.6-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![Firebase](https://img.shields.io/badge/Firebase-11.9.1-orange?style=flat-square&logo=firebase)](https://firebase.google.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![Gemini AI](https://img.shields.io/badge/Gemini-2.5%20Flash-purple?style=flat-square&logo=google)](https://ai.google.dev/)
+[![Gemini AI](https://img.shields.io/badge/Gemini-1.5%20Pro-purple?style=flat-square&logo=google)](https://ai.google.dev/)
+[![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Integrated-4285F4?style=flat-square&logo=google-cloud)](https://cloud.google.com/)
 
-**Your Personal AI-Powered Career Co-Pilot**
+**Your Personal AI-Powered Career Co-Pilot with Premium Glassmorphism UI**
 
-[Live Demo](https://careerlens--careerlens-1.us-central1.hosted.app) | [Documentation](#-documentation) | [Features](#-core-features)
+🌟 **Complete Career Management** | 🤖 **AI-Powered Insights** | 📚 **20M+ Learning Resources** | 🎓 **Smart Recommendations**
+
+[Live Demo](https://careerlens-1.web.app) | [Architecture](#-complete-architecture) | [Features](#-complete-feature-list)
 
 </div>
 
@@ -130,90 +133,1218 @@
 
 ---
 
-## 🏗 Architecture Overview
+## ✨ Complete Feature List
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         USER INTERFACE                          │
-│                    (Next.js 15 + React 18)                      │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     FRONTEND SERVICES                           │
-│  • Authentication (Firebase Auth + Google OAuth)                │
-│  • Real-time Data Fetching (Reddit, Google Search, Web Scraper)│
-│  • AI-Powered Recommendations (Gemini 2.5 Flash)               │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    FIREBASE SERVICES                            │
-│  • Firestore (User Profiles, Reviews, Cached Data)             │
-│  • Firebase Auth (User Management)                             │
-│  • Cloud Functions (Automated Data Collection)                 │
-│  • App Hosting (Next.js Deployment)                            │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    GOOGLE CLOUD SERVICES                        │
-│  • Vertex AI / Gemini AI (Career Recommendations, Summarization)│
-│  • Cloud Storage (Resume Storage, Assets)                      │
-│  • Cloud Functions (Background Jobs, Schedulers)               │
-│  • BigQuery (Analytics - Future)                               │
-│  • Looker Studio (Dashboards - Future)                         │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    EXTERNAL APIs                                │
-│  • Reddit JSON API (College Reviews)                           │
-│  • Google Custom Search API (Course Discovery, Mentor Profiles)│
-│  • NPTEL/Coursera/AWS/GCP APIs (Course Scraping)              │
-│  • YouTube API (Educational Content)                           │
-└─────────────────────────────────────────────────────────────────┘
-```
+### **🎯 Career Management**
+
+#### **1. Career Navigator**
+- AI-powered career path recommendations
+- Personalized roadmaps based on skills and interests
+- Industry-specific guidance
+- Skill gap analysis with actionable steps
+- Integration with Gemini 2.5 Flash for intelligent suggestions
+
+#### **2. Career Graph Visualization**
+- Interactive node-based career graph (React Flow)
+- GitHub-style 365-day activity heatmap
+- Skill network visualization
+- Progress tracking & milestones
+- AI-powered readiness score
+
+#### **3. Career Updates Feed**
+- Latest industry news and trends
+- Personalized content recommendations
+- Real-time updates from multiple sources
+- Bookmark favorite articles
+- Share insights with community
+
+### **📊 AI-Powered Tools**
+
+#### **4. AI Career Insights (Gemini 1.5 Pro)**
+- Comprehensive career analysis
+- Industry trends & predictions
+- Salary insights & comparisons
+- Job market demand analysis
+- Long-term career planning
+
+#### **5. AI Skills Recommender (620 lines)**
+- Personalized skill development paths
+- Real-time skill demand analysis
+- Learning resource suggestions
+- Skill priority rankings
+- Progress tracking
+
+#### **6. AI Resume Optimizer**
+- ATS-friendly resume generation
+- Resume scoring & analysis
+- Job-specific tailoring
+- Resume parser for existing resumes
+- PDF/DOCX support
+- Download & share resumes
+
+#### **7. AI Interview Preparation**
+- Mock interview with conversational AI
+- Role-specific questions with model answers
+- Voice recognition support (planned)
+- Performance feedback & scoring
+- Industry-specific interview prep
+
+#### **8. AI Project Generator (580 lines)**
+- Context-aware project recommendations
+- Complexity matching (beginner to advanced)
+- Implementation guides & tutorials
+- Technology stack suggestions
+- GitHub integration (planned)
+
+#### **9. AI Chat Assistant (Copilot)**
+- Real-time career guidance
+- Technical problem-solving
+- Learning assistance
+- Code review & suggestions
+- Multi-turn conversations
+
+### **🎓 Education & Learning**
+
+#### **10. College Recommendations (42 Colleges)**
+- Comprehensive college database (IITs, NITs, IIITs, BITS, etc.)
+- Advanced filtering (location, courses, fees, placements)
+- Real-time Reddit reviews integration
+- College comparison tool
+- Placement statistics & rankings
+- Campus photos & virtual tours
+
+#### **11. eBooks Library (20M+ Books)**
+- Internet Archive integration
+- Multiple formats (PDF, EPUB, TXT)
+- Advanced search with filters
+- Bookmark management (localStorage)
+- Reading progress tracking
+- Genre-based discovery
+
+#### **12. Course Discovery**
+- NPTEL integration (12,000+ courses)
+- Coursera course scraping
+- AWS Educate cloud training
+- Google Cloud Skills Boost
+- YouTube educational videos
+- Personalized recommendations
+
+#### **13. Certification Hub (450 lines)**
+- 25+ curated certifications
+- Industry-recognized credentials
+- Free & paid options
+- Progress tracking
+- Certificate verification
+
+#### **14. Learning Roadmaps**
+- Technology-specific paths
+- Skill progression tracking
+- Resource recommendations
+- Time estimates & milestones
+- Community-driven content
+
+### **📚 Resource Discovery**
+
+#### **15. Library Finder**
+- Google Maps API integration
+- Real-time location tracking
+- Distance calculation (Haversine formula)
+- Library search by city/area
+- Ratings & reviews (Google Places)
+- Photos & amenities
+- Directions & navigation
+
+#### **16. News Feed (NewsAPI)**
+- Latest industry news articles
+- Indian & global coverage
+- Category filtering (Tech, AI, Career)
+- Article caching (5-min TTL)
+- Bookmark articles
+- Social sharing
+
+#### **17. Mentor Discovery**
+- Google Custom Search integration
+- LinkedIn profile search
+- Industry expert discovery
+- Connection recommendations
+- Mentorship matching (planned)
+
+### **🗓️ Productivity Tools**
+
+#### **18. AI Calendar (Google Calendar API)**
+- Event management & synchronization
+- AI event suggestions (Gemini-powered)
+- Smart reminders (Firebase Cloud Messaging)
+- Today's tasks widget
+- Streak tracking & productivity scores
+- Calendar integration across devices
+- Task completion tracking
+
+#### **19. English Language Helper**
+- AI-powered language learning
+- Grammar correction
+- Pronunciation guidance
+- Vocabulary building
+- Conversation practice
+- IELTS/TOEFL prep
+
+### **👤 Profile & Gamification**
+
+#### **20. Intelligent Profile Management**
+- Multi-tab profile editor (6 sections)
+- 3D visual dashboard
+- Achievement tracking
+- Skill endorsements
+- Activity feed
+- Real-time Firebase sync
+- Gamified milestones
+
+#### **21. Skill Gap Analyzer**
+- Current skills vs. target role comparison
+- Learning resource recommendations
+- Timeline estimation
+- Progress tracking
+- Certification suggestions
+
+### **🌐 Community Features**
+
+#### **22. College Reviews (Reddit Integration)**
+- Real-time Reddit discussions
+- Server-side proxy (CORS bypass)
+- Sentiment analysis
+- Topic extraction
+- Mock data fallback
+- Community voting
+
+#### **23. Social Sharing**
+- Share achievements
+- Post career milestones
+- Collaborative learning
+- Peer recommendations
+- Discussion forums (planned)
+
+### **🎨 UI/UX Features**
+
+#### **24. Premium Glassmorphism Design**
+- Neon color scheme (Cyan #00E5FF, Purple #A57CFF, Emerald #00FFC6)
+- Animated mesh wave background
+- Smooth page transitions (Framer Motion)
+- Responsive design (mobile-first)
+- Dark mode optimized
+- Accessibility compliant (WCAG 2.1)
+
+#### **25. Interactive Components**
+- shadcn/ui component library (40+ components)
+- Radix UI primitives
+- Custom animations
+- Loading skeletons
+- Toast notifications
+- Modal dialogs
+
+### **⚙️ Technical Features**
+
+#### **26. Performance Optimization**
+- Server-Side Rendering (SSR)
+- Static Site Generation (SSG)
+- Image optimization (WebP, lazy loading)
+- Code splitting & dynamic imports
+- Edge functions (low latency)
+- CDN distribution
+
+#### **27. Caching Strategies**
+- API response caching (Firestore, 5-min TTL)
+- localStorage persistence (bookmarks, preferences)
+- Service worker caching (planned)
+- Browser caching headers
+
+#### **28. Security & Privacy**
+- Firebase Auth (Google OAuth 2.0)
+- JWT token authentication
+- Firestore security rules
+- HTTPS-only enforcement
+- API rate limiting
+- Input validation (Zod schemas)
+- XSS/CSRF protection
+
+#### **29. Real-Time Features**
+- Firestore real-time listeners
+- Live data updates
+- Push notifications (FCM)
+- Activity feed updates
+- Collaborative editing (planned)
+
+#### **30. Background Jobs**
+- Cloud Functions schedulers
+- Data refresh (every 24h)
+- Automated notifications
+- Analytics collection
+- Cache invalidation
+
+### **📱 Mobile Features**
+
+#### **31. Progressive Web App (PWA) - Planned**
+- Offline support
+- Install to home screen
+- Push notifications
+- Background sync
+- App-like experience
+
+### **📊 Analytics & Monitoring**
+
+#### **32. Performance Monitoring**
+- Firebase Performance Monitoring
+- Page load times
+- API response tracking
+- User engagement metrics
+- Error logging
+
+#### **33. User Analytics**
+- Firebase Analytics
+- Event tracking
+- Conversion funnels
+- User behavior analysis
+- A/B testing (planned)
 
 ---
 
-## 🧰 Tech Stack
+## 🏗 Complete Architecture
 
-### **Frontend**
-- **Next.js 15** (React 18, App Router)
-- **TypeScript** (Type-safe development)
-- **Tailwind CSS** (Styling)
-- **Framer Motion** (Animations)
-- **shadcn/ui** (Component library)
+### **System Architecture Diagram**
 
-### **Backend & Cloud**
-- **Firebase**
-  - Firestore (NoSQL Database)
-  - Firebase Auth (Authentication)
-  - Cloud Functions (Serverless functions)
-  - App Hosting (Next.js deployment)
-- **Google Cloud Platform**
-  - **Vertex AI / Gemini 2.5 Flash** (Generative AI)
-  - **Cloud Storage** (File storage)
-  - **Cloud Functions** (Background processing)
-  - **BigQuery** (Analytics - Planned)
-  - **Looker Studio** (Data visualization - Planned)
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            CLIENT LAYER                                      │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │  Next.js 15.5.6 (React 18) + TypeScript + Tailwind CSS                  │ │
+│  │  • Premium Glassmorphism UI (Neon Cyan/Purple/Emerald Theme)            │ │
+│  │  • Framer Motion Animations + Mesh Wave Background                      │ │
+│  │  • shadcn/ui Components + Radix UI Primitives                           │ │
+│  │  • Responsive Design (Mobile-First)                                     │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────┬───────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         PRESENTATION LAYER                                   │
+│  ┌──────────────────────┬──────────────────────┬─────────────────────────┐ │
+│  │ 19+ Pages            │ 65+ Components       │ 14 Services             │ │
+│  │ • Dashboard          │ • Career Navigator   │ • Reddit API            │ │
+│  │ • Career Navigator   │ • AI Chat            │ • Internet Archive      │ │
+│  │ • Career Graph       │ • Resume Builder     │ • College Finder        │ │
+│  │ • AI Calendar        │ • Interview Prep     │ • Web Scraper           │ │
+│  │ • Career Updates     │ • News Feed          │ • Google Search         │ │
+│  │ • Colleges (42)      │ • Library Finder     │ • AI Summarizer         │ │
+│  │ • eBooks (20M+)      │ • College Cards      │ • Calendar Service      │ │
+│  │ • News Feed          │ • Book Search        │ • Profile Service       │ │
+│  │ • Library Finder     │ • Profile Gamified   │ • News Service          │ │
+│  │ • English Helper     │ • Bookmark Manager   │ • Library Service       │ │
+│  └──────────────────────┴──────────────────────┴─────────────────────────┘ │
+└──────────────────────────────────┬───────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          APPLICATION LAYER                                   │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │  API Routes (Server-Side Logic)                                        │ │
+│  │  • /api/college-recommendations → College search & filtering           │ │
+│  │  • /api/reddit-search → Reddit proxy (CORS bypass + mock data)        │ │
+│  │  • /api/news → NewsAPI proxy with caching                             │ │
+│  │  • /api/ebooks/archive/* → Internet Archive integration               │ │
+│  │  • /api/courses/scrape → Real-time course scraping                    │ │
+│  │  • /api/parse-resume → Resume parsing & analysis                      │ │
+│  │  • /api/career-navigator → AI career recommendations                  │ │
+│  │  • /api/ai/career-summary → Gemini AI summarization                   │ │
+│  │  • /api/english-helper → AI language learning                         │ │
+│  │  • /api/copilot/chat → AI chat assistant                              │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────┬───────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        GOOGLE CLOUD PLATFORM                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │  Firebase Services (Backend as a Service)                               │ │
+│  │  ┌────────────────┬─────────────────┬──────────────────────────┐       │ │
+│  │  │ Authentication │ Firestore DB    │ Cloud Storage            │       │ │
+│  │  │ • Google OAuth │ • Users         │ • Resume Files           │       │ │
+│  │  │ • Email/Pass   │ • Profiles      │ • Profile Photos         │       │ │
+│  │  │ • Session Mgmt │ • Reviews       │ • Assets                 │       │ │
+│  │  │                │ • Colleges      │ • Background Images      │       │ │
+│  │  │                │ • Cache         │                          │       │ │
+│  │  │                │ • Activities    │                          │       │ │
+│  │  └────────────────┴─────────────────┴──────────────────────────┘       │ │
+│  │                                                                          │ │
+│  │  ┌────────────────┬─────────────────┬──────────────────────────┐       │ │
+│  │  │ App Hosting    │ Cloud Functions │ Cloud Messaging          │       │ │
+│  │  │ • Next.js Deploy│ • Schedulers   │ • Push Notifications     │       │ │
+│  │  │ • Auto-scaling │ • Background Jobs│ • FCM Tokens            │       │ │
+│  │  │ • CDN          │ • Data Refresh  │ • Event Reminders        │       │ │
+│  │  └────────────────┴─────────────────┴──────────────────────────┘       │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │  Google AI (Gemini)                                                     │ │
+│  │  • Gemini 1.5 Pro → Career recommendations, summarization               │ │
+│  │  • Gemini 2.5 Flash → Fast AI responses, chat, interview prep           │ │
+│  │  • Vertex AI → Advanced AI workflows & model management                 │ │
+│  │  • Context caching → Reduced latency & costs                            │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │  Google Cloud Services                                                  │ │
+│  │  • Cloud Run → Serverless container deployment                          │ │
+│  │  • BigQuery → Analytics & data warehousing (planned)                    │ │
+│  │  • Cloud Storage → Asset hosting & backups                              │ │
+│  │  • Cloud Functions → Background processing & cron jobs                  │ │
+│  │  • Looker Studio → Data visualization dashboards (planned)              │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────┬───────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         EXTERNAL INTEGRATIONS                                │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │  Google APIs                                                            │ │
+│  │  • Custom Search API → Course discovery, mentor search                  │ │
+│  │  • Maps API → Library finder (location tracking, directions)            │ │
+│  │  • Places API → Library search, ratings, photos                         │ │
+│  │  • Calendar API → Event management, sync                                │ │
+│  │  • YouTube API → Educational video recommendations                      │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │  Third-Party APIs                                                       │ │
+│  │  • Reddit JSON API → College reviews (server-side proxy)                │ │
+│  │  • Internet Archive API → 20M+ free books search                        │ │
+│  │  • NewsAPI.org → Latest news articles                                   │ │
+│  │  • NPTEL API → Indian courses (IIT lectures)                            │ │
+│  │  • Coursera API → Course scraping                                       │ │
+│  │  • AWS Educate → Cloud computing courses                                │ │
+│  │  • Google Cloud Skills Boost → GCP certifications                       │ │
+│  └─────────────────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────────────┘
 
-### **AI & Data**
-- **Genkit** (AI workflow orchestration)
-- **Gemini 2.5 Flash Lite** (Fast AI responses)
-- **Web Scraping** (NPTEL, Coursera, AWS, GCP)
-- **Real-time Data Aggregation** (Reddit, Google Search)
+                                   ▼
 
-### **APIs & Services**
-- **Reddit JSON API** - College reviews (server-side proxy)
-- **Internet Archive API** - 20M+ free books search
-- **Google Custom Search API** - Intelligent content discovery
-- **YouTube Data API** - Educational video recommendations
-- **NPTEL/SWAYAM API** - Course catalog integration
-- **Firebase Cloud Messaging** - Push notifications
-- **Google Maps API** - Library finder
-- **Google Calendar API** - Event management
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          DATA FLOW                                           │
+│                                                                              │
+│  1. User Action → Client Component                                          │
+│  2. Client → API Route (Server-Side)                                        │
+│  3. API Route → Service Layer (Business Logic)                              │
+│  4. Service → External APIs / Firebase / Gemini AI                          │
+│  5. Response → API Route → Client → UI Update                               │
+│                                                                              │
+│  ✅ Server-Side Rendering (SSR) for SEO                                     │
+│  ✅ Client-Side Navigation (CSR) for speed                                  │
+│  ✅ Edge Functions for low latency                                          │
+│  ✅ Caching strategies (Redis + localStorage)                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### **Architecture Highlights**
+
+#### **Multi-Layer Design**
+- **Client Layer**: Modern UI with Next.js 15 + React 18
+- **Presentation Layer**: 19 pages, 65+ components, 14 services
+- **Application Layer**: 10+ API routes for server-side logic
+- **Infrastructure Layer**: Google Cloud Platform (Firebase + GCP)
+- **Integration Layer**: 11 external APIs
+
+#### **Key Design Patterns**
+- **Server-Side Rendering**: SEO-optimized pages
+- **API Proxy Pattern**: CORS bypass (Reddit, NewsAPI)
+- **Service Layer Pattern**: Separation of concerns
+- **Repository Pattern**: Firestore data access
+- **Observer Pattern**: Real-time updates (Firestore listeners)
+- **Singleton Pattern**: Firebase initialization
+- **Factory Pattern**: AI service creation
+
+#### **Performance Optimizations**
+- **Edge Functions**: Low-latency API responses
+- **CDN Distribution**: Global content delivery
+- **Image Optimization**: Next.js Image component
+- **Code Splitting**: Lazy loading components
+- **Caching Strategy**: 5-min Redis + localStorage
+- **Background Jobs**: Cloud Functions for data refresh
+
+#### **Security Measures**
+- **Firebase Auth**: Secure user authentication
+- **Firestore Rules**: Document-level permissions
+- **API Rate Limiting**: Prevent abuse
+- **Environment Variables**: No hardcoded secrets
+- **HTTPS Only**: Encrypted data transmission
+- **CORS Policies**: Controlled API access
+
+---
+
+## 🧰 Complete Tech Stack
+
+### **Frontend Technologies**
+
+#### **Core Framework**
+- **Next.js 15.5.6** (React 18, App Router, TypeScript)
+  - Server-Side Rendering (SSR)
+  - Static Site Generation (SSG)
+  - Incremental Static Regeneration (ISR)
+  - API Routes (serverless functions)
+  - Image Optimization
+  - Font Optimization (Google Fonts)
+  - Bundle Analysis & Code Splitting
+
+#### **UI Libraries & Styling**
+- **Tailwind CSS 3.4.1** - Utility-first CSS framework
+  - Custom glassmorphism utilities
+  - Neon color palette (Cyan #00E5FF, Purple #A57CFF, Emerald #00FFC6)
+  - Dark mode optimized
+  - Responsive breakpoints
+- **Framer Motion** - Advanced animations & transitions
+  - Page transitions
+  - Mesh wave background animation
+  - Component entrance/exit animations
+- **shadcn/ui** - 40+ accessible components
+  - Built on Radix UI primitives
+  - Fully customizable with Tailwind
+  - Accordion, Alert, Badge, Button, Card, Dialog, etc.
+- **Radix UI** - Unstyled, accessible components
+  - Dropdown menus, tooltips, modals
+  - Keyboard navigation support
+  - ARIA compliance
+
+#### **State Management & Data Fetching**
+- **React Hooks** (useState, useEffect, useContext, useMemo)
+- **Custom Hooks** (useAuth, useToast, useBackgroundJobs)
+- **Context API** - Global state management
+
+#### **Form Handling & Validation**
+- **React Hook Form** - Performant form validation
+- **Zod** - TypeScript-first schema validation
+- **Hookform Resolvers** - Form validation integration
+
+#### **Data Visualization**
+- **React Flow** - Interactive career graph visualization
+  - Node-based graph editor
+  - Custom node types
+  - Edge animations
+
+### **Backend & Cloud Infrastructure**
+
+#### **🔥 Firebase Services (Primary Backend)**
+
+##### **Authentication**
+- **Firebase Auth 11.9.1**
+  - Google OAuth 2.0 (one-click sign-in)
+  - Email/Password authentication
+  - Session management
+  - Protected routes & API endpoints
+
+##### **Database**
+- **Firestore (NoSQL)**
+  - Real-time database
+  - Offline persistence
+  - Collections:
+    - `users` - User accounts
+    - `profiles` - User profile data
+    - `reviews` - College reviews
+    - `colleges` - College information (42 colleges)
+    - `cache` - API response caching (5-min TTL)
+    - `activities` - User activity tracking
+    - `eventReminders` - Calendar reminders
+    - `fcmTokens` - Push notification tokens
+  - Security rules for data protection
+  - Indexes for query optimization
+
+##### **Storage**
+- **Firebase Cloud Storage**
+  - Resume file uploads (.txt, .doc, .docx)
+  - Profile photo storage
+  - Background images/videos
+  - Asset hosting
+
+##### **Hosting & Deployment**
+- **Firebase App Hosting**
+  - Next.js 15 support
+  - Auto-scaling (0-10 instances)
+  - 2 vCPUs, 2GB RAM per instance
+  - Global CDN distribution
+  - Custom domain support
+  - HTTPS by default
+
+##### **Cloud Functions**
+- **Firebase Cloud Functions (Node.js 20)**
+  - Background data refresh (every 24h)
+  - Scheduled tasks (cron jobs)
+  - Event-triggered functions
+  - HTTP callable functions
+
+##### **Analytics & Monitoring**
+- **Firebase Analytics**
+  - User engagement tracking
+  - Event logging
+  - Conversion funnels
+- **Firebase Performance Monitoring**
+  - Page load times
+  - API response times
+  - Network request monitoring
+
+#### **☁️ Google Cloud Platform Services**
+
+##### **AI & Machine Learning**
+- **Vertex AI**
+  - Model management
+  - Custom model training (planned)
+  - AutoML integration (planned)
+- **Gemini AI (Google Generative AI)**
+  - **Gemini 1.5 Pro** - Complex reasoning, long context
+  - **Gemini 2.5 Flash** - Fast AI responses, chat
+  - Use cases:
+    - Career path recommendations
+    - Skill gap analysis
+    - Resume optimization
+    - Interview question generation
+    - Content summarization
+    - AI chat assistant
+    - English language learning
+- **Genkit** - AI workflow orchestration
+  - Flow definitions
+  - Prompt engineering
+  - Context management
+
+##### **Compute & Hosting**
+- **Cloud Run**
+  - Serverless container deployment
+  - Auto-scaling
+  - Pay-per-use pricing
+- **Cloud Functions**
+  - Event-driven serverless functions
+  - HTTP triggers
+  - Background processing
+
+##### **Storage & Databases**
+- **Cloud Storage**
+  - Object storage for assets
+  - CDN integration
+  - Lifecycle management
+- **BigQuery** (planned)
+  - Data warehousing
+  - SQL analytics
+  - ML model training data
+  - User behavior analysis
+
+##### **Monitoring & Operations**
+- **Cloud Logging**
+  - Centralized log management
+  - Log-based metrics
+- **Cloud Monitoring**
+  - Uptime checks
+  - Alerting policies
+  - Dashboards
+- **Looker Studio** (planned)
+  - Data visualization
+  - Custom reports
+  - Real-time dashboards
+
+##### **Google APIs & Services**
+- **Google Maps API**
+  - Maps JavaScript API
+  - Places API (library search)
+  - Geocoding API
+  - Directions API
+- **Google Custom Search API**
+  - Programmable search engine
+  - Course discovery
+  - Mentor search
+- **YouTube Data API v3**
+  - Video search
+  - Channel information
+  - Educational content recommendations
+- **Google Calendar API**
+  - Event management
+  - Calendar sync
+  - Reminder creation
+
+##### **Security & Identity**
+- **Cloud Identity Platform**
+  - Multi-factor authentication (planned)
+  - SAML/OAuth providers
+- **Secret Manager**
+  - API key management
+  - Environment variable encryption
+- **Cloud IAM**
+  - Role-based access control
+  - Service account management
+
+### **External API Integrations**
+
+#### **Social & Community**
+- **Reddit JSON API**
+  - College reviews & discussions
+  - Server-side proxy (CORS bypass)
+  - Sentiment analysis
+  - Topic extraction
+  - Mock data fallback
+
+#### **Education & Content**
+- **Internet Archive API**
+  - 20M+ free books
+  - Multiple formats (PDF, EPUB, Text)
+  - Metadata retrieval
+- **NPTEL API**
+  - 12,000+ Indian courses
+  - IIT/IISc lectures
+  - Certificate programs
+- **Coursera API**
+  - Course catalog
+  - Enrollment data
+  - Free audit options
+
+#### **News & Information**
+- **NewsAPI.org**
+  - Latest news articles
+  - Indian & global news
+  - Category filtering
+  - 100 requests/day (free tier)
+
+#### **Cloud Platforms**
+- **AWS Educate**
+  - Cloud computing courses
+  - Free training materials
+- **Google Cloud Skills Boost**
+  - GCP certifications
+  - Hands-on labs
+  - Learning paths
+
+### **Development Tools & DevOps**
+
+#### **Version Control & CI/CD**
+- **Git** - Source control
+- **GitHub** - Repository hosting
+  - Automatic deployment triggers
+  - Branch protection
+  - Pull request reviews
+- **Firebase App Hosting**
+  - Automatic builds from GitHub
+  - Preview channels for PRs
+  - Rollback capability
+
+#### **Code Quality**
+- **TypeScript 5.0** - Type safety
+- **ESLint** - Code linting
+  - Next.js recommended rules
+  - React hooks rules
+  - TypeScript rules
+
+#### **Build Tools**
+- **Turbopack** (Next.js 15) - Fast bundler
+- **PostCSS** - CSS transformations
+- **Babel** - JavaScript compilation
+
+### **Additional Libraries**
+
+#### **Utility Libraries**
+- **class-variance-authority** - Component variants
+- **clsx** - Conditional CSS classes
+- **date-fns** - Date manipulation
+- **lucide-react** - Icon library (1000+ icons)
+- **embla-carousel-react** - Carousel component
+
+#### **PDF & Document Handling**
+- **react-pdf** - PDF rendering
+- **jsPDF** - PDF generation
+- **docx** - Word document parsing
+
+### **Performance & Optimization**
+
+#### **Caching Strategies**
+- **localStorage** - Client-side persistence
+  - Bookmarks (eBooks)
+  - Search history
+  - User preferences
+- **Firestore Cache** - API response caching
+  - 5-minute TTL
+  - Automatic invalidation
+
+#### **Image & Asset Optimization**
+- **Next.js Image Optimization**
+  - Automatic WebP conversion
+  - Lazy loading
+  - Responsive images
+  - Blur placeholders
+- **CDN Distribution**
+  - Firebase CDN
+  - Edge caching
+  - Global distribution
+
+#### **Code Splitting**
+- **Dynamic imports** - Lazy load components
+- **Route-based splitting** - Per-page bundles
+- **Component-level splitting** - On-demand loading
+
+### **Security & Privacy**
+
+#### **Authentication & Authorization**
+- JWT tokens (Firebase Auth)
+- Session management
+- Protected API routes
+- Firestore security rules
+
+#### **Data Protection**
+- HTTPS only (enforced)
+- Environment variable encryption
+- No hardcoded secrets (production-ready)
+- Privacy-first location services
+- Secure external links (`rel="noopener noreferrer"`)
+
+#### **API Security**
+- Rate limiting (500ms debouncing)
+- CORS policies
+- Input validation (Zod schemas)
+- SQL injection prevention (Firestore)
+- XSS protection (React auto-escaping)
+
+### **Infrastructure Summary**
+
+| Category | Technologies | Count |
+|----------|-------------|-------|
+| **Frontend** | Next.js, React, TypeScript, Tailwind | 4 |
+| **UI Libraries** | shadcn/ui, Radix UI, Framer Motion | 3 |
+| **Firebase** | Auth, Firestore, Storage, Hosting, Functions | 5 |
+| **Google Cloud** | Vertex AI, Gemini, Cloud Run, BigQuery, Cloud Storage | 5 |
+| **Google APIs** | Maps, Places, Search, YouTube, Calendar | 5 |
+| **External APIs** | Reddit, Internet Archive, NewsAPI, NPTEL, Coursera | 5 |
+| **Development** | Git, GitHub, ESLint, TypeScript, Genkit | 5 |
+| **Total Services** | **32 integrated technologies** | 32 |
+
+**Total Lines of Code**: ~40,000+  
+**API Routes**: 10+  
+**Services**: 14 production services  
+**Cloud Functions**: 5 background functions  
+**Collections**: 8 Firestore collections  
+**External Integrations**: 11 APIs
+
+---
+
+## ☁️ Google Cloud Platform Integration
+
+### **Complete GCP Services Used**
+
+CareerLens leverages the full power of Google Cloud Platform to deliver intelligent, scalable, and reliable career development tools. Here's a comprehensive breakdown:
+
+### **1. 🔥 Firebase Services Suite**
+
+#### **Firebase Authentication**
+- **Purpose**: User identity & access management
+- **Features**:
+  - Google OAuth 2.0 (one-click sign-in)
+  - Email/Password authentication
+  - Session management with JWT tokens
+  - Protected routes & API endpoints
+- **SDK**: `firebase@11.9.1`
+- **Cost**: Free tier (10K verifications/month)
+
+#### **Cloud Firestore**
+- **Purpose**: NoSQL real-time database
+- **Collections**:
+  ```
+  firestore/
+  ├── users/{userId}                    # User accounts
+  ├── profiles/{userId}                 # User profiles
+  ├── reviews/{reviewId}                # College reviews
+  ├── colleges/{collegeId}              # 42 colleges database
+  ├── cache/{cacheKey}                  # API response cache (5-min TTL)
+  ├── activities/{activityId}           # User activity tracking
+  ├── eventReminders/{reminderId}       # Calendar reminders
+  └── fcmTokens/{tokenId}               # Push notification tokens
+  ```
+- **Features**:
+  - Real-time data synchronization
+  - Offline persistence
+  - Security rules for data protection
+  - Composite indexes for complex queries
+- **Performance**: Sub-10ms latency (asia-south1 region)
+- **Cost**: Free tier (1GB storage, 50K reads/day)
+
+#### **Firebase Cloud Storage**
+- **Purpose**: File storage & hosting
+- **Use Cases**:
+  - Resume uploads (.txt, .doc, .docx)
+  - Profile photos
+  - Background images/videos
+  - Static assets
+- **Features**:
+  - CDN integration
+  - Automatic image optimization
+  - Secure download URLs
+  - Storage rules for access control
+- **Cost**: Free tier (5GB storage, 1GB/day download)
+
+#### **Firebase App Hosting**
+- **Purpose**: Next.js 15 deployment platform
+- **Configuration**:
+  ```yaml
+  runConfig:
+    minInstances: 0              # Scale to zero
+    maxInstances: 10             # Auto-scale up to 10
+    cpu: 2                       # 2 vCPUs per instance
+    memoryMiB: 2048              # 2GB RAM per instance
+    concurrency: 80              # 80 requests/instance
+  ```
+- **Features**:
+  - Automatic builds from GitHub
+  - Preview channels for pull requests
+  - Rollback to previous versions
+  - Global CDN (150+ locations)
+  - Custom domain support
+  - HTTPS by default (automatic SSL)
+- **Deployment**: Connected to `github.com/balaraj74/CareerLens` (main branch)
+- **URLs**:
+  - Production: `careerlens--careerlens-1.us-central1.hosted.app`
+  - Static: `careerlens-1.web.app`
+
+#### **Firebase Cloud Functions (1st Gen)**
+- **Purpose**: Serverless backend functions
+- **Runtime**: Node.js 20
+- **Functions**:
+  - `scheduledDataRefresh` - Daily data refresh (cron: every 24h)
+  - `onUserCreate` - New user setup
+  - `sendNotification` - FCM push notifications
+  - `cacheInvalidator` - Cache cleanup
+  - `analyticsCollector` - Usage metrics
+- **Triggers**:
+  - HTTPS callable functions
+  - Scheduled (Cloud Scheduler)
+  - Firestore document triggers
+  - Authentication triggers
+- **Cost**: Free tier (2M invocations/month)
+
+#### **Firebase Cloud Messaging (FCM)**
+- **Purpose**: Push notifications
+- **Features**:
+  - Event reminders (calendar)
+  - Career milestone alerts
+  - News updates
+  - Interview prep reminders
+- **Implementation**:
+  - FCM tokens stored in Firestore
+  - Server-side FCM Admin SDK
+  - Client-side service worker (planned)
+- **Cost**: Free (unlimited notifications)
+
+#### **Firebase Performance Monitoring**
+- **Purpose**: Real-time performance tracking
+- **Metrics**:
+  - Page load times (First Contentful Paint, LCP)
+  - API response times
+  - Network request duration
+  - Success/failure rates
+- **Target**: Lighthouse score 95+ (currently achieved)
+
+#### **Firebase Analytics**
+- **Purpose**: User engagement tracking
+- **Events Tracked**:
+  - Page views & navigation
+  - Feature usage (resume builder, AI chat, etc.)
+  - Conversion funnels
+  - User retention
+- **Integration**: Automatic with Firebase SDK
+
+### **2. 🤖 Vertex AI & Gemini API**
+
+#### **Google Generative AI (Gemini)**
+- **Models Used**:
+  - **Gemini 1.5 Pro**
+    - Complex reasoning tasks
+    - Long context understanding (1M tokens)
+    - Career path recommendations
+    - Resume optimization
+    - Skill gap analysis
+  - **Gemini 2.5 Flash**
+    - Fast AI responses (< 1s latency)
+    - Conversational AI (chat assistant)
+    - Interview question generation
+    - Content summarization
+    - English language learning
+- **SDK**: `@genkit-ai/googleai`
+- **Features**:
+  - Context caching for reduced latency
+  - Streaming responses
+  - Safety settings (BLOCK_MEDIUM_AND_ABOVE)
+  - Temperature control (0.7-0.9)
+- **Cost**: Pay-per-token (cached context reduces cost by 90%)
+
+#### **Vertex AI**
+- **Purpose**: Advanced AI/ML platform
+- **Current Usage**:
+  - Model management
+  - API access via Gemini
+- **Planned Features**:
+  - Custom model training (resume scoring)
+  - AutoML integration
+  - Prediction APIs
+
+#### **Genkit (AI Workflow Orchestration)**
+- **Purpose**: AI flow management
+- **Version**: `genkit@1.21.0`
+- **Flows**:
+  - Career recommendation flow
+  - Resume parsing flow
+  - Interview preparation flow
+  - Content summarization flow
+- **Features**:
+  - Type-safe AI workflows
+  - Prompt versioning
+  - Context management
+  - Error handling & retries
+
+### **3. 🌐 Google Cloud Services**
+
+#### **Cloud Run**
+- **Purpose**: Serverless container platform
+- **Status**: Ready for deployment (Dockerfile prepared)
+- **Planned Use**:
+  - Microservices architecture
+  - Background job workers
+  - API endpoints with heavy compute
+- **Config**:
+  - Auto-scaling (0-100 instances)
+  - 1 CPU, 512MB RAM per instance
+  - Concurrency: 80 requests/container
+
+#### **Cloud Functions (2nd Gen)**
+- **Purpose**: Event-driven serverless functions
+- **Runtime**: Node.js 20
+- **Planned Functions**:
+  - Image processing (resume uploads)
+  - PDF generation (resume export)
+  - Webhook handlers (external integrations)
+  - Data migration scripts
+
+#### **Cloud Storage (GCS)**
+- **Purpose**: Object storage for large assets
+- **Buckets**:
+  - `careerlens-assets` - Static images/videos
+  - `careerlens-backups` - Firestore backups (daily)
+  - `careerlens-exports` - User data exports
+- **Features**:
+  - Lifecycle policies (auto-delete old backups)
+  - CDN integration (Cloud CDN)
+  - Signed URLs for secure access
+- **Cost**: $0.02/GB/month (standard storage)
+
+#### **BigQuery** (Planned)
+- **Purpose**: Data warehousing & analytics
+- **Planned Tables**:
+  - `user_events` - Clickstream data
+  - `career_paths` - Historical career data
+  - `skill_trends` - Industry skill demand
+  - `resume_analytics` - ATS scoring data
+- **Features**:
+  - SQL analytics
+  - ML model training data
+  - Real-time dashboards
+  - Export to Looker Studio
+- **Cost**: $5/TB query (free 1TB/month)
+
+#### **Cloud Logging**
+- **Purpose**: Centralized log management
+- **Logs Collected**:
+  - Application logs (Next.js)
+  - Cloud Functions logs
+  - API request/response logs
+  - Error stack traces
+- **Retention**: 30 days (default)
+- **Features**:
+  - Log-based metrics
+  - Alerting policies
+  - Export to BigQuery
+
+#### **Cloud Monitoring**
+- **Purpose**: Infrastructure monitoring
+- **Dashboards**:
+  - Firebase App Hosting metrics
+  - API response times
+  - Firestore read/write operations
+  - Error rates & anomalies
+- **Alerts**:
+  - High error rate (>5%)
+  - Slow API responses (>2s)
+  - Firestore quota limits
+- **Uptime Checks**: 1-minute intervals
+
+#### **Looker Studio** (Planned)
+- **Purpose**: Data visualization & reporting
+- **Dashboards**:
+  - User engagement metrics
+  - Feature adoption rates
+  - AI model performance
+  - Career path trends
+- **Data Sources**:
+  - BigQuery tables
+  - Firebase Analytics
+  - Custom SQL queries
+
+#### **Cloud Scheduler**
+- **Purpose**: Cron job management
+- **Jobs**:
+  - Daily data refresh (00:00 UTC)
+  - Weekly analytics report (Sunday 12:00)
+  - Cache cleanup (every 6h)
+  - Backup Firestore (daily)
+- **Cost**: Free (3 jobs/month)
+
+### **4. 🗺️ Google APIs**
+
+#### **Google Maps JavaScript API**
+- **Purpose**: Library Finder feature
+- **Features**:
+  - Interactive map display
+  - Location markers
+  - Info windows with details
+  - Distance calculation (Haversine)
+- **API Key**: `AIzaSyCCovOlhJubYYE5iZ5I2AGk_roWOUVa5LU` (production)
+- **Cost**: $7/1000 requests (free $200/month credit)
+
+#### **Google Places API**
+- **Purpose**: Library search & details
+- **Features**:
+  - Nearby library search
+  - Ratings & reviews
+  - Photos & amenities
+  - Opening hours
+- **Cost**: $17/1000 requests (shared $200 credit)
+
+#### **Google Geocoding API**
+- **Purpose**: Address to coordinates conversion
+- **Use Case**: User location → nearest libraries
+- **Cost**: $5/1000 requests
+
+#### **Google Directions API**
+- **Purpose**: Navigation & route planning
+- **Features**:
+  - Turn-by-turn directions
+  - Multiple transport modes
+  - Traffic-aware routing
+- **Cost**: $5/1000 requests
+
+#### **Google Custom Search API**
+- **Purpose**: Course & mentor discovery
+- **Search Engine ID**: Custom CSE for educational content
+- **Features**:
+  - NPTEL course search
+  - Coursera course discovery
+  - Mentor LinkedIn profile search
+- **Quota**: 100 queries/day (free), upgradable to 10K/day
+- **Cost**: $5/1000 queries (after free tier)
+
+#### **YouTube Data API v3**
+- **Purpose**: Educational video recommendations
+- **Features**:
+  - Video search by topic
+  - Channel information
+  - Playlist management
+  - View count & ratings
+- **Quota**: 10,000 units/day (free)
+- **Cost**: Free tier sufficient
+
+#### **Google Calendar API**
+- **Purpose**: Event management & sync
+- **Features**:
+  - Create/edit/delete events
+  - Calendar synchronization
+  - Recurring event support
+  - Reminder configuration
+- **Scopes**:
+  - `calendar.events` - Event management
+  - `calendar.readonly` - Read-only access
+- **Cost**: Free (unlimited API calls)
+
+### **5. 🔐 Security & Identity**
+
+#### **Cloud Identity Platform**
+- **Purpose**: Advanced authentication
+- **Planned Features**:
+  - Multi-factor authentication (MFA)
+  - SAML/OAuth providers
+  - Enterprise SSO
+- **Cost**: $0.015/MAU (after 50K users)
+
+#### **Secret Manager**
+- **Purpose**: Secure secret storage
+- **Secrets Stored**:
+  - `GEMINI_API_KEY` - Gemini AI key
+  - `GOOGLE_GENAI_API_KEY` - Google AI key
+  - `NEWS_API_KEY` - NewsAPI.org key (hardcoded in production)
+  - `REDIS_URL` - Redis connection string (planned)
+  - `REDDIT_CLIENT_SECRET` - Reddit OAuth
+- **Cost**: $0.06/10K accesses
+
+#### **Cloud IAM**
+- **Purpose**: Access control & permissions
+- **Service Accounts**:
+  - `firebase-admin` - Firestore/Storage access
+  - `cloud-functions` - Function execution
+  - `genkit-ai` - Vertex AI access
+- **Roles**:
+  - Editor (developers)
+  - Viewer (monitoring team)
+  - Owner (project admin)
+
+### **GCP Cost Breakdown (Monthly Estimate)**
+
+| Service | Usage | Cost |
+|---------|-------|------|
+| **Firebase App Hosting** | ~100K requests, 10 instances | $25-50 |
+| **Firestore** | 1M reads, 500K writes, 5GB storage | $10-20 |
+| **Cloud Storage** | 10GB storage, 100GB egress | $5-10 |
+| **Gemini API** | 10M tokens (cached 90%) | $15-30 |
+| **Google Maps APIs** | 10K requests | $0 (free credit) |
+| **Cloud Functions** | 1M invocations | $0 (free tier) |
+| **Cloud Messaging** | 1M notifications | $0 (free) |
+| **Firebase Auth** | 10K MAU | $0 (free tier) |
+| **Monitoring & Logging** | 50GB logs | $5 |
+| **BigQuery** (planned) | 1TB queries | $0 (free 1TB) |
+| **Total Estimated Cost** | | **$60-115/month** |
+
+*Note: Actual costs vary with usage. Free tiers cover most development/testing needs.*
+
+### **GCP Project Configuration**
+
+```yaml
+Project ID: careerlens-1
+Region: us-central1 (primary)
+Fallback Region: asia-south1 (low latency for India)
+Billing Account: Active (Google Cloud Free Trial)
+APIs Enabled: 15+ Google Cloud APIs
+Service Accounts: 3 (firebase-admin, cloud-functions, genkit-ai)
+Firestore Mode: Native (real-time database)
+Storage Location: us-central1 (multi-region)
+```
+
+### **Deployment Architecture**
+
+```
+GitHub Repository (main branch)
+         ↓ (commit push)
+Firebase App Hosting Builder
+         ↓ (build Next.js 15)
+Cloud Run Instance (Docker container)
+         ↓ (deploy with rollout)
+Global CDN (150+ locations)
+         ↓ (serve users)
+Production URL: careerlens--careerlens-1.us-central1.hosted.app
+```
+
+### **Future GCP Integrations**
+
+- **Cloud Pub/Sub**: Real-time event streaming
+- **Cloud Tasks**: Async job queue
+- **Cloud Spanner**: Globally distributed database (if scale requires)
+- **Cloud CDN**: Enhanced content delivery
+- **Cloud Armor**: DDoS protection & WAF
+- **Cloud SQL**: PostgreSQL for relational data (user analytics)
+- **Memorystore (Redis)**: Distributed caching
+- **Cloud Run Jobs**: Batch processing
+- **Workflows**: Multi-step automation
 
 ---
 
