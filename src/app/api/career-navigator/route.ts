@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callGemini } from '@/ai/genkit';
 
+export const dynamic = 'force-dynamic';
+
 const CAREER_NAVIGATOR_PROMPT = `You are CareerLens AI — an expert career architect for Indian students.
 
 Generate a career decision tree based on the student's profile.

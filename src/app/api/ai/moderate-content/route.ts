@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callGemini } from '@/ai/genkit';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/ai/moderate-content
  * Server-side endpoint for AI content moderation.

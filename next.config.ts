@@ -46,6 +46,12 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb', // Increase from default 1mb to 10mb for PDF uploads
     },
   },
+  serverExternalPackages: [
+    'genkit',
+    '@genkit-ai/google-genai',
+    'firebase-admin',
+    'pdf-parse',
+  ],
   output: 'standalone',
   distDir: '.next',
   webpack: (config) => {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callGemini } from '@/ai/genkit';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/ai/resource-recommendations
  * Server-side endpoint for AI resource/course recommendations.

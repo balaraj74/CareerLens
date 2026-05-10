@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callGemini } from '@/ai/genkit';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { chatText } = await req.json();

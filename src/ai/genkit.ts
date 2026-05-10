@@ -11,26 +11,47 @@
  *       or GCE/Cloud Run default service account (production).
  *
  * Model: gemini-2.5-flash (stable, billable, high-quality)
+ *
+ * IMPORTANT: Initialization is lazy (deferred to first call) to prevent
+ * build-time crashes in CI environments without GCP credentials.
  */
 
-import { genkit } from 'genkit';
+import { genkit, type Genkit } from 'genkit';
 import { vertexAI } from '@genkit-ai/google-genai';
 
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID
-  || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  || 'careerlens-1';
+let _ai: Genkit | null = null;
 
-const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
+/**
+ * Lazily initialize the Genkit instance on first use.
+ * This prevents build-time failures in CI (GitHub Actions)
+ * where GCP credentials are not available.
+ */
+function getAI(): Genkit {
+  if (!_ai) {
+    const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID
+      || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+      || 'careerlens-1';
 
-export const ai = genkit({
-  plugins: [
-    vertexAI({
-      projectId: PROJECT_ID,
-      location: LOCATION,
-    }),
-  ],
-  // Default model for all ai.generate() calls that don't specify one
-  model: 'vertexai/gemini-2.5-flash',
+    const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
+
+    _ai = genkit({
+      plugins: [
+        vertexAI({
+          projectId: PROJECT_ID,
+          location: LOCATION,
+        }),
+      ],
+      model: 'vertexai/gemini-2.5-flash',
+    });
+  }
+  return _ai;
+}
+
+/** @deprecated Use callGemini() instead. Exposed for legacy flows. */
+export const ai = new Proxy({} as Genkit, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getAI(), prop, receiver);
+  },
 });
 
 /**
@@ -48,7 +69,7 @@ export async function callGemini(
     outputSchema?: any;
   } = {}
 ): Promise<string> {
-  const result = await ai.generate({
+  const result = await getAI().generate({
     model: options.model || 'vertexai/gemini-2.5-flash',
     prompt,
     config: {

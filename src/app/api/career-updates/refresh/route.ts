@@ -3,6 +3,8 @@ import { adminDb } from '@/lib/firebase-admin';
 import { callGemini } from '@/ai/genkit';
 import * as admin from 'firebase-admin';
 
+export const dynamic = 'force-dynamic';
+
 // Helper to fetch from Google Custom Search
 async function fetchGoogleCareerSearch(apiKey: string, searchEngineId: string, query: string) {
   if (!apiKey || !searchEngineId) return { items: [] };
