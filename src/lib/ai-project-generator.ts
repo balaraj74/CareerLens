@@ -59,71 +59,22 @@ async function callGeminiForProjects(
   difficulty: string,
   count: number
 ): Promise<ProjectRecommendation[]> {
-  const { callGemini } = await import('@/ai/genkit');
-
-  const prompt = `
-You are a senior software engineer and career mentor. Generate ${count} practical project ideas for someone with these skills: ${skills.join(', ')}.
-
-Career Goal: ${goal}
-Difficulty Level: ${difficulty}
-
-For each project, provide:
-1. A catchy, specific title
-2. Brief summary (1-2 sentences)
-3. Detailed description
-4. Exact tech stack needed
-5. Estimated completion time
-6. 3-5 learning goals
-7. Step-by-step implementation phases with tasks
-8. 2-3 bonus challenges to extend the project
-9. Deployment options (e.g., Vercel, Google Cloud Run, AWS)
-10. Real-world application or business value
-
-Return ONLY valid JSON array with this structure:
-[
-  {
-    "title": "project title",
-    "summary": "brief summary",
-    "description": "detailed description",
-    "difficulty": "${difficulty}",
-    "techStack": ["tech1", "tech2"],
-    "category": "AI/ML|Web App|Mobile App|Data Science|DevOps|Game|Tool|API",
-    "estimatedTime": "time estimate",
-    "learningGoals": ["goal1", "goal2"],
-    "prerequisites": ["skill1"],
-    "steps": [
-      {"phase": "Phase 1", "tasks": ["task1", "task2"]}
-    ],
-    "bonusChallenges": ["challenge1", "challenge2"],
-    "deploymentOptions": [
-      {"platform": "platform name", "difficulty": "Easy|Medium|Hard"}
-    ],
-    "skillsYouWillLearn": ["skill1", "skill2"],
-    "realWorldApplication": "how this applies to real jobs",
-    "portfolioValue": "Low|Medium|High"
-  }
-]
-
-Make projects:
-- Practical and resume-worthy
-- Build on existing skills while teaching new ones
-- Include modern, in-demand technologies
-- Have clear, achievable goals
-`;
-
-  const text = await callGemini(prompt, {
-    temperature: 0.8,
-    maxOutputTokens: 4096,
+  const res = await fetch('/api/ai/project-recommendations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skills, goal, difficulty, count }),
   });
 
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error('No JSON found in AI response');
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
   }
 
-  const projectsData = JSON.parse(jsonMatch[0]);
+  const json = await res.json();
+  if (!json.success || !json.data) {
+    throw new Error('Invalid API response');
+  }
 
-  return projectsData.map((project: any, index: number) => ({
+  return json.data.map((project: any, index: number) => ({
     id: `project-${Date.now()}-${index}`,
     ...project,
     xpReward: calculateProjectXP(project.difficulty, project.portfolioValue),

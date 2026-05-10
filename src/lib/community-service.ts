@@ -200,17 +200,21 @@ export async function voteReview(
  */
 async function moderateContent(content: string): Promise<boolean> {
   try {
-    const { callGemini } = await import('@/ai/genkit');
-    
-    const result = await callGemini(
-      `Analyze the following content for inappropriate material, spam, offensive language, or harmful content. Respond with ONLY "APPROPRIATE" or "INAPPROPRIATE".\n\nContent: ${content}`,
-      { temperature: 0.1, maxOutputTokens: 10 }
-    );
-    
-    return result.trim().toUpperCase() === 'APPROPRIATE';
+    const res = await fetch('/api/ai/moderate-content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+
+    if (!res.ok) {
+      return true; // Default to allowing if API fails
+    }
+
+    const json = await res.json();
+    return json.isAppropriate !== false;
   } catch (error) {
-    console.error('Error moderating content:', error);
-    return true; // Allow content if moderation fails
+    console.error('Content moderation error:', error);
+    return true; // Default to allowing content on error
   }
 }
 

@@ -65,58 +65,33 @@ export async function generateSkillRecommendations(
 }
 
 /**
- * Call Vertex AI via Genkit to get personalized skill recommendations
+ * Call AI skill recommendations via server-side API route.
+ * This avoids importing genkit (Node-only) into the client bundle.
  */
 async function callGeminiForSkills(userContext: any): Promise<SkillRecommendation[]> {
-  const { callGemini } = await import('@/ai/genkit');
-
-  const prompt = `
-You are a career development AI assistant. Analyze the following user profile and recommend the next 5 most important skills they should learn.
-
-User Profile:
-- Career Goal: ${userContext.goal}
-- Current Skills: ${userContext.currentSkills.join(', ')}
-- Years of Experience: ${userContext.yearsOfExperience}
-- Education: ${userContext.educationLevel}
-- Interests: ${userContext.interests.join(', ')}
-
-Provide 5 skill recommendations in JSON format with the following structure:
-[
-  {
-    "name": "skill name",
-    "category": "AI|Web|Data|Cloud|Mobile|DevOps|Design|Other",
-    "description": "brief description of the skill",
-    "difficulty": "Beginner|Intermediate|Advanced",
-    "importanceScore": 0-100,
-    "prerequisites": ["skill1", "skill2"],
-    "estimatedLearningTime": "time estimate",
-    "inDemand": true|false,
-    "salaryImpact": "Low|Medium|High"
-  }
-]
-
-Focus on skills that:
-1. Build on their existing knowledge
-2. Are in high demand for their career goal
-3. Have a clear learning path
-4. Will increase their marketability
-
-Return ONLY the JSON array, no additional text.
-`;
-
-  const text = await callGemini(prompt, {
-    temperature: 0.7,
-    maxOutputTokens: 2048,
+  const res = await fetch('/api/ai/skill-recommendations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      goal: userContext.goal,
+      currentSkills: userContext.currentSkills,
+      yearsOfExperience: userContext.yearsOfExperience,
+      educationLevel: userContext.educationLevel,
+      interests: userContext.interests,
+    }),
   });
 
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error('No JSON found in AI response');
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
   }
 
-  const skillsData = JSON.parse(jsonMatch[0]);
+  const json = await res.json();
 
-  return skillsData.map((skill: any, index: number) => ({
+  if (!json.success || !json.data) {
+    throw new Error('Invalid API response');
+  }
+
+  return json.data.map((skill: any, index: number) => ({
     id: `skill-${Date.now()}-${index}`,
     ...skill,
     skillMatch: calculateSkillMatch(skill, userContext),

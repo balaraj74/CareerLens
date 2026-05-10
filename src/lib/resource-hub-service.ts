@@ -34,80 +34,41 @@ export async function getAIResourceRecommendations(
   count: number = 5
 ): Promise<Resource[]> {
   try {
-    const { callGemini } = await import('@/ai/genkit');
-
-    // Analyze user profile with Vertex AI
-    const prompt = `
-You are a career development AI assistant. Analyze this user profile and recommend ${count} FREE online courses/certifications that would be most beneficial for their career growth.
-
-User Profile:
-- Name: ${userProfile.name || 'Student'}
-- Current Skills: ${(userProfile.skills || []).map((s) => s.name).join(', ')}
-- Career Goal: ${userProfile.objective || 'Not specified'}
-- Experience: ${(userProfile.experienceDetails || []).length} years
-
-Available Platforms:
-1. NPTEL (Indian, high quality, free certificates)
-2. Coursera (Many free courses, audit option)
-3. AWS Educate (Cloud computing, free)
-4. Google Cloud Skills Boost (GCP, free)
-5. edX (MIT, Harvard courses)
-
-Recommend courses that:
-1. Fill skill gaps for their career goal
-2. Are 100% free or have free audit options
-3. Provide certificates (free or paid)
-4. Are relevant to current job market
-
-Respond in JSON format:
-{
-  "recommendations": [
-    {
-      "title": "Course name",
-      "provider": "NPTEL|Coursera|AWS Educate|Google Cloud Skills Boost|edX",
-      "category": "Category",
-      "description": "Why this course is perfect for the user",
-      "duration": "X weeks/months",
-      "level": "Beginner|Intermediate|Advanced",
-      "skills": ["skill1", "skill2"],
-      "url": "Direct enrollment URL",
-      "certificate": true|false
-    }
-  ]
-}`;
-
-    const text = await callGemini(prompt, {
-      temperature: 0.7,
-      maxOutputTokens: 2048,
+    const res = await fetch('/api/ai/resource-recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userProfile, count }),
     });
 
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      const resources: Resource[] = parsed.recommendations.map((rec: any, idx: number) => ({
-        id: `ai-rec-${Date.now()}-${idx}`,
-        title: rec.title,
-        provider: rec.provider,
-        category: rec.category,
-        description: rec.description,
-        url: rec.url,
-        duration: rec.duration,
-        level: rec.level,
-        skills: rec.skills,
-        certificate: rec.certificate,
-        free: true,
-        isAIRecommended: true,
-        createdAt: new Date().toISOString(),
-      }));
-
-      // Cache recommendations in Firestore
-      await cacheResources(resources);
-
-      return resources;
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status}`);
     }
 
-    return getFallbackResources(userProfile, count);
+    const json = await res.json();
+    if (!json.success || !json.data) {
+      throw new Error('Invalid API response');
+    }
+
+    const resources: Resource[] = json.data.map((rec: any, idx: number) => ({
+      id: `ai-rec-${Date.now()}-${idx}`,
+      title: rec.title,
+      provider: rec.provider,
+      category: rec.category,
+      description: rec.description,
+      url: rec.url,
+      duration: rec.duration,
+      level: rec.level,
+      skills: rec.skills,
+      certificate: rec.certificate,
+      free: true,
+      isAIRecommended: true,
+      createdAt: new Date().toISOString(),
+    }));
+
+    // Cache recommendations in Firestore
+    await cacheResources(resources);
+
+    return resources;
   } catch (error) {
     console.error('Error getting AI recommendations:', error);
     return getFallbackResources(userProfile, count);
