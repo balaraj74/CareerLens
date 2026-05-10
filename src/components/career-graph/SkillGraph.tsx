@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Network, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Waypoints, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SkillNode } from '@/lib/types';
 
@@ -27,7 +27,7 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  
+
   // Node positions (calculated using force-directed layout simulation)
   const nodePositions = useRef<Map<string, { x: number; y: number; vx: number; vy: number }>>(
     new Map()
@@ -54,7 +54,7 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
     if (nodePositions.current.size === 0) {
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      
+
       skills.forEach((skill, index) => {
         const angle = (index / skills.length) * 2 * Math.PI;
         const radius = 150 + Math.random() * 100;
@@ -72,10 +72,10 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
     const simulate = () => {
       // Apply forces
       applyForces();
-      
+
       // Render
       render(ctx, canvas.width, canvas.height);
-      
+
       animationId = requestAnimationFrame(simulate);
     };
 
@@ -105,7 +105,7 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
         const dx = pos.x - otherPos.x;
         const dy = pos.y - otherPos.y;
         const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-        
+
         if (distance < 200) {
           const force = 100 / (distance * distance);
           pos.vx += (dx / distance) * force;
@@ -121,7 +121,7 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
         const dx = connPos.x - pos.x;
         const dy = connPos.y - pos.y;
         const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-        
+
         const force = distance * 0.001;
         pos.vx += (dx / distance) * force;
         pos.vy += (dy / distance) * force;
@@ -149,7 +149,7 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
   const render = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height);
     ctx.save();
-    
+
     // Apply zoom and pan
     ctx.translate(offset.x, offset.y);
     ctx.scale(zoom, zoom);
@@ -157,7 +157,7 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
     // Draw connections
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
-    
+
     skills.forEach((skill) => {
       const pos = nodePositions.current.get(skill.id);
       if (!pos) return;
@@ -193,7 +193,7 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
       ctx.arc(pos.x, pos.y, radius, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
-      
+
       // Border for high-weight skills
       if (skill.weight > 70) {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
@@ -285,10 +285,10 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-white">
-          <Network className="w-5 h-5 text-violet-400" />
+          <Waypoints className="w-5 h-5 text-violet-400" />
           <h3 className="text-lg font-semibold">Skill Connection Graph</h3>
         </div>
-        
+
         {/* Controls */}
         <div className="flex items-center gap-2">
           <Button
@@ -401,7 +401,7 @@ export function SkillGraph({ skills, onNodeClick }: SkillGraphProps) {
       </div>
 
       <div className="text-xs text-gray-400 bg-black/20 rounded-lg p-3 border border-white/10">
-        💡 <strong>Tip:</strong> Click on nodes to view details. Drag to pan, use zoom controls to explore. 
+        💡 <strong>Tip:</strong> Click on nodes to view details. Drag to pan, use zoom controls to explore.
         Node size represents proficiency level, connections show related skills practiced together.
       </div>
     </div>

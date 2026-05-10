@@ -1,17 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
+import { callGemini } from '@/ai/genkit';
 
 export async function POST(req: Request) {
     try {
         const { profile, message } = await req.json();
-        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-
-        if (!apiKey) {
-            return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const prompt = `
       You are CareerLens Copilot, an advanced AI career mentor.
@@ -48,16 +40,13 @@ export async function POST(req: Request) {
       ${message ? `User's specific question/request: "${message}"` : ''}
     `;
 
-        const result = await model.generateContent(prompt);
-        const response = result.response;
-        const text = response.text();
-
-        // Clean up potential markdown formatting if Gemini adds it
-        const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const text = await callGemini(prompt, {
+            temperature: 0.7,
+            maxOutputTokens: 512,
+        });
 
         let data;
         try {
-            // Find the first '{' and last '}' to extract the JSON object
             const firstBrace = text.indexOf('{');
             const lastBrace = text.lastIndexOf('}');
 
@@ -65,13 +54,12 @@ export async function POST(req: Request) {
                 const jsonString = text.substring(firstBrace, lastBrace + 1);
                 data = JSON.parse(jsonString);
             } else {
-                throw new Error('No JSON object found');
+                throw new Error('No JSON object found in response');
             }
         } catch (e) {
             console.error('Failed to parse JSON from Gemini:', text);
-            // Fallback if JSON parsing fails
             data = {
-                message: text.replace(/```json/g, '').replace(/```/g, '').trim(), // Use clean text as message
+                message: text.replace(/```json/g, '').replace(/```/g, '').trim(),
                 actionUrl: '/ai-career-hub',
                 actionLabel: 'Explore Career Hub'
             };
@@ -83,7 +71,6 @@ export async function POST(req: Request) {
         return NextResponse.json({
             error: 'Failed to generate response',
             details: error.message,
-            stack: error.stack
         }, { status: 500 });
     }
 }

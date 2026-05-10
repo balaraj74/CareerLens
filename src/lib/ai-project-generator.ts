@@ -43,25 +43,15 @@ export async function generateProjectRecommendations(
   const difficulty = level <= 2 ? 'Beginner' : level <= 4 ? 'Intermediate' : 'Advanced';
 
   try {
-    // Check if API key is available
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (apiKey) {
-      // Try to get AI-generated projects
-      return await callGeminiForProjects(skills, goal, difficulty, count);
-    } else {
-      console.log('Gemini API key not configured, using curated projects');
-      // Use curated projects if no API key
-      return generateCuratedProjects(skills, goal, difficulty, count);
-    }
+    return await callGeminiForProjects(skills, goal, difficulty, count);
   } catch (error) {
-    console.error('Error generating projects:', error);
-    // Fallback to curated projects
+    console.error('Error generating projects with AI, falling back to curated:', error);
     return generateCuratedProjects(skills, goal, difficulty, count);
   }
 }
 
 /**
- * Call Gemini API to generate personalized project ideas
+ * Call Vertex AI via Genkit to generate personalized project ideas
  */
 async function callGeminiForProjects(
   skills: string[],
@@ -69,12 +59,7 @@ async function callGeminiForProjects(
   difficulty: string,
   count: number
 ): Promise<ProjectRecommendation[]> {
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-
-  if (!apiKey) {
-    console.warn('Gemini API key not configured');
-    throw new Error('Gemini API key not found');
-  }
+  const { callGemini } = await import('@/ai/genkit');
 
   const prompt = `
 You are a senior software engineer and career mentor. Generate ${count} practical project ideas for someone with these skills: ${skills.join(', ')}.
@@ -126,57 +111,23 @@ Make projects:
 - Have clear, achievable goals
 `;
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 4096,
-          },
-        }),
-      }
-    );
+  const text = await callGemini(prompt, {
+    temperature: 0.8,
+    maxOutputTokens: 4096,
+  });
 
-    if (!response.ok) {
-      throw new Error('Gemini API request failed');
-    }
-
-    const data = await response.json();
-    const text = data.candidates[0]?.content?.parts[0]?.text || '';
-
-    // Extract JSON from response
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in response');
-    }
-
-    const projectsData = JSON.parse(jsonMatch[0]);
-
-    // Add IDs and XP rewards
-    return projectsData.map((project: any, index: number) => ({
-      id: `project-${Date.now()}-${index}`,
-      ...project,
-      xpReward: calculateProjectXP(project.difficulty, project.portfolioValue),
-    }));
-  } catch (error) {
-    console.error('Error calling Gemini for projects:', error);
-    throw error;
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) {
+    throw new Error('No JSON found in AI response');
   }
+
+  const projectsData = JSON.parse(jsonMatch[0]);
+
+  return projectsData.map((project: any, index: number) => ({
+    id: `project-${Date.now()}-${index}`,
+    ...project,
+    xpReward: calculateProjectXP(project.difficulty, project.portfolioValue),
+  }));
 }
 
 /**

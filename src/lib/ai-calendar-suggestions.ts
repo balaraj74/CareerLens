@@ -84,7 +84,7 @@ Format as JSON matching this schema:
 }`;
 
     const result = await ai.generate({
-      model: 'gemini-2.5-flash-lite',
+      model: 'vertexai/gemini-2.5-flash',
       prompt,
       config: {
         temperature: 0.8,
@@ -99,7 +99,11 @@ Format as JSON matching this schema:
     return result.output?.suggestions || [];
   } catch (error) {
     console.error('Error generating event suggestions:', error);
-    return getFallbackSuggestions(userProfile);
+    throw new Error(
+      `Failed to generate event suggestions: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
@@ -140,7 +144,7 @@ Format as JSON:
 }`;
 
     const result = await ai.generate({
-      model: 'gemini-2.5-flash-lite',
+      model: 'vertexai/gemini-2.5-flash',
       prompt,
       config: {
         temperature: 0.7,
@@ -287,59 +291,4 @@ function findFreeSlot(
   }
 
   return null;
-}
-
-/**
- * Fallback suggestions when AI is unavailable
- */
-function getFallbackSuggestions(userProfile: EnhancedUserProfile): EventSuggestion[] {
-  const suggestions: EventSuggestion[] = [
-    {
-      summary: 'Daily Skill Practice',
-      description: `Practice ${(userProfile.skills || []).slice(0, 2).map((s) => s.name).join(' and ')} for 30 minutes`,
-      type: 'learning',
-      priority: 'high',
-      duration: 30,
-      suggestedTime: 'morning',
-      reasoning: 'Consistent daily practice builds expertise over time',
-    },
-    {
-      summary: 'Interview Preparation Session',
-      description: 'Practice common interview questions for your role',
-      type: 'interview',
-      priority: 'high',
-      duration: 60,
-      suggestedTime: 'afternoon',
-      reasoning: 'Regular interview prep keeps you market-ready',
-    },
-    {
-      summary: 'Networking Coffee Chat',
-      description: 'Reach out to someone in your industry for a virtual coffee',
-      type: 'networking',
-      priority: 'medium',
-      duration: 30,
-      suggestedTime: 'afternoon',
-      reasoning: 'Building professional relationships opens opportunities',
-    },
-    {
-      summary: 'Career Goal Review',
-      description: 'Review and update your career goals and progress',
-      type: 'task',
-      priority: 'medium',
-      duration: 45,
-      suggestedTime: 'evening',
-      reasoning: 'Regular reflection keeps you aligned with your objectives',
-    },
-    {
-      summary: 'Learn New Technology',
-      description: 'Explore a trending technology in your field',
-      type: 'learning',
-      priority: 'medium',
-      duration: 90,
-      suggestedTime: 'morning',
-      reasoning: 'Staying current with technology trends is crucial',
-    },
-  ];
-
-  return suggestions;
 }

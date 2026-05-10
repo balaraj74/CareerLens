@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { callGemini } from '@/ai/genkit';
 import * as admin from 'firebase-admin';
-
-// Initialize Gemini AI with API key (simpler than Vertex AI for development)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Helper to fetch from Google Custom Search
 async function fetchGoogleCareerSearch(apiKey: string, searchEngineId: string, query: string) {
@@ -47,15 +44,15 @@ async function fetchNews(apiKey: string, query: string) {
   }
 }
 
-// Summarize with Gemini AI
+// Summarize with Vertex AI via Genkit
 async function summarizeWithGemini(combinedData: any) {
-  try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
-    
-    const prompt = `You are an expert career analyst analyzing REAL-TIME data from multiple sources including Google Search results, Reddit discussions, and news articles.
+  const prompt = `You are an expert career analyst analyzing REAL-TIME data from multiple sources including Google Search results, Reddit discussions, and news articles.
     
 
     IMPORTANT: Extract REAL data from the content provided. Do not make up numbers or percentages.
+
+    Here is the data to analyze:
+    ${JSON.stringify(combinedData).substring(0, 8000)}
 
     Output ONLY valid JSON with this structure:
     {
@@ -65,7 +62,7 @@ async function summarizeWithGemini(combinedData: any) {
       ],
       "jobs": [
         {"title": "Software Engineer", "city": "Bengaluru", "count": 1500, "exampleLinks": ["indeed.com/...", "linkedin.com/..."]},
-        {"title": "Data Scientist", "city": "San Francisco", "count": 800, "exampleLinks": ["..."]  }
+        {"title": "Data Scientist", "city": "San Francisco", "count": 800, "exampleLinks": ["..."]}
       ],
       "certifications": [
         {"name": "AWS Solutions Architect", "platform": "AWS", "url": "https://..."},
@@ -83,33 +80,21 @@ async function summarizeWithGemini(combinedData: any) {
       }
     }`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    if (!text) throw new Error("No response from Gemini AI");
+  const text = await callGemini(prompt, {
+    model: 'vertexai/gemini-2.5-flash',
+    temperature: 0.5,
+    maxOutputTokens: 4096,
+  });
 
-    // Clean up markdown code blocks if present
-    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(jsonStr);
-  } catch (error) {
-    console.error("Gemini AI Summarization Error:", error);
-    // Fallback mock data if AI fails
-    return {
-      trendingSkills: [{ skill: "AI & ML (Fallback)", changePct: 10, evidence: ["System fallback due to AI error"] }],
-      jobs: [],
-      certifications: [],
-      opportunities: [],
-      insights: "Data processing error - showing cached trends.",
-      metrics: { aiMlGrowthPct: 0, reactOpenings: 0, topCity: "Unknown" }
-    };
-  }
+  if (!text) throw new Error('No response from Vertex AI');
+
+  const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  return JSON.parse(jsonStr);
 }
 
 export async function POST() {
   try {
     // 1. Gather Data
-    // Use the environment variables available in .env.local
     const googleKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY || '';
     const googleCx = process.env.GOOGLE_SEARCH_ENGINE_ID || process.env.NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID || '';
     const newsKey = process.env.NEWS_API_KEY || '';

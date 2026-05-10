@@ -24,7 +24,7 @@ const prompt = ai.definePrompt({
   name: 'generateResumeJsonPrompt',
   input: {schema: GenerateResumeFromJsonInputSchema},
   output: {schema: GenerateResumeFromJsonOutputSchema},
-  model: 'googleai/gemini-2.5-flash-lite',
+  model: 'vertexai/gemini-2.5-flash',
   prompt: `You are an expert resume writer and ATS (Applicant Tracking System) optimizer. Your task is to create a professional, ATS-friendly resume.
 
   **Instructions:**

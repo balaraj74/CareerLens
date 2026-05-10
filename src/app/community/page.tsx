@@ -162,12 +162,6 @@ export default function CommunityPage() {
   const getTopCollegesFromGemini = async (exam: string, rank: string, score: string) => {
     setLoadingColleges(true);
     try {
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        throw new Error('Gemini API key not configured');
-      }
-
       const prompt = `Based on ${exam} exam with rank: ${rank} and score: ${score}, list the TOP 10 colleges in India that the student can realistically get admission to. 
       
       Return ONLY a JSON array of college names, nothing else. Format: ["College Name 1", "College Name 2", ...]
@@ -182,35 +176,22 @@ export default function CommunityPage() {
       Example output format:
       ["IIT Bombay", "RVCE Bangalore", "PESIT Bangalore", "BMS College of Engineering", "NIT Karnataka"]`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: prompt
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 500,
-            },
-          }),
-        }
-      );
+      const response = await fetch('/api/ai/college-predictor', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
 
       const data = await response.json();
-      const result = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+      const colleges = data.colleges || [];
       
-      // Extract JSON array from response
-      const jsonMatch = result.match(/\[[\s\S]*\]/);
-      const colleges = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-      
-      console.log(`🎓 Gemini suggested ${colleges.length} colleges for ${exam}`);
+      console.log(`🎓 AI suggested ${colleges.length} colleges for ${exam}`);
       return colleges;
     } catch (error) {
       console.error('Error getting colleges from Gemini:', error);

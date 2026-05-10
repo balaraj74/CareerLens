@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth, useFirebase } from '@/hooks/use-auth';
-import { fetchEnhancedProfile } from '@/lib/enhanced-profile-service';
+import { subscribeToProfile } from '@/lib/enhanced-profile-service';
 import type { EnhancedUserProfile } from '@/lib/types';
 import { motion } from 'framer-motion';
 import {
@@ -35,28 +35,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 
 export function DynamicGamifiedProfile() {
-  const { user } = useAuth();
-  const { db } = useFirebase();
+  const { user, loading: authLoading } = useAuth();
+  const { db, loading: firebaseLoading } = useFirebase();
   const [profile, setProfile] = useState<EnhancedUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    loadProfile();
-  }, [user, db]);
+    if (authLoading || firebaseLoading) return;
 
-  const loadProfile = async () => {
-    if (!user || !db) return;
-
-    try {
-      setLoading(true);
-      const data = await fetchEnhancedProfile(db, user.uid);
-      setProfile(data);
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
+    if (!user || !db) {
       setLoading(false);
+      setProfile(null);
+      return;
     }
-  };
+
+    setLoading(true);
+    const unsub = subscribeToProfile(
+      db,
+      user.uid,
+      (data) => {
+        setProfile(data);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error loading profile:', error);
+        setLoading(false);
+      }
+    );
+
+    unsubscribeRef.current = unsub;
+
+    return () => {
+      unsub();
+      unsubscribeRef.current = null;
+    };
+  }, [user, db, authLoading, firebaseLoading]);
 
   if (loading) {
     return (

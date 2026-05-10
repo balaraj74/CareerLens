@@ -13,6 +13,8 @@ import {
   where,
   getDocs,
   addDoc,
+  onSnapshot,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import type {
   EnhancedUserProfile,
@@ -83,6 +85,62 @@ export async function fetchEnhancedProfile(
     console.error('Error fetching enhanced profile:', error);
     return null;
   }
+}
+
+/**
+ * Subscribe to real-time profile updates.
+ * Returns an unsubscribe function to stop listening.
+ */
+export function subscribeToProfile(
+  db: Firestore,
+  userId: string,
+  onData: (profile: EnhancedUserProfile) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const docRef = doc(db, 'users', userId);
+
+  return onSnapshot(
+    docRef,
+    (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const profile: EnhancedUserProfile = {
+          ...data,
+          level: data.level || 1,
+          currentXP: data.currentXP || 0,
+          totalXP: data.totalXP || 0,
+          nextLevelXP: data.nextLevelXP || 1000,
+          careerStage: data.careerStage || 'Learner',
+          streak: data.streak || 0,
+          projects: data.projects || [],
+          achievements: data.achievements || initializeAchievements(),
+          dailyGoals: data.dailyGoals || initializeDailyGoals(),
+          weeklyActivity: data.weeklyActivity || initializeWeeklyActivity(),
+          certifications: data.certifications || [],
+          languages: data.languages || [],
+          interests: data.interests || [],
+          analytics: data.analytics || initializeAnalytics(),
+        } as EnhancedUserProfile;
+        onData(profile);
+      } else {
+        // No document exists yet — create it in Firestore so data is persisted
+        const defaultProfile = createDefaultProfile(userId);
+        setDoc(docRef, {
+          ...defaultProfile,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }, { merge: true }).catch((err) => {
+          console.error('Failed to auto-create profile document:', err);
+        });
+        // onSnapshot will fire again once the doc is written; provide default immediately
+        onData(defaultProfile);
+      }
+    },
+    (error) => {
+      console.error('Real-time profile subscription error:', error);
+      onError?.(error);
+    }
+  );
 }
 
 /**
@@ -204,10 +262,10 @@ export async function unlockAchievement(
   const updatedAchievements = profile.achievements.map((achievement) =>
     achievement.id === achievementId
       ? {
-          ...achievement,
-          unlocked: true,
-          unlockedAt: new Date().toISOString(),
-        }
+        ...achievement,
+        unlocked: true,
+        unlockedAt: new Date().toISOString(),
+      }
       : achievement
   );
 
@@ -348,7 +406,7 @@ export async function calculateAnalytics(
     weeklyHours: profile.weeklyActivity.reduce((sum, day) => sum + day.hours, 0),
     avgProductivity: Math.round(
       profile.weeklyActivity.reduce((sum, day) => sum + day.productivity, 0) /
-        (profile.weeklyActivity.length || 1)
+      (profile.weeklyActivity.length || 1)
     ),
   };
 

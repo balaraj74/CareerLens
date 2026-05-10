@@ -196,43 +196,18 @@ export async function voteReview(
 }
 
 /**
- * AI Content Moderation using Gemini
+ * AI Content Moderation using Vertex AI via Genkit
  */
 async function moderateContent(content: string): Promise<boolean> {
   try {
-    // Use Gemini API for content moderation
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const { callGemini } = await import('@/ai/genkit');
     
-    if (!apiKey) {
-      console.warn('Gemini API key not configured, skipping moderation');
-      return true; // Allow content if API key is missing
-    }
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Analyze the following content for inappropriate material, spam, offensive language, or harmful content. Respond with ONLY "APPROPRIATE" or "INAPPROPRIATE".\n\nContent: ${content}`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 10,
-          },
-        }),
-      }
+    const result = await callGemini(
+      `Analyze the following content for inappropriate material, spam, offensive language, or harmful content. Respond with ONLY "APPROPRIATE" or "INAPPROPRIATE".\n\nContent: ${content}`,
+      { temperature: 0.1, maxOutputTokens: 10 }
     );
-
-    const data = await response.json();
-    const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toUpperCase();
     
-    return result === 'APPROPRIATE';
+    return result.trim().toUpperCase() === 'APPROPRIATE';
   } catch (error) {
     console.error('Error moderating content:', error);
     return true; // Allow content if moderation fails

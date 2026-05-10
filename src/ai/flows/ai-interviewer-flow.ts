@@ -47,7 +47,7 @@ const aiInterviewerFollowupPrompt = ai.definePrompt({
       Job Description: ${"{{jobDescription}}"}
       Conversation History is attached. Based on the last user response, ask the next question or conclude the interview.
     `,
-    model: 'googleai/gemini-2.5-flash-lite',
+    model: 'vertexai/gemini-2.5-flash',
 });
 
 
@@ -95,7 +95,7 @@ Return a JSON object with:
 
     const llmResponse = await ai.generate({
         prompt: dynamicPrompt,
-        model: 'googleai/gemini-2.5-flash-lite',
+        model: 'vertexai/gemini-2.5-flash',
         config: {
           temperature: 0.8, // Higher temperature for more natural, varied responses
           topK: 40,

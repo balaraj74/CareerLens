@@ -42,7 +42,7 @@ const prompt = ai.definePrompt({
 
     Return a single JSON object with the key "firstQuestion".
   `,
-  model: 'googleai/gemini-2.5-flash-lite',
+  model: 'vertexai/gemini-2.5-flash',
 });
 
 const aiInterviewerFlow = ai.defineFlow(

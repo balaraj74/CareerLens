@@ -1,12 +1,11 @@
 'use server';
 /**
  * Enhanced Resume Optimizer Flow
- * Combines BigQuery job market data with Gemini AI for intelligent resume optimization
+ * Pure AI-driven — no BigQuery dependency
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getResumeKeywords, getSkillsForRole } from '@/lib/bigquery/service';
 
 // Schema for Gemini AI response
 const ResumeOptimizationSchema = z.object({
@@ -59,285 +58,163 @@ const ResumeOptimizationSchema = z.object({
 export type ResumeOptimizationResult = z.infer<typeof ResumeOptimizationSchema>;
 
 /**
- * Optimize resume with Gemini AI + BigQuery market data
+ * Optimize resume with Gemini AI (pure AI — no BigQuery)
  */
 export async function optimizeResumeWithAI(
     resumeText: string,
     targetRole: string,
     industry: string = 'Technology'
 ): Promise<ResumeOptimizationResult> {
+    console.log(`📝 [ResumeOptimizer] Starting AI analysis for role: "${targetRole}"`);
+
     try {
-        // 1. Fetch real-time job market data from BigQuery
-        const [marketKeywords, jobSkills] = await Promise.all([
-            getResumeKeywords(targetRole, industry),
-            getSkillsForRole(targetRole, industry),
-        ]);
+        const prompt = `You are an elite resume optimization AI and ATS expert with deep knowledge of what "${targetRole}" job postings require in ${new Date().getFullYear()}.
 
-        // Extract comprehensive keyword lists
-        const requiredSkills = jobSkills.flatMap(job => job.required_skills || []);
-        const trendingSkills = jobSkills.flatMap(job => job.trending_skills || []);
-        const marketAtsKeywords = jobSkills.flatMap(job => job.ats_keywords || []);
-
-        const highImpactKeywords = marketKeywords?.high_impact_keywords || [];
-        const atsKeywords = marketKeywords?.ats_keywords || [];
-        const technicalSkills = marketKeywords?.technical_skills || [];
-        const softSkills = marketKeywords?.soft_skills || [];
-        const actionVerbs = marketKeywords?.action_verbs || [];
-        const certifications = marketKeywords?.certifications || [];
-
-        // 2. Create intelligent prompt for Gemini
-        const prompt = ai.definePrompt({
-            name: 'optimizeResumePrompt',
-            model: 'googleai/gemini-2.0-flash-exp',
-            input: {
-                schema: z.object({
-                    resumeText: z.string(),
-                    targetRole: z.string(),
-                    industry: z.string(),
-                    requiredSkills: z.array(z.string()),
-                    trendingSkills: z.array(z.string()),
-                    highImpactKeywords: z.array(z.string()),
-                    atsKeywords: z.array(z.string()),
-                    technicalSkills: z.array(z.string()),
-                    softSkills: z.array(z.string()),
-                    actionVerbs: z.array(z.string()),
-                    certifications: z.array(z.string()),
-                }),
-            },
-            output: {
-                schema: ResumeOptimizationSchema,
-            },
-            prompt: `
-You are an elite resume optimization AI with access to REAL-TIME job market data from BigQuery.
-
-**Target Role:** {{targetRole}}
-**Industry:** {{industry}}
-
-**REAL JOB MARKET DATA (from BigQuery):**
-
-Required Skills (CRITICAL to include):
-{{#each requiredSkills}}
-- {{this}}
-{{/each}}
-
-Trending Skills (HIGH VALUE to mention):
-{{#each trendingSkills}}
-- {{this}}
-{{/each}}
-
-High-Impact Keywords (BOOST ATS score):
-{{#each highImpactKeywords}}
-- {{this}}
-{{/each}}
-
-ATS System Keywords (MUST HAVE for parsing):
-{{#each atsKeywords}}
-- {{this}}
-{{/each}}
-
-Technical Skills Expected:
-{{#each technicalSkills}}
-- {{this}}
-{{/each}}
-
-Soft Skills Valued:
-{{#each softSkills}}
-- {{this}}
-{{/each}}
-
-Powerful Action Verbs:
-{{#each actionVerbs}}
-- {{this}}
-{{/each}}
-
-Recommended Certifications:
-{{#each certifications}}
-- {{this}}
-{{/each}}
-
----
+**Target Role:** ${targetRole}
+**Industry:** ${industry}
 
 **RESUME TO OPTIMIZE:**
 
-{{resumeText}}
+${resumeText}
 
 ---
 
 **YOUR TASK:**
 
-Analyze this resume against REAL job market data and provide:
+Analyze this resume SPECIFICALLY for "${targetRole}" positions and provide:
 
-1. **ATS Score (0-100)**:
-   - Check if resume contains critical ATS keywords
-   - Verify proper formatting for ATS parsing
-   - Assess keyword density (not too sparse, not stuffed)
-   - Standard section headers present?
-   - Contact info visible?
+### 1. ATS Score (0-100)
+- Does the resume contain keywords that ATS systems look for in "${targetRole}" roles?
+- Is the formatting ATS-compatible? (standard section headers, no tables/graphics)
+- Are critical "${targetRole}" keywords present?
+- Contact info visible?
 
-2. **Keyword Analysis**:
-   - Which CRITICAL keywords from job market are MISSING?
-   - Which TRENDING keywords should be added?
-   - Which keywords are already PRESENT and strong?
-   - Calculate keyword density score
+### 2. Keyword Analysis
+- Which CRITICAL keywords for "${targetRole}" are MISSING from this resume?
+  (e.g., for Data Scientist: Python, SQL, ML, TensorFlow, statistics)
+  (e.g., for DevOps: Docker, Kubernetes, CI/CD, Terraform, AWS)
+- Which TRENDING keywords for "${targetRole}" should be added?
+- Which relevant keywords are already PRESENT?
+- Keyword density score (0-100)
 
-3. **Action Verb Analysis**:
-   - Identify strong action verbs already used
-   - Find weak verbs that should be replaced (e.g., "worked on", "responsible for")
-   - Suggest specific power verbs from the market data
-   - Match verbs to achievements
+### 3. Action Verb Analysis
+- Identify strong action verbs already used
+- Find weak verbs to replace (e.g., "worked on" → "engineered", "responsible for" → "led")
+- Suggest power verbs specific to "${targetRole}" roles
 
-4. **Improvement Areas** (prioritized):
-   - CRITICAL: ATS blockers, missing must-have keywords
-   - HIGH: Skill gaps, weak bullet points, missing impact metrics
-   - MEDIUM: Keyword optimization, formatting improvements
-   - LOW: Polish, minor enhancements
+### 4. Improvement Areas (prioritized)
+- CRITICAL: ATS blockers, missing must-have skills for "${targetRole}"
+- HIGH: Skill gaps, weak bullet points, missing quantified impact
+- MEDIUM: Keyword optimization, formatting improvements
+- LOW: Polish, minor enhancements
 
-5. **Strengths**:
-   - What does this resume do exceptionally well?
-   - Which market-relevant skills are showcased?
-   - Strong formatting or impact statements?
+### 5. Strengths
+What does this resume do well for a "${targetRole}" application?
 
-6. **Skill Gap Insights**:
-   - Does resume mention all required skills?
-   - Are modern/trending skills present?
-   - Calculate skill match percentage vs. market
+### 6. Skill Gap Insights
+- Does resume mention all required skills for "${targetRole}"?
+- Are modern/trending skills present?
+- Calculate skill match percentage
 
-7. **Section-by-Section Feedback**:
-   - Rate each section 0-10
-   - Specific feedback per section
-   - 2-3 actionable improvements per section
+### 7. Section-by-Section Feedback
+Rate each resume section 0-10 and provide specific improvements.
 
-8. **Quick Wins**:
-   - 5-7 EASY changes with HIGH impact
-   - Simple keyword additions
-   - Verb replacements
-   - Format tweaks
+### 8. Quick Wins (5-7)
+Easy changes with HIGH impact — simple keyword additions, verb replacements, format tweaks.
 
 **CRITICAL RULES:**
-- Base ALL recommendations on the REAL market data provided
-- Be SPECIFIC with examples
-- Prioritize changes by impact
-- Focus on ATS compatibility + human readability
-- Consider both technical accuracy and storytelling
-- Flag any critical omissions
+- ALL analysis must be specific to "${targetRole}" — not generic advice
+- Be SPECIFIC with examples from the actual resume text
+- For a Data Scientist resume, check for Python/ML/stats — NOT React/Node.js
+- For a DevOps resume, check for Docker/K8s/Terraform — NOT Figma/design
+- Prioritize changes by impact on getting interviews`;
 
-Provide constructive, actionable, data-driven feedback!
-`,
-        });
-
-        // 3. Run AI analysis
-        const response = await prompt({
-            resumeText,
-            targetRole,
-            industry,
-            requiredSkills: [...new Set(requiredSkills)].slice(0, 30),
-            trendingSkills: [...new Set(trendingSkills)].slice(0, 20),
-            highImpactKeywords,
-            atsKeywords: [...new Set([...atsKeywords, ...marketAtsKeywords])].slice(0, 25),
-            technicalSkills,
-            softSkills,
-            actionVerbs,
-            certifications,
+        const response = await ai.generate({
+            model: 'vertexai/gemini-2.5-flash',
+            prompt,
+            output: {
+                schema: ResumeOptimizationSchema,
+            },
+            config: {
+                temperature: 0.3,
+                maxOutputTokens: 8192,
+            },
         });
 
         if (!response.output) {
-            throw new Error('Failed to get optimization response from AI');
+            throw new Error('AI returned empty output for resume optimization');
         }
 
+        console.log(`✅ [ResumeOptimizer] Analysis complete. ATS Score: ${response.output.atsScore}`);
         return response.output;
 
     } catch (error) {
-        console.error('Error optimizing resume with AI:', error);
-
-        // Fallback response if AI fails
-        return {
-            atsScore: 0,
-            overallQuality: 0,
-            keywordAnalysis: {
-                missingCriticalKeywords: ['Error analyzing resume'],
-                missingTrendingKeywords: [],
-                presentKeywords: [],
-                keywordDensity: 0,
-            },
-            actionVerbAnalysis: {
-                strongVerbsUsed: [],
-                weakVerbsToReplace: [],
-                suggestedVerbs: [],
-            },
-            improvementAreas: [{
-                priority: 'critical',
-                category: 'ats',
-                issue: 'Analysis failed',
-                recommendation: 'Please try again or check your resume format',
-            }],
-            strengths: [],
-            skillGapInsights: {
-                hasAllRequiredSkills: false,
-                missingRequiredSkills: [],
-                hasModernSkills: false,
-                skillMatchPercentage: 0,
-            },
-            sectionFeedback: [],
-            quickWins: [],
-        };
+        console.error('❌ [ResumeOptimizer] Error:', error);
+        throw new Error(
+            `Resume optimization failed for role "${targetRole}": ${
+                error instanceof Error ? error.message : String(error)
+            }`
+        );
     }
 }
 
 /**
- * Quick keyword check (faster, lightweight)
+ * Quick keyword check (lightweight, no full AI call)
  */
 export async function quickKeywordCheck(
     resumeText: string,
     targetRole: string,
-    industry: string = 'Technology'
+    _industry: string = 'Technology'
 ): Promise<{
     atsScore: number;
     missingKeywords: string[];
     presentKeywords: string[];
 }> {
-    try {
-        const marketKeywords = await getResumeKeywords(targetRole, industry);
+    // Well-known ATS keywords per role
+    const ROLE_KEYWORDS: Record<string, string[]> = {
+        'data scientist': ['python', 'sql', 'machine learning', 'tensorflow', 'pandas', 'numpy', 'statistics', 'deep learning', 'nlp', 'scikit-learn', 'jupyter', 'data visualization', 'r', 'pytorch'],
+        'data analyst': ['sql', 'python', 'excel', 'tableau', 'power bi', 'statistics', 'data visualization', 'etl', 'reporting', 'dashboard'],
+        'data engineer': ['python', 'sql', 'spark', 'airflow', 'kafka', 'aws', 'etl', 'data pipeline', 'hadoop', 'docker', 'data modeling', 'dbt'],
+        'frontend': ['javascript', 'react', 'typescript', 'html', 'css', 'next.js', 'responsive design', 'webpack', 'git', 'tailwind', 'testing'],
+        'backend': ['python', 'java', 'node.js', 'sql', 'rest api', 'docker', 'microservices', 'postgresql', 'mongodb', 'redis', 'git'],
+        'full stack': ['javascript', 'react', 'node.js', 'typescript', 'sql', 'html', 'css', 'python', 'docker', 'git', 'rest api'],
+        'devops': ['docker', 'kubernetes', 'ci/cd', 'terraform', 'aws', 'linux', 'ansible', 'jenkins', 'monitoring', 'git', 'bash'],
+        'cloud': ['aws', 'azure', 'gcp', 'terraform', 'kubernetes', 'docker', 'networking', 'iam', 'serverless', 'ci/cd'],
+        'cybersecurity': ['siem', 'penetration testing', 'network security', 'linux', 'python', 'firewalls', 'incident response', 'vulnerability', 'compliance'],
+        'mobile': ['react native', 'flutter', 'swift', 'kotlin', 'ios', 'android', 'typescript', 'firebase', 'rest api'],
+        'product manager': ['agile', 'scrum', 'jira', 'roadmap', 'user research', 'a/b testing', 'stakeholder', 'analytics', 'requirements'],
+        'ui/ux': ['figma', 'sketch', 'user research', 'prototyping', 'wireframing', 'usability testing', 'design systems', 'accessibility'],
+    };
 
-        if (!marketKeywords) {
-            return {
-                atsScore: 0,
-                missingKeywords: ['Unable to fetch market data'],
-                presentKeywords: [],
-            };
+    const roleLower = targetRole.toLowerCase();
+    let keywords: string[] = [];
+
+    for (const [roleKey, skills] of Object.entries(ROLE_KEYWORDS)) {
+        if (roleLower.includes(roleKey) || roleKey.includes(roleLower)) {
+            keywords = skills;
+            break;
         }
-
-        const normalizedResume = resumeText.toLowerCase();
-        const allMarketKeywords = [
-            ...marketKeywords.ats_keywords,
-            ...marketKeywords.technical_skills,
-        ];
-
-        const present: string[] = [];
-        const missing: string[] = [];
-
-        allMarketKeywords.forEach(keyword => {
-            if (normalizedResume.includes(keyword.toLowerCase())) {
-                present.push(keyword);
-            } else {
-                missing.push(keyword);
-            }
-        });
-
-        const atsScore = allMarketKeywords.length > 0
-            ? Math.round((present.length / allMarketKeywords.length) * 100)
-            : 0;
-
-        return {
-            atsScore,
-            missingKeywords: missing,
-            presentKeywords: present,
-        };
-    } catch (error) {
-        console.error('Quick keyword check error:', error);
-        return {
-            atsScore: 0,
-            missingKeywords: [],
-            presentKeywords: [],
-        };
     }
+
+    if (keywords.length === 0) {
+        keywords = ['communication', 'leadership', 'teamwork', 'problem solving', 'analytical'];
+    }
+
+    const normalizedResume = resumeText.toLowerCase();
+    const present: string[] = [];
+    const missing: string[] = [];
+
+    keywords.forEach(keyword => {
+        if (normalizedResume.includes(keyword.toLowerCase())) {
+            present.push(keyword);
+        } else {
+            missing.push(keyword);
+        }
+    });
+
+    const atsScore = keywords.length > 0
+        ? Math.round((present.length / keywords.length) * 100)
+        : 0;
+
+    return { atsScore, missingKeywords: missing, presentKeywords: present };
 }

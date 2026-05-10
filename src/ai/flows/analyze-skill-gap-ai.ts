@@ -1,12 +1,11 @@
 'use server';
 /**
  * Gemini AI-Powered Skill Gap Analysis
- * Real-time intelligent skill matching with BigQuery market data
+ * Pure AI-driven — no BigQuery dependency
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getSkillsForRole, getTrendingSkills } from '@/lib/bigquery/service';
 
 // Schema for Gemini AI response
 const SkillGapAnalysisSchema = z.object({
@@ -68,281 +67,176 @@ const SkillGapAnalysisSchema = z.object({
 export type SkillGapAnalysisResult = z.infer<typeof SkillGapAnalysisSchema>;
 
 /**
- * Analyze skill gap with Gemini AI + BigQuery market data
+ * Analyze skill gap using Gemini AI (pure AI — no BigQuery)
  */
 export async function analyzeSkillGapWithAI(
     targetRole: string,
     currentSkills: string[],
     industry: string = 'Technology'
 ): Promise<SkillGapAnalysisResult> {
+    console.log(`🧠 [SkillGap] Starting PURE AI analysis for: "${targetRole}"`);
+    console.log(`🧠 [SkillGap] User skills: [${currentSkills.join(', ')}]`);
+    console.log(`🧠 [SkillGap] Industry: ${industry}`);
+
+    const prompt = `You are a world-class career advisor and skill gap analyst with deep knowledge of the global job market in ${new Date().getFullYear()}.
+
+IMPORTANT: You must analyze SPECIFICALLY for the "${targetRole}" role. Do NOT default to generic web development advice.
+
+---
+
+**TARGET ROLE:** ${targetRole}
+**INDUSTRY:** ${industry}
+
+**CANDIDATE'S CURRENT SKILLS:**
+${currentSkills.map(s => `- ${s}`).join('\n')}
+
+---
+
+**YOUR TASK — Skill Gap Analysis for "${targetRole}":**
+
+You MUST base your entire analysis on what the "${targetRole}" role ACTUALLY requires in the real job market. Think about:
+- What do ${targetRole} job postings on LinkedIn, Indeed, Glassdoor typically require?
+- What technical stack and tools does a ${targetRole} use daily?
+- What certifications are valued for a ${targetRole}?
+- What are the trending skills in this domain right now?
+
+### 1. Match Percentage (0-100%)
+Compare the candidate's skills listed above against what a "${targetRole}" actually needs.
+- If they listed Python and the role needs Python → that's a match
+- If they listed JavaScript but the role needs TensorFlow → that is NOT a match
+- Be realistic. Don't inflate.
+
+### 2. Matched Skills
+Which of the candidate's skills directly apply to the "${targetRole}" role?
+Only list skills from their list above that are genuinely relevant to "${targetRole}".
+
+### 3. Missing Critical Skills
+What MUST-HAVE skills for "${targetRole}" does the candidate NOT have?
+Be specific to the role:
+- For "Data Scientist" → Python, SQL, ML frameworks, statistics, etc.
+- For "DevOps Engineer" → Docker, Kubernetes, CI/CD, Terraform, etc.
+- For "UI/UX Designer" → Figma, user research, prototyping, etc.
+- For "Cybersecurity Analyst" → SIEM, penetration testing, network security, etc.
+Do NOT list React/Node.js unless "${targetRole}" actually requires them.
+
+### 4. Emerging/Trending Skills
+What are the hottest emerging skills in the "${targetRole}" domain right now?
+
+### 5. Recommendations (5-8)
+Prioritized, actionable steps. Each must be specific to "${targetRole}".
+
+### 6. Career Insights
+Readiness assessment, time to job-ready, strengths, weaknesses, competitive advantages.
+
+### 7. Learning Path (3 phases)
+Phase 1: Foundation → Phase 2: Advancement → Phase 3: Specialization
+Each phase should list specific skills and learning resources relevant to "${targetRole}".
+
+### 8. Market Context
+Current demand, competition level, salary range, and approximate job openings for "${targetRole}" in ${industry}.
+
+---
+
+CRITICAL RULES:
+1. EVERY skill, recommendation, and insight MUST be specific to "${targetRole}" — NOT generic web development
+2. If the candidate's skills are mostly unrelated to "${targetRole}", the match percentage should be LOW (under 30%)
+3. Missing skills should be what "${targetRole}" job postings actually list as requirements
+4. Be honest, specific, and actionable
+`;
+
     try {
-        // 1. Fetch real-time job market data from BigQuery
-        const [jobSkills, trendingSkillsData] = await Promise.all([
-            getSkillsForRole(targetRole, industry),
-            getTrendingSkills(industry, 20),
-        ]);
-
-        // Extract comprehensive skill requirements
-        const requiredSkills = jobSkills.flatMap(job => job.required_skills || []);
-        const trendingSkills = [
-            ...jobSkills.flatMap(job => job.trending_skills || []),
-            ...trendingSkillsData.map(skill =>
-                typeof skill === 'string' ? skill : skill.skill
-            ),
-        ];
-        const atsKeywords = jobSkills.flatMap(job => job.ats_keywords || []);
-
-        // Get unique skills
-        const uniqueRequired = [...new Set(requiredSkills)];
-        const uniqueTrending = [...new Set(trendingSkills)];
-
-        // 2. Create intelligent Gemini AI prompt
-        const prompt = ai.definePrompt({
-            name: 'analyzeSkillGapPrompt',
-            model: 'googleai/gemini-2.0-flash-exp',
-            input: {
-                schema: z.object({
-                    targetRole: z.string(),
-                    industry: z.string(),
-                    currentSkills: z.array(z.string()),
-                    marketRequiredSkills: z.array(z.string()),
-                    marketTrendingSkills: z.array(z.string()),
-                    atsKeywords: z.array(z.string()),
-                }),
-            },
+        const response = await ai.generate({
+            model: 'vertexai/gemini-2.5-flash',
+            prompt,
             output: {
                 schema: SkillGapAnalysisSchema,
             },
-            prompt: `
-You are an elite career counselor and skill gap analyst with access to REAL-TIME job market data from BigQuery.
-
-**ANALYSIS REQUEST:**
-
-**Target Role:** {{targetRole}}
-**Industry:** {{industry}}
-
-**Candidate's Current Skills:**
-{{#each currentSkills}}
-• {{this}}
-{{/each}}
-
----
-
-**REAL JOB MARKET DATA (from BigQuery):**
-
-**Skills REQUIRED by Employers (CRITICAL):**
-{{#each marketRequiredSkills}}
-• {{this}}
-{{/each}}
-
-**Skills TRENDING in {{industry}} (HIGH VALUE):**
-{{#each marketTrendingSkills}}
-• {{this}}
-{{/each}}
-
-**ATS Keywords for {{targetRole}}:**
-{{#each atsKeywords}}
-• {{this}}
-{{/each}}
-
----
-
-**YOUR TASK:**
-
-Perform a comprehensive, intelligent skill gap analysis:
-
-### 1. **Calculate Match Percentage (0-100%)**
-- Compare candidate's skills to market required skills
-- Weight critical skills higher than nice-to-haves
-- Consider skill variations (e.g., "React" = "React.js" = "ReactJS")
-- Factor in transferable skills
-- Be accurate and realistic
-
-### 2. **Skill Breakdown**
-
-**Matched Skills:**
-- List skills the candidate HAS that match job requirements
-- Assess proficiency level based on skill context
-- Indicate market demand for each skill
-
-**Missing Critical Skills:**
-- Identify MUST-HAVE skills the candidate LACKS
-- Categorize by importance (must-have / highly-recommended / nice-to-have)
-- Estimate learning difficulty
-- Provide realistic time-to-learn estimates
-
-**Emerging Skills:**
-- Identify trending skills that will increase market value
-- Assign trend score (0-10)
-- Assess future value
-
-### 3. **Recommendations**
-
-Provide 5-10 prioritized recommendations:
-- **IMMEDIATE**: Critical gaps that block job applications
-- **SHORT-TERM**: High-impact skills to learn in 1-3 months
-- **LONG-TERM**: Advanced skills for career growth
-
-Categories:
-- Technical skills
-- Soft skills  
-- Tools & technologies
-- Certifications
-
-For each:
-- Specific action to take
-- Clear rationale
-- Expected impact
-
-### 4. **Career Insights**
-
-**Readiness Assessment:**
-- Ready: Can apply now
-- Almost Ready: 1-2 skills away
-- Needs Preparation: 3-6 months needed
-- Significant Gap: 6+ months needed
-
-**Estimate:**
-- Realistic time to become job-ready
-- Strengths to leverage
-- Weaknesses to address
-- Competitive advantages
-
-### 5. **Learning Path**
-
-Create a phased learning plan:
-- Phase 1: Foundation (critical gaps)
-- Phase 2: Advancement (high-value skills)
-- Phase 3: Specialization (emerging tech)
-
-For each phase:
-- Duration
-- Skills to master
-- Resource types (online courses, projects, certifications)
-
-### 6. **Market Context**
-
-Provide insights on:
-- Current demand level for this role
-- Competition level
-- Salary outlook
-- Typical job openings count
-
----
-
-**CRITICAL ANALYSIS RULES:**
-
-1. **Be Honest**: Don't inflate match percentage
-2. **Be Specific**: "Learn React.js" not "Learn web development"
-3. **Be Realistic**: Accurate time estimates
-4. **Be Constructive**: Focus on actionable steps
-5. **Use Market Data**: Base ALL recommendations on the real market data provided
-6. **Consider Context**: Some skills imply others (e.g., React → JavaScript)
-7. **Prioritize Impact**: Focus on skills that matter most
-8. **Be Encouraging**: Highlight strengths while addressing gaps
-
-Return detailed, actionable insights that will genuinely help the candidate!
-`,
-        });
-
-        // 3. Run AI analysis
-        const response = await prompt({
-            targetRole,
-            industry,
-            currentSkills,
-            marketRequiredSkills: uniqueRequired.slice(0, 30),
-            marketTrendingSkills: uniqueTrending.slice(0, 25),
-            atsKeywords: [...new Set(atsKeywords)].slice(0, 20),
+            config: {
+                temperature: 0.4,
+                maxOutputTokens: 8192,
+            },
         });
 
         if (!response.output) {
-            throw new Error('Failed to get skill gap analysis from AI');
+            throw new Error('AI returned empty output — no skill gap analysis generated');
         }
 
+        console.log(`✅ [SkillGap] Analysis complete for "${targetRole}" → Match: ${response.output.matchPercentage}%`);
+        console.log(`✅ [SkillGap] Alignment: ${response.output.skillAlignment}`);
+        console.log(`✅ [SkillGap] Matched: ${response.output.skillBreakdown.matchedSkills.length}, Missing: ${response.output.skillBreakdown.missingCriticalSkills.length}`);
+
         return response.output;
-
     } catch (error) {
-        console.error('Error analyzing skill gap with AI:', error);
-
-        // Fallback response
-        return {
-            matchPercentage: 0,
-            skillAlignment: 'poor',
-            skillBreakdown: {
-                matchedSkills: [],
-                missingCriticalSkills: [{
-                    skill: 'Error occurred',
-                    importance: 'must-have',
-                    learnability: 'moderate',
-                    timeToLearn: 'N/A',
-                }],
-                emergingSkills: [],
-            },
-            recommendations: [{
-                priority: 'immediate',
-                category: 'technical',
-                action: 'Please try again',
-                rationale: 'Analysis failed',
-                impact: 'high',
-            }],
-            careerInsights: {
-                readinessLevel: 'significant-gap',
-                estimatedTimeToReady: 'Unable to determine',
-                strengthAreas: [],
-                weaknessAreas: ['Analysis error'],
-                competitiveAdvantages: [],
-            },
-            learningPath: [],
-            marketContext: {
-                demandLevel: 'moderate',
-                competitionLevel: 'moderate',
-                salaryOutlook: 'Unable to determine',
-                jobOpenings: '0',
-            },
-        };
+        console.error(`❌ [SkillGap] Analysis failed for "${targetRole}":`, error);
+        throw new Error(
+            `Skill gap analysis failed for role "${targetRole}": ${
+                error instanceof Error ? error.message : String(error)
+            }`
+        );
     }
 }
 
 /**
- * Quick skill match check (lightweight)
+ * Quick skill match check (lightweight, no AI call)
+ * Uses simple string matching for fast results
  */
 export async function quickSkillMatch(
     targetRole: string,
     currentSkills: string[],
-    industry: string = 'Technology'
+    _industry: string = 'Technology'
 ): Promise<{
     matchPercentage: number;
     matchedCount: number;
     missingCount: number;
 }> {
-    try {
-        const jobSkills = await getSkillsForRole(targetRole, industry);
-        const requiredSkills = [...new Set(jobSkills.flatMap(job => job.required_skills || []))];
+    // Well-known skill requirements per role domain
+    const ROLE_SKILL_MAP: Record<string, string[]> = {
+        'data scientist': ['python', 'sql', 'machine learning', 'tensorflow', 'pytorch', 'pandas', 'numpy', 'statistics', 'r', 'deep learning', 'scikit-learn', 'data visualization', 'jupyter', 'nlp'],
+        'data analyst': ['sql', 'python', 'excel', 'tableau', 'power bi', 'statistics', 'data visualization', 'r', 'pandas', 'etl'],
+        'data engineer': ['python', 'sql', 'spark', 'airflow', 'kafka', 'aws', 'gcp', 'etl', 'hadoop', 'docker', 'data modeling'],
+        'frontend': ['javascript', 'react', 'typescript', 'html', 'css', 'next.js', 'tailwind', 'vue', 'angular', 'webpack', 'git'],
+        'backend': ['python', 'java', 'node.js', 'sql', 'rest api', 'docker', 'microservices', 'postgresql', 'mongodb', 'redis', 'git'],
+        'full stack': ['javascript', 'react', 'node.js', 'typescript', 'sql', 'html', 'css', 'python', 'docker', 'git', 'rest api', 'mongodb'],
+        'devops': ['docker', 'kubernetes', 'ci/cd', 'terraform', 'aws', 'linux', 'ansible', 'jenkins', 'monitoring', 'git', 'python', 'bash'],
+        'cloud': ['aws', 'azure', 'gcp', 'terraform', 'kubernetes', 'docker', 'networking', 'iam', 'serverless', 'ci/cd', 'linux'],
+        'cybersecurity': ['network security', 'siem', 'penetration testing', 'linux', 'python', 'firewalls', 'incident response', 'cryptography', 'vulnerability assessment', 'compliance'],
+        'machine learning': ['python', 'tensorflow', 'pytorch', 'deep learning', 'nlp', 'computer vision', 'statistics', 'sql', 'mlops', 'scikit-learn'],
+        'mobile': ['react native', 'flutter', 'swift', 'kotlin', 'ios', 'android', 'typescript', 'firebase', 'rest api', 'git'],
+        'product manager': ['agile', 'scrum', 'jira', 'data analysis', 'user research', 'roadmapping', 'a/b testing', 'sql', 'stakeholder management', 'wireframing'],
+        'ui/ux': ['figma', 'sketch', 'user research', 'prototyping', 'wireframing', 'usability testing', 'design systems', 'adobe xd', 'html', 'css', 'accessibility'],
+    };
 
-        const normalizedCurrent = currentSkills.map(s => s.toLowerCase().trim());
-        const normalizedRequired = requiredSkills.map(s => s.toLowerCase().trim());
+    const roleLower = targetRole.toLowerCase();
+    let requiredSkills: string[] = [];
 
-        const matchedCount = normalizedCurrent.filter(skill =>
-            normalizedRequired.some(req =>
-                req.includes(skill) || skill.includes(req)
-            )
-        ).length;
-
-        const matchPercentage = requiredSkills.length > 0
-            ? Math.round((matchedCount / requiredSkills.length) * 100)
-            : 0;
-
-        return {
-            matchPercentage,
-            matchedCount,
-            missingCount: requiredSkills.length - matchedCount,
-        };
-    } catch (error) {
-        console.error('Quick skill match error:', error);
-        return {
-            matchPercentage: 0,
-            matchedCount: 0,
-            missingCount: 0,
-        };
+    // Find best matching role
+    for (const [roleKey, skills] of Object.entries(ROLE_SKILL_MAP)) {
+        if (roleLower.includes(roleKey) || roleKey.includes(roleLower)) {
+            requiredSkills = skills;
+            break;
+        }
     }
+
+    // Default fallback for unknown roles
+    if (requiredSkills.length === 0) {
+        requiredSkills = ['communication', 'problem solving', 'teamwork', 'technical skills', 'analytical thinking'];
+    }
+
+    const normalizedCurrent = currentSkills.map(s => s.toLowerCase().trim());
+
+    const matchedCount = normalizedCurrent.filter(skill =>
+        requiredSkills.some(req =>
+            req.includes(skill) || skill.includes(req)
+        )
+    ).length;
+
+    const matchPercentage = requiredSkills.length > 0
+        ? Math.round((matchedCount / requiredSkills.length) * 100)
+        : 0;
+
+    return {
+        matchPercentage: Math.min(matchPercentage, 100),
+        matchedCount,
+        missingCount: Math.max(requiredSkills.length - matchedCount, 0),
+    };
 }

@@ -1,12 +1,10 @@
 /**
  * AI Review Summarization Service
- * Uses Gemini to generate intelligent summaries of college reviews
+ * Uses Vertex AI via Genkit to generate intelligent summaries of college reviews
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { callGemini } from '@/ai/genkit';
 import type { RedditReview, ReviewSummary } from '@/lib/types/community';
-
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
 
 /**
  * Generate AI summary of college reviews
@@ -16,8 +14,6 @@ export async function generateAISummary(
   reviews: RedditReview[]
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-    
     // Prepare reviews for summarization
     const reviewTexts = reviews.slice(0, 20).map((review, idx) => 
       `Review ${idx + 1} (${review.sentiment}, ${review.score} upvotes):\n${review.content}\n`
@@ -49,9 +45,10 @@ Please provide a comprehensive summary in this format:
 
 Keep it objective, balanced, and helpful for students making decisions.`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    return await callGemini(prompt, {
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+    });
   } catch (error) {
     console.error('Error generating AI summary:', error);
     return generateFallbackSummary(collegeName, reviews);
@@ -115,8 +112,6 @@ export async function generateComparisonSummary(
   colleges: Array<{ name: string; reviews: RedditReview[] }>
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-    
     const collegesInfo = colleges.map(c => {
       const positive = c.reviews.filter(r => r.sentiment === 'positive').length;
       const total = c.reviews.length;
@@ -139,9 +134,10 @@ Provide a brief comparison highlighting:
 
 Keep it concise (5-7 sentences).`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    return await callGemini(prompt, {
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+    });
   } catch (error) {
     console.error('Error generating comparison:', error);
     return 'Unable to generate AI comparison. Please review individual summaries.';

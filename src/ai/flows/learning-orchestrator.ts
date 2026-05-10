@@ -23,7 +23,7 @@ const extractTextPrompt = ai.definePrompt({
   Organize the extracted text in a structured and readable format.
   
   PDF Document: {{media url=pdfDataUri}}`,
-  model: 'googleai/gemini-2.5-flash-lite',
+  model: 'vertexai/gemini-2.5-flash',
 });
 
 // Define the main prompt that generates all the learning materials.
@@ -44,7 +44,7 @@ const learningContentPrompt = ai.definePrompt({
   {{{textContent}}}
   \`\`\`
   `,
-  model: 'googleai/gemini-2.5-flash-lite',
+  model: 'vertexai/gemini-2.5-flash',
 });
 
 // Define the main orchestration flow.

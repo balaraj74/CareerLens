@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth, useFirebase } from '@/hooks/use-auth';
 import {
-    fetchEnhancedProfile,
+    subscribeToProfile,
     completeDailyGoal,
     updateStreak,
 } from '@/lib/enhanced-profile-service';
@@ -43,18 +43,58 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
 export function PremiumDashboard() {
-    const { user } = useAuth();
-    const { db } = useFirebase();
+    const { user, loading: authLoading } = useAuth();
+    const { db, loading: firebaseLoading } = useFirebase();
     const { toast } = useToast();
     const [profile, setProfile] = useState<EnhancedUserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [greeting, setGreeting] = useState('');
     const [copilotMessage, setCopilotMessage] = useState('');
     const [isCopilotLoading, setIsCopilotLoading] = useState(false);
+    const unsubscribeRef = useRef<(() => void) | null>(null);
 
+    // Real-time profile subscription
     useEffect(() => {
-        loadProfile();
-    }, [user, db]);
+        // Still initialising Firebase or Auth — keep the spinner
+        if (firebaseLoading || authLoading) return;
+
+        // Auth resolved but no user — stop loading
+        if (!user || !db) {
+            setLoading(false);
+            setProfile(null);
+            return;
+        }
+
+        // Subscribe to real-time Firestore updates
+        setLoading(true);
+        const unsub = subscribeToProfile(
+            db,
+            user.uid,
+            (data) => {
+                setProfile(data);
+                setLoading(false);
+            },
+            (error) => {
+                console.error('Error loading profile:', error);
+                toast({
+                    title: 'Error',
+                    description: 'Failed to load dashboard data',
+                    variant: 'destructive',
+                });
+                setLoading(false);
+            }
+        );
+
+        unsubscribeRef.current = unsub;
+
+        // Update streak on first load
+        updateStreak(db, user.uid).catch(console.error);
+
+        return () => {
+            unsub();
+            unsubscribeRef.current = null;
+        };
+    }, [user, db, firebaseLoading, authLoading]);
 
     useEffect(() => {
         if (profile?.name) {
@@ -64,36 +104,12 @@ export function PremiumDashboard() {
         }
     }, [profile?.name]);
 
-    const loadProfile = async () => {
-        if (!user || !db) return;
-
-        try {
-            setLoading(true);
-            const data = await fetchEnhancedProfile(db, user.uid);
-            setProfile(data);
-
-            if (data) {
-                await updateStreak(db, user.uid);
-            }
-        } catch (error) {
-            console.error('Error loading profile:', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to load dashboard data',
-                variant: 'destructive',
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleCompleteGoal = async (goalId: string) => {
         if (!user || !db) return;
 
         try {
             await completeDailyGoal(db, user.uid, goalId);
-            await loadProfile();
-
+            // No need to manually reload — onSnapshot will fire automatically
             toast({
                 title: 'Goal Completed! 🎉',
                 description: 'You earned XP!',

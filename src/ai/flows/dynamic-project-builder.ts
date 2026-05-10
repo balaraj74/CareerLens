@@ -58,7 +58,7 @@ export async function suggestProjects(
 ): Promise<Array<z.infer<typeof ProjectSuggestionSchema>>> {
   const prompt = ai.definePrompt({
     name: 'suggestProjects',
-    model: 'googleai/gemini-2.0-flash-exp',
+    model: 'vertexai/gemini-2.5-flash',
     input: {
       schema: z.object({
         currentSkills: z.array(z.string()),
@@ -146,7 +146,7 @@ export async function generateProjectPlan(
 ): Promise<z.infer<typeof ProjectPlanSchema>> {
   const prompt = ai.definePrompt({
     name: 'generateProjectPlan',
-    model: 'googleai/gemini-2.0-flash-exp',
+    model: 'vertexai/gemini-2.5-flash',
     input: {
       schema: z.object({
         projectTitle: z.string(),
@@ -265,7 +265,7 @@ export async function generateProjectReadme(
 ): Promise<string> {
   const prompt = ai.definePrompt({
     name: 'generateProjectReadme',
-    model: 'googleai/gemini-2.0-flash-exp',
+    model: 'vertexai/gemini-2.5-flash',
     input: {
       schema: z.object({
         projectTitle: z.string(),
@@ -337,7 +337,7 @@ export async function analyzeProjectCompletion(
 }> {
   const prompt = ai.definePrompt({
     name: 'analyzeProjectCompletion',
-    model: 'googleai/gemini-2.0-flash-exp',
+    model: 'vertexai/gemini-2.5-flash',
     input: {
       schema: z.object({
         projectTitle: z.string(),

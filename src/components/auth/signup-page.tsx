@@ -12,17 +12,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from "@/components/ui/input";
 import { Logo } from '@/components/icons';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, useFirebase } from '@/hooks/use-auth';
+import { saveEnhancedProfile } from '@/lib/enhanced-profile-service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -39,6 +40,7 @@ const formSchema = z.object({
 
 export function SignupPage() {
   const { signUp, googleSignIn } = useAuth();
+  const { db } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +58,14 @@ export function SignupPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await signUp(values.email, values.password);
+      const cred = await signUp(values.email, values.password);
+      // Seed the Firestore profile so the dashboard has data from day one
+      if (db && cred?.user) {
+        await saveEnhancedProfile(db, cred.user.uid, {
+          email: values.email,
+          name: cred.user.displayName || '',
+        });
+      }
       router.push('/profile');
     } catch (error: any) {
       toast({
@@ -65,23 +74,31 @@ export function SignupPage() {
         description: error.message,
       });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }
-  
+
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
     try {
-      await googleSignIn();
+      const cred = await googleSignIn();
+      // Seed the Firestore profile with Google account data
+      if (db && cred?.user) {
+        await saveEnhancedProfile(db, cred.user.uid, {
+          email: cred.user.email || '',
+          name: cred.user.displayName || '',
+          photoURL: cred.user.photoURL || '',
+        });
+      }
       router.push('/profile');
     } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Google Sign-In Failed",
-            description: error.message,
-        });
+      toast({
+        variant: "destructive",
+        title: "Google Sign-In Failed",
+        description: error.message,
+      });
     } finally {
-        setIsGoogleLoading(false);
+      setIsGoogleLoading(false);
     }
   }
 
@@ -90,7 +107,7 @@ export function SignupPage() {
       <Card className="glass-card rounded-2xl">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center mb-4">
-              <Logo />
+            <Logo />
           </div>
           <CardTitle className="text-3xl font-headline text-glow">Create an Account</CardTitle>
           <CardDescription>Enter your details below to get started.</CardDescription>
@@ -105,7 +122,7 @@ export function SignupPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="m@example.com" {...field} disabled={isLoading || isGoogleLoading}/>
+                      <Input type="email" placeholder="m@example.com" {...field} disabled={isLoading || isGoogleLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -118,7 +135,7 @@ export function SignupPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} disabled={isLoading || isGoogleLoading}/>
+                      <Input type="password" placeholder="••••••••" {...field} disabled={isLoading || isGoogleLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,7 +148,7 @@ export function SignupPage() {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} disabled={isLoading || isGoogleLoading}/>
+                      <Input type="password" placeholder="••••••••" {...field} disabled={isLoading || isGoogleLoading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -154,7 +171,7 @@ export function SignupPage() {
             </div>
           </div>
           <Button variant="outline" className="w-full h-12 text-base" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-            {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
+            {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :
               <svg className="w-4 h-4 mr-2" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 173.4 58.2L359.3 129.5C330.7 104 292.3 88 248 88c-73.2 0-132.3 59.2-132.3 132.3s59.1 132.3 132.3 132.3c78.2 0 110.3-55.8 114.3-85.3H248v-63.7h238.5c2.4 12.4 3.8 25.8 3.8 39.5z"></path></svg>
             }
             Sign Up with Google

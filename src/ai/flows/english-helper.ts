@@ -52,7 +52,7 @@ Examples:
 - "Welcome! Let's have a fun conversation. Tell me, have you traveled anywhere exciting recently?"
 
 Make it natural, friendly, and encouraging. Keep it to 2-3 sentences max.`,
-    model: 'googleai/gemini-2.5-flash-lite',
+    model: 'vertexai/gemini-2.5-flash',
     config: {
       temperature: 0.9,
       topP: 0.95,
@@ -130,7 +130,7 @@ Be specific about errors you notice, but frame them positively. For example:
 - Celebrate what they're doing right: "I love how you used the word 'fascinating' - that's advanced vocabulary!"
 
 Keep your conversational response to 2-3 sentences max. Make it feel like a real conversation, not a lecture.`,
-    model: 'googleai/gemini-2.5-flash-lite',
+    model: 'vertexai/gemini-2.5-flash',
     config: {
       temperature: 0.8,
       topK: 40,

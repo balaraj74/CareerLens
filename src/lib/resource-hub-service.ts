@@ -34,14 +34,9 @@ export async function getAIResourceRecommendations(
   count: number = 5
 ): Promise<Resource[]> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const { callGemini } = await import('@/ai/genkit');
 
-    if (!apiKey) {
-      console.warn('Gemini API key not configured, using fallback recommendations');
-      return getFallbackResources(userProfile, count);
-    }
-
-    // Analyze user profile with Gemini
+    // Analyze user profile with Vertex AI
     const prompt = `
 You are a career development AI assistant. Analyze this user profile and recommend ${count} FREE online courses/certifications that would be most beneficial for their career growth.
 
@@ -81,24 +76,11 @@ Respond in JSON format:
   ]
 }`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
+    const text = await callGemini(prompt, {
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+    });
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
     // Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {

@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth, useFirebase } from '@/hooks/use-auth';
 import {
-  fetchEnhancedProfile,
+  subscribeToProfile,
   completeDailyGoal,
   updateStreak,
 } from '@/lib/enhanced-profile-service';
@@ -59,8 +59,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export function DynamicDashboard() {
-  const { user } = useAuth();
-  const { db } = useFirebase();
+  const { user, loading: authLoading } = useAuth();
+  const { db, loading: firebaseLoading } = useFirebase();
   const { toast } = useToast();
   const [profile, setProfile] = useState<EnhancedUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,15 +71,54 @@ export function DynamicDashboard() {
   const [actionUrl, setActionUrl] = useState('');
   const [actionLabel, setActionLabel] = useState('');
   const [isCopilotLoading, setIsCopilotLoading] = useState(false);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   const router = useRouter();
 
   const { scrollYProgress } = useScroll();
   const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
 
+  // Real-time profile subscription
   useEffect(() => {
-    loadProfile();
-  }, [user, db]);
+    // Still initialising Firebase or Auth — keep the spinner
+    if (firebaseLoading || authLoading) return;
+
+    // Auth resolved but no user — stop loading
+    if (!user || !db) {
+      setLoading(false);
+      setProfile(null);
+      return;
+    }
+
+    setLoading(true);
+    const unsub = subscribeToProfile(
+      db,
+      user.uid,
+      (data) => {
+        setProfile(data);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error loading profile:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load dashboard data',
+          variant: 'destructive',
+        });
+        setLoading(false);
+      }
+    );
+
+    unsubscribeRef.current = unsub;
+
+    // Update streak on first load
+    updateStreak(db, user.uid).catch(console.error);
+
+    return () => {
+      unsub();
+      unsubscribeRef.current = null;
+    };
+  }, [user, db, firebaseLoading, authLoading]);
 
   useEffect(() => {
     if (profile?.name) {
@@ -99,30 +138,6 @@ export function DynamicDashboard() {
       return () => clearInterval(timer);
     }
   }, [profile?.name]);
-
-  const loadProfile = async () => {
-    if (!user || !db) return;
-
-    try {
-      setLoading(true);
-      const data = await fetchEnhancedProfile(db, user.uid);
-      setProfile(data);
-
-      // Update streak on dashboard view
-      if (data) {
-        await updateStreak(db, user.uid);
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load dashboard data',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (profile) {
@@ -228,8 +243,7 @@ export function DynamicDashboard() {
 
     try {
       await completeDailyGoal(db, user.uid, goalId);
-      await loadProfile(); // Reload to get updated data
-
+      // No need to manually reload — onSnapshot will fire automatically
       toast({
         title: 'Goal Completed! 🎉',
         description: 'You earned XP!',

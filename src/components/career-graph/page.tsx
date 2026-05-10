@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, RefreshCw, Sparkles, Share2 } from 'lucide-react';
+import { Activity, RefreshCw, Sparkles, Share2, Waypoints } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirebase } from '@/hooks/use-auth';
@@ -20,8 +20,8 @@ import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
 export function CareerGraphPage() {
-  const { user } = useAuth();
-  const { db } = useFirebase();
+  const { user, loading: authLoading } = useAuth();
+  const { db, loading: firebaseLoading } = useFirebase();
   const { toast } = useToast();
 
   const [careerGraph, setCareerGraph] = useState<CareerGraphData | null>(null);
@@ -33,10 +33,15 @@ export function CareerGraphPage() {
 
   useEffect(() => {
     loadCareerGraph();
-  }, [user, db]);
+  }, [user, db, authLoading, firebaseLoading]);
 
   const loadCareerGraph = async () => {
-    if (!user || !db) return;
+    if (authLoading || firebaseLoading) return;
+
+    if (!user || !db) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -255,15 +260,34 @@ export function CareerGraphPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <SkillGraph
-                skills={careerGraph.skills}
-                onNodeClick={(skill) => {
-                  toast({
-                    title: skill.name,
-                    description: `Proficiency: ${Math.round(skill.weight)}% | Category: ${skill.category}`,
-                  });
-                }}
-              />
+              {careerGraph.skills && careerGraph.skills.length > 0 ? (
+                <SkillGraph
+                  skills={careerGraph.skills}
+                  onNodeClick={(skill) => {
+                    toast({
+                      title: skill.name,
+                      description: `Proficiency: ${Math.round(skill.weight)}% | Category: ${skill.category}`,
+                    });
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 px-4 bg-slate-800/30 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
+                  <div className="p-4 bg-slate-800 rounded-full mb-4">
+                    <Waypoints className="w-12 h-12 text-slate-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">No Skills Graph Available</h3>
+                  <p className="text-slate-400 text-center max-w-md mb-6">
+                    We couldn't generate a skill graph because you haven't added any skills yet. Add some skills to your profile to see your individualized learning network.
+                  </p>
+                  <Button
+                    onClick={() => window.location.href = '/profile/edit'}
+                    variant="neon"
+                    className="shadow-neon-purple"
+                  >
+                    Add Skills to Profile
+                  </Button>
+                </div>
+              )}
             </motion.div>
           </TabsContent>
         </Tabs>

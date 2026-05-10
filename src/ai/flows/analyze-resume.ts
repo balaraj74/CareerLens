@@ -65,7 +65,7 @@ const AnalysisResponseSchema = z.object({
 // Define the prompt
 const analyzeResumePrompt = ai.definePrompt({
   name: 'analyzeResumePrompt',
-  model: 'googleai/gemini-2.0-flash-exp',
+  model: 'vertexai/gemini-2.5-flash',
   input: {
     schema: z.object({
       resumeText: z.string(),
@@ -227,7 +227,7 @@ export async function quickATSCheck(resumeText: string): Promise<{
 }> {
   const quickPrompt = ai.definePrompt({
     name: 'quickATSCheck',
-    model: 'googleai/gemini-2.0-flash-exp',
+    model: 'vertexai/gemini-2.5-flash',
     input: {
       schema: z.object({
         resumeText: z.string(),

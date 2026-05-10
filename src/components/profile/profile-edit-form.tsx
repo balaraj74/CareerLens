@@ -37,8 +37,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 export function ProfileEditForm() {
-  const { user } = useAuth();
-  const { db } = useFirebase();
+  const { user, loading: authLoading } = useAuth();
+  const { db, loading: firebaseLoading } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -48,10 +48,15 @@ export function ProfileEditForm() {
 
   useEffect(() => {
     loadProfile();
-  }, [user]);
+  }, [user, db, authLoading, firebaseLoading]);
 
   const loadProfile = async () => {
-    if (!user || !db) return;
+    if (authLoading || firebaseLoading) return;
+
+    if (!user || !db) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -76,8 +81,17 @@ export function ProfileEditForm() {
 
     try {
       setSaving(true);
-      await saveEnhancedProfile(db, user.uid, profile);
-      await calculateAnalytics(db, user.uid);
+
+      // Firestore throws errors or hangs silently on explicit 'undefined' properties.
+      // We must strip them out before saving.
+      const cleanProfile = JSON.parse(JSON.stringify(profile));
+
+      await saveEnhancedProfile(db, user.uid, cleanProfile);
+
+      // Run analytics calculation in background to avoid blocking the UI
+      calculateAnalytics(db, user.uid).catch(err => {
+        console.warn('Background analytics calculation failed:', err);
+      });
 
       toast({
         title: 'Success',
@@ -87,7 +101,7 @@ export function ProfileEditForm() {
       console.error('Error saving profile:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save profile',
+        description: 'Failed to save profile. Please try again.',
         variant: 'destructive',
       });
     } finally {

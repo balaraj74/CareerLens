@@ -150,7 +150,7 @@ const naturalLanguageParserFlow = ai.defineFlow(
       .replace('{{userInput}}', input.userInput);
 
     const { output } = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp',
+      model: 'vertexai/gemini-2.5-flash',
       prompt,
       output: {
         schema: ParsedEventDataSchema,

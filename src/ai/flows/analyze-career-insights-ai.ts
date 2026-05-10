@@ -1,5 +1,6 @@
 /**
  * Gemini AI Career Insights Analyzer
+ * Pure AI-driven — no BigQuery dependency
  * 
  * Provides real-time, AI-powered career intelligence including:
  * - Market demand analysis
@@ -8,13 +9,10 @@
  * - Salary trends
  * - Geographic opportunities
  * - Industry certifications
- * 
- * Integrates with BigQuery for market data enrichment
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getTrendingSkills, getSkillsForRole, getSalaryRange } from '@/lib/bigquery/service';
 
 // ================================
 // Response Schema Definition
@@ -75,38 +73,17 @@ interface CareerInsightsInput {
 // ================================
 
 /**
- * Analyze career insights using Gemini AI
- * Provides comprehensive career intelligence and market analysis
+ * Analyze career insights using Gemini AI (pure AI — no BigQuery)
  */
 export async function analyzeCareerInsightsWithAI(
     input: CareerInsightsInput
 ): Promise<CareerInsightResult> {
     const { domain, currentRole, experienceLevel = 'Mid', location } = input;
 
-    console.log('🧠 Starting Gemini AI Career Insights Analysis:', { domain, currentRole, experienceLevel });
+    console.log('🧠 [CareerInsights] Starting AI analysis:', { domain, currentRole, experienceLevel });
 
     try {
-        // ================================
-        // Step 1: Fetch Real Market Data
-        // ================================
-
-        const [trendingSkills, jobData, salaryData] = await Promise.all([
-            getTrendingSkills(domain, 15),
-            getSkillsForRole(domain),
-            getSalaryRange(domain, location)
-        ]);
-
-        console.log('📊 Market Data Retrieved:', {
-            trendingSkillsCount: trendingSkills.length,
-            jobDataCount: jobData.length,
-            salaryData
-        });
-
-        // ================================
-        // Step 2: Construct AI Prompt
-        // ================================
-
-        const prompt = `You are an expert career advisor and market analyst with deep knowledge of technology trends, job markets, and career development.
+        const prompt = `You are an expert career advisor and market analyst with deep knowledge of technology trends, job markets, and career development in ${new Date().getFullYear()}.
 
 **Career Domain Analysis Request:**
 - Domain/Field: ${domain}
@@ -114,192 +91,101 @@ export async function analyzeCareerInsightsWithAI(
 - Experience Level: ${experienceLevel}
 - Location: ${location || 'Global'}
 
-**Real-Time Market Data:**
-
-**Trending Skills (from current job market):**
-${trendingSkills.length > 0
-                ? trendingSkills.map((s, i) => `${i + 1}. ${s.skill} (Demand: ${s.demand_score}/10, Frequency: ${s.frequency})`).join('\n')
-                : 'No trending skills data available'}
-
-**Job Market Data:**
-${jobData.length > 0
-                ? `- ${jobData.length} active job listings analyzed
-- Average Salary: $${jobData[0]?.average_salary?.toLocaleString() || 'N/A'}
-- Salary Range: $${jobData[0]?.salary_min?.toLocaleString()} - $${jobData[0]?.salary_max?.toLocaleString()}
-- Top Required Skills: ${jobData[0]?.required_skills?.slice(0, 10).join(', ') || 'N/A'}
-- ATS Keywords: ${jobData[0]?.ats_keywords?.slice(0, 8).join(', ') || 'N/A'}
-- Remote Friendly: ${jobData.filter(j => j.remote_friendly).length}/${jobData.length} positions`
-                : 'Limited job market data available'}
-
-**Salary Information:**
-${salaryData
-                ? `- Average: $${Math.round(salaryData.average).toLocaleString()}
-- Range: $${Math.round(salaryData.min).toLocaleString()} - $${Math.round(salaryData.max).toLocaleString()}`
-                : 'Salary data not available'}
-
 **Your Task:**
-Provide a comprehensive, data-driven career analysis for someone in the "${domain}" field. Use the real market data above and your knowledge of industry trends to provide:
+Provide a comprehensive, data-driven career analysis for someone in the "${domain}" field.
 
-1. **Accurate Market Metrics**: Analyze demand, growth rate, and job opportunities
-2. **Career Progression**: Identify realistic future career paths based on current trends
-3. **Certifications**: Recommend certifications that are actually valued in this field TODAY
-4. **Emerging Technologies**: Focus on technologies that are ACTUALLY trending in 2024-2025
-5. **Top Companies**: Name real companies actively hiring in this space
-6. **Geographic Hotspots**: Identify real locations with strong job markets for this field
-7. **Actionable Insights**: Provide specific, actionable advice
+### Required Analysis:
+
+1. **Market Metrics**: 
+   - Demand score (0-10) based on current job market for "${domain}"
+   - Projected annual growth rate
+   - Salary growth potential over 3-5 years
+   - Estimated current global job openings for "${domain}"
+   - Average years to next career level
+
+2. **Career Progression**: 
+   - 3-6 realistic future career paths from "${domain}" role
+   - Consider both IC and management tracks
+
+3. **Certifications**: 
+   - Recommend 3-8 certifications ACTUALLY valued for "${domain}" today
+   - Examples: AWS Solutions Architect for Cloud, CISSP for Cybersecurity, etc.
+   - Do NOT recommend generic certs unrelated to "${domain}"
+
+4. **Emerging Technologies**: 
+   - 3-10 technologies ACTUALLY trending in the "${domain}" space right now
+   - Be specific: "LangChain" not just "AI", "dbt" not just "data tools"
+
+5. **Top Companies**: 
+   - 4-8 REAL companies actively hiring for "${domain}" roles
+   - Include mix of FAANG, startups, and industry leaders
+
+6. **Geographic Hotspots**: 
+   - 3-8 real locations/regions with strong "${domain}" job markets
+   - Include both in-person and remote-friendly markets
+
+7. **Insights**:
+   - Skill gap analysis for "${domain}" professionals
+   - Overall market outlook
+   - What gives candidates a competitive advantage
+
+8. **Risk Assessment**:
+   - Automation risk level for "${domain}" roles
+   - Market saturation level
+
+9. **Immediate Actions**: 
+   - 3-5 specific, actionable steps for a ${experienceLevel}-level "${domain}" professional
+   - Each with priority, timeframe, and expected impact
 
 **Important Guidelines:**
 - Be realistic and data-driven, not overly optimistic
-- Consider the current job market (2024-2025)
-- Prioritize practical, actionable advice
-- Factor in AI/automation trends affecting this field
-- Consider remote work trends
-- Use the trending skills data to inform your recommendations
+- Consider the current job market (${new Date().getFullYear()})
+- ALL recommendations must be specific to "${domain}" — not generic tech advice
 - Be specific with company names, certifications, and technologies
+- Factor in AI/automation trends affecting "${domain}"`;
 
-Provide a thorough analysis that will help professionals make informed career decisions.`;
-
-        // ================================
-        // Step 3: Call Gemini AI
-        // ================================
-
-        console.log('🤖 Calling Gemini AI for career insights...');
+        console.log('🤖 [CareerInsights] Calling Gemini AI...');
 
         const result = await ai.generate({
-            model: 'gemini-2.0-flash-exp', // Fast and cost-effective
+            model: 'vertexai/gemini-2.5-flash',
             prompt,
             output: {
                 schema: careerInsightSchema,
             },
             config: {
-                temperature: 0.7, // Balanced creativity and accuracy
-                topP: 0.9,
-                topK: 40,
+                temperature: 0.5,
+                maxOutputTokens: 8192,
             },
         });
 
-        console.log('✅ Gemini AI Analysis Complete');
+        if (!result.output) {
+            throw new Error('AI returned empty output for career insights');
+        }
 
-        // Extract and validate the result
-        const analysisResult = result.output as CareerInsightResult;
+        console.log('✅ [CareerInsights] Analysis complete for:', domain);
 
-        // Add the domain for reference
-        return {
-            ...analysisResult,
-            domain,
-        } as any;
+        return result.output;
 
     } catch (error) {
-        console.error('❌ Error in Gemini AI Career Insights Analysis:', error);
-
-        // Fallback with reasonable defaults
-        return getFallbackCareerInsights(domain);
+        console.error('❌ [CareerInsights] Error:', error);
+        throw new Error(
+            `Career insights analysis failed for domain "${domain}": ${
+                error instanceof Error ? error.message : String(error)
+            }`
+        );
     }
 }
 
-// ================================
-// Fallback Function
-// ================================
-
 /**
- * Fallback career insights when AI fails
- * Provides basic but accurate information
- */
-function getFallbackCareerInsights(domain: string): CareerInsightResult {
-    return {
-        demand_score: 7.5,
-        growth_rate: 12.0,
-        salary_growth_potential: 18.0,
-        job_openings_count: 25000,
-        avg_career_progression_years: 3.5,
-
-        future_opportunities: [
-            'Senior Engineer',
-            'Technical Lead',
-            'Engineering Manager',
-            'Solutions Architect'
-        ],
-
-        certifications: [
-            'AWS Certified Solutions Architect',
-            'Google Cloud Professional',
-            'Kubernetes Administrator',
-            'Azure Developer Associate'
-        ],
-
-        emerging_technologies: [
-            'AI/ML Integration',
-            'Cloud Native Development',
-            'Kubernetes',
-            'TypeScript',
-            'GraphQL',
-            'Serverless Architecture'
-        ],
-
-        top_companies: [
-            'Google',
-            'Microsoft',
-            'Amazon',
-            'Meta',
-            'Apple',
-            'Netflix'
-        ],
-
-        geographic_hotspots: [
-            'San Francisco Bay Area',
-            'Seattle',
-            'New York City',
-            'Austin',
-            'Boston'
-        ],
-
-        skill_gap_analysis: `The ${domain} field is experiencing strong growth. Focus on cloud technologies, AI integration, and modern development practices to stay competitive.`,
-
-        market_outlook: 'Strong demand with positive long-term prospects. Remote opportunities expanding globally.',
-
-        competitive_advantage: 'Combine deep technical expertise with cloud and AI skills. Build a strong portfolio and contribute to open source.',
-
-        automation_risk: 'Low',
-        market_saturation: 'Medium',
-
-        immediate_actions: [
-            {
-                action: 'Learn cloud technologies (AWS/Azure/GCP)',
-                priority: 'High',
-                timeframe: '3-6 months',
-                impact: 'Significantly increases job opportunities'
-            },
-            {
-                action: 'Explore AI/ML integration tools',
-                priority: 'High',
-                timeframe: '2-4 months',
-                impact: 'Positions you for emerging roles'
-            },
-            {
-                action: 'Contribute to open source projects',
-                priority: 'Medium',
-                timeframe: 'Ongoing',
-                impact: 'Builds credibility and portfolio'
-            }
-        ],
-    };
-}
-
-/**
- * Quick career insights check without full AI analysis
- * Useful for previews or preliminary data
+ * Quick career insights check (lightweight, no full AI call)
  */
 export async function getQuickCareerInsights(domain: string) {
-    const [trendingSkills, jobData] = await Promise.all([
-        getTrendingSkills(domain, 5),
-        getSkillsForRole(domain)
-    ]);
-
     return {
         domain,
-        trendingSkillsCount: trendingSkills.length,
-        jobOpenings: jobData.length,
-        topSkills: trendingSkills.slice(0, 5).map(s => s.skill),
-        avgSalary: jobData[0]?.average_salary || null
+        trendingSkillsCount: 0,
+        jobOpenings: 0,
+        topSkills: [],
+        avgSalary: null,
+        note: 'Use full analyzeCareerInsightsWithAI for complete analysis',
     };
 }

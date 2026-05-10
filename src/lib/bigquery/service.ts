@@ -112,7 +112,7 @@ export async function getSkillsForRole(
         const [rows] = await bigQueryClient.query(options);
         return rows as JobMarketData[];
     } catch (error) {
-        console.error('Error querying BigQuery for skills:', error);
+        console.warn(`⚠️ BigQuery unavailable for role "${role}", using role-aware mock data. Error:`, (error as Error).message);
         return getMockSkillsForRole(role);
     }
 }
@@ -156,7 +156,7 @@ export async function getTrendingSkills(
         const [rows] = await bigQueryClient.query(options);
         return rows as { skill: string; demand_score: number; frequency: number }[];
     } catch (error) {
-        console.error('Error querying trending skills:', error);
+        console.warn(`⚠️ BigQuery unavailable for trending skills in "${industry}", using mock data. Error:`, (error as Error).message);
         return getMockTrendingSkills(industry);
     }
 }
@@ -457,71 +457,243 @@ export async function getResumeOptimization(
 }
 
 // ========================================
-// Mock Data Functions (for development/fallback)
+// Role-Aware Mock Data (for development/fallback)
 // ========================================
 
+/**
+ * Role-to-domain mapping with comprehensive skill profiles.
+ * Maps role keywords to specific career domain data so the AI
+ * receives relevant context even when BigQuery is unavailable.
+ */
+interface RoleProfile {
+    keywords: string[];
+    required_skills: string[];
+    trending_skills: string[];
+    ats_keywords: string[];
+    salary: { min: number; max: number; avg: number };
+    certifications: string[];
+    high_impact_keywords: string[];
+    technical_skills: string[];
+    future_opportunities: string[];
+    top_companies: string[];
+    emerging_technologies: string[];
+}
+
+const ROLE_PROFILES: Record<string, RoleProfile> = {
+    'data-science': {
+        keywords: ['data scientist', 'data science', 'machine learning engineer', 'ml engineer', 'data analyst', 'analytics'],
+        required_skills: ['Python', 'SQL', 'Machine Learning', 'Statistics', 'Pandas', 'NumPy', 'Scikit-learn', 'TensorFlow', 'Data Visualization', 'R', 'Deep Learning', 'NLP'],
+        trending_skills: ['LLMs', 'Generative AI', 'MLOps', 'Feature Engineering', 'PyTorch', 'Hugging Face', 'LangChain', 'Vector Databases'],
+        ats_keywords: ['Machine Learning', 'Python', 'SQL', 'TensorFlow', 'Data Analysis', 'Statistical Modeling', 'A/B Testing', 'ETL'],
+        salary: { min: 100000, max: 180000, avg: 140000 },
+        certifications: ['Google Professional Machine Learning Engineer', 'AWS Machine Learning Specialty', 'TensorFlow Developer Certificate'],
+        high_impact_keywords: ['Predictive Modeling', 'Neural Networks', 'Data Pipeline', 'Feature Engineering'],
+        technical_skills: ['Python', 'R', 'SQL', 'TensorFlow', 'PyTorch', 'Spark'],
+        future_opportunities: ['AI Research Scientist', 'ML Engineering Manager', 'Chief Data Officer'],
+        top_companies: ['Google DeepMind', 'OpenAI', 'Meta AI', 'Netflix', 'Spotify'],
+        emerging_technologies: ['Foundation Models', 'AutoML', 'Federated Learning', 'Edge AI'],
+    },
+    'devops': {
+        keywords: ['devops', 'sre', 'site reliability', 'platform engineer', 'infrastructure', 'cloud engineer'],
+        required_skills: ['Docker', 'Kubernetes', 'CI/CD', 'Terraform', 'AWS', 'Linux', 'Ansible', 'Jenkins', 'Monitoring', 'Shell Scripting', 'Git', 'Networking'],
+        trending_skills: ['GitOps', 'ArgoCD', 'Service Mesh', 'Istio', 'Platform Engineering', 'eBPF', 'Pulumi', 'Crossplane'],
+        ats_keywords: ['Kubernetes', 'Docker', 'Terraform', 'CI/CD', 'AWS', 'Infrastructure as Code', 'SRE', 'Monitoring'],
+        salary: { min: 110000, max: 175000, avg: 142000 },
+        certifications: ['AWS DevOps Engineer Professional', 'CKA (Certified Kubernetes Administrator)', 'HashiCorp Terraform Associate'],
+        high_impact_keywords: ['Infrastructure as Code', 'Container Orchestration', 'Pipeline Automation', 'Observability'],
+        technical_skills: ['Docker', 'Kubernetes', 'Terraform', 'AWS', 'GCP', 'Azure'],
+        future_opportunities: ['Platform Engineering Lead', 'Cloud Architect', 'VP of Infrastructure'],
+        top_companies: ['Google', 'HashiCorp', 'Datadog', 'GitLab', 'Cloudflare'],
+        emerging_technologies: ['eBPF', 'WebAssembly (Wasm)', 'AI-Driven Ops', 'Serverless Containers'],
+    },
+    'frontend': {
+        keywords: ['frontend', 'front-end', 'front end', 'ui developer', 'react developer', 'angular developer', 'vue developer'],
+        required_skills: ['JavaScript', 'TypeScript', 'React', 'HTML', 'CSS', 'Git', 'REST APIs', 'Responsive Design', 'Testing', 'State Management'],
+        trending_skills: ['Next.js', 'Server Components', 'Tailwind CSS', 'Vite', 'Astro', 'Web Components', 'Playwright'],
+        ats_keywords: ['React', 'TypeScript', 'JavaScript', 'CSS', 'Responsive Design', 'Webpack', 'Performance'],
+        salary: { min: 85000, max: 155000, avg: 120000 },
+        certifications: ['Meta Front-End Developer Certificate', 'AWS Certified Developer'],
+        high_impact_keywords: ['Component Architecture', 'Performance Optimization', 'Accessibility', 'Design Systems'],
+        technical_skills: ['JavaScript', 'TypeScript', 'React', 'Next.js', 'CSS'],
+        future_opportunities: ['Frontend Architect', 'Design Systems Lead', 'Engineering Manager'],
+        top_companies: ['Vercel', 'Meta', 'Airbnb', 'Stripe', 'Shopify'],
+        emerging_technologies: ['Server Components', 'View Transitions API', 'WebGPU', 'AI-Powered UIs'],
+    },
+    'backend': {
+        keywords: ['backend', 'back-end', 'back end', 'server', 'api developer', 'java developer', 'golang', 'python developer'],
+        required_skills: ['Java', 'Python', 'Go', 'SQL', 'REST APIs', 'Microservices', 'Docker', 'Databases', 'Caching', 'Message Queues', 'System Design', 'Spring Boot'],
+        trending_skills: ['gRPC', 'GraphQL', 'Rust', 'Event-Driven Architecture', 'Serverless', 'tRPC'],
+        ats_keywords: ['Microservices', 'REST', 'SQL', 'NoSQL', 'System Design', 'Scalability', 'API Design'],
+        salary: { min: 95000, max: 165000, avg: 130000 },
+        certifications: ['AWS Solutions Architect', 'Google Cloud Professional Developer', 'Oracle Java SE Developer'],
+        high_impact_keywords: ['Distributed Systems', 'API Architecture', 'Database Optimization', 'High Availability'],
+        technical_skills: ['Java', 'Python', 'Go', 'SQL', 'Redis', 'Kafka'],
+        future_opportunities: ['Staff Engineer', 'System Architect', 'VP of Engineering'],
+        top_companies: ['Google', 'Amazon', 'LinkedIn', 'Uber', 'Netflix'],
+        emerging_technologies: ['AI Inference Serving', 'Edge Functions', 'WASM Backends', 'Serverless Containers'],
+    },
+    'fullstack': {
+        keywords: ['full stack', 'fullstack', 'full-stack', 'web developer', 'software engineer', 'software developer', 'mern', 'mean'],
+        required_skills: ['JavaScript', 'React', 'Node.js', 'TypeScript', 'AWS', 'SQL', 'Git', 'REST APIs', 'HTML/CSS', 'MongoDB', 'PostgreSQL', 'Docker'],
+        trending_skills: ['Next.js', 'AI Integration', 'GraphQL', 'Tailwind CSS', 'Prisma', 'tRPC', 'Turborepo'],
+        ats_keywords: ['React', 'Node.js', 'TypeScript', 'AWS', 'CI/CD', 'Full Stack', 'Agile'],
+        salary: { min: 90000, max: 160000, avg: 125000 },
+        certifications: ['AWS Certified Developer', 'Azure Fundamentals', 'Google Cloud Developer'],
+        high_impact_keywords: ['Full Stack Development', 'Cloud Architecture', 'System Design'],
+        technical_skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'SQL'],
+        future_opportunities: ['Cloud Architect', 'Engineering Manager', 'Technical Lead'],
+        top_companies: ['Google', 'Meta', 'Amazon', 'Microsoft', 'Stripe'],
+        emerging_technologies: ['AI Integration', 'Edge Computing', 'WebAssembly'],
+    },
+    'cybersecurity': {
+        keywords: ['cybersecurity', 'security engineer', 'security analyst', 'penetration tester', 'infosec', 'information security', 'soc analyst'],
+        required_skills: ['Network Security', 'SIEM', 'Penetration Testing', 'Vulnerability Assessment', 'Firewalls', 'IDS/IPS', 'Python', 'Linux', 'Incident Response', 'Threat Modeling'],
+        trending_skills: ['Zero Trust Architecture', 'Cloud Security (CSPM)', 'AI Threat Detection', 'DevSecOps', 'Supply Chain Security', 'SOAR'],
+        ats_keywords: ['SIEM', 'Penetration Testing', 'Risk Assessment', 'Compliance', 'SOC', 'NIST', 'ISO 27001'],
+        salary: { min: 95000, max: 170000, avg: 135000 },
+        certifications: ['CISSP', 'CEH', 'CompTIA Security+', 'OSCP', 'AWS Security Specialty'],
+        high_impact_keywords: ['Threat Intelligence', 'Vulnerability Management', 'Zero Trust', 'Incident Response'],
+        technical_skills: ['Python', 'Wireshark', 'Burp Suite', 'Nmap', 'Splunk'],
+        future_opportunities: ['CISO', 'Security Architect', 'Threat Intelligence Lead'],
+        top_companies: ['CrowdStrike', 'Palo Alto Networks', 'Google', 'Microsoft', 'Mandiant'],
+        emerging_technologies: ['AI-Powered SOC', 'Quantum-Resistant Crypto', 'SASE', 'XDR'],
+    },
+    'product-management': {
+        keywords: ['product manager', 'product management', 'product owner', 'program manager', 'technical pm'],
+        required_skills: ['Product Strategy', 'User Research', 'Agile/Scrum', 'Data Analysis', 'Roadmap Planning', 'Stakeholder Management', 'A/B Testing', 'SQL', 'Wireframing', 'Market Analysis'],
+        trending_skills: ['AI Product Management', 'Product-Led Growth (PLG)', 'Growth Hacking', 'Product Analytics', 'Jobs to Be Done'],
+        ats_keywords: ['Product Strategy', 'Agile', 'Scrum', 'User Research', 'KPIs', 'Roadmap', 'Stakeholder'],
+        salary: { min: 110000, max: 190000, avg: 150000 },
+        certifications: ['CSPO (Certified Scrum Product Owner)', 'PMI-ACP', 'Google Project Management Certificate'],
+        high_impact_keywords: ['Product Vision', 'Go-to-Market Strategy', 'User-Centric Design', 'Revenue Growth'],
+        technical_skills: ['SQL', 'Jira', 'Amplitude', 'Figma', 'Mixpanel'],
+        future_opportunities: ['VP of Product', 'Chief Product Officer', 'Founder/CEO'],
+        top_companies: ['Google', 'Apple', 'Meta', 'Airbnb', 'Spotify'],
+        emerging_technologies: ['AI-First Products', 'Product Analytics AI', 'No-Code Platforms', 'Voice Interfaces'],
+    },
+    'ui-ux-design': {
+        keywords: ['ui designer', 'ux designer', 'ui/ux', 'product designer', 'interaction designer', 'visual designer', 'design'],
+        required_skills: ['Figma', 'User Research', 'Wireframing', 'Prototyping', 'Design Systems', 'Interaction Design', 'Visual Design', 'Usability Testing', 'Information Architecture', 'Typography'],
+        trending_skills: ['AI-Powered Design', 'Design Tokens', 'Framer', 'Motion Design', '3D Design (Spline)', 'Accessibility (WCAG 2.2)'],
+        ats_keywords: ['Figma', 'User Research', 'Prototyping', 'Design Systems', 'Wireframes', 'A/B Testing'],
+        salary: { min: 80000, max: 160000, avg: 120000 },
+        certifications: ['Google UX Design Certificate', 'Nielsen Norman UX Certification', 'Interaction Design Foundation'],
+        high_impact_keywords: ['User-Centered Design', 'Design Thinking', 'Responsive Design', 'Conversion Optimization'],
+        technical_skills: ['Figma', 'Adobe XD', 'Sketch', 'Framer', 'HTML/CSS'],
+        future_opportunities: ['Head of Design', 'VP of Design', 'Design Director'],
+        top_companies: ['Apple', 'Google', 'Airbnb', 'Figma', 'Spotify'],
+        emerging_technologies: ['AI Design Tools', 'Spatial Computing (VisionOS)', 'Variable Fonts', 'Micro-Interactions'],
+    },
+    'mobile': {
+        keywords: ['mobile developer', 'ios developer', 'android developer', 'react native', 'flutter developer', 'mobile engineer', 'app developer'],
+        required_skills: ['Swift', 'Kotlin', 'React Native', 'Flutter', 'UI/UX Mobile', 'REST APIs', 'Git', 'Testing', 'CI/CD', 'App Store Deployment'],
+        trending_skills: ['Compose Multiplatform', 'SwiftUI', 'Expo', 'KMM (Kotlin Multiplatform)', 'AR/VR Mobile', 'Edge AI on Mobile'],
+        ats_keywords: ['iOS', 'Android', 'Swift', 'Kotlin', 'React Native', 'Flutter', 'Mobile Architecture'],
+        salary: { min: 95000, max: 170000, avg: 132000 },
+        certifications: ['Google Associate Android Developer', 'Apple Developer Certification', 'Meta React Native Certificate'],
+        high_impact_keywords: ['Cross-Platform Development', 'Mobile Architecture', 'App Performance', 'Offline-First'],
+        technical_skills: ['Swift', 'Kotlin', 'Dart', 'React Native', 'TypeScript'],
+        future_opportunities: ['Mobile Architect', 'Engineering Manager', 'Head of Mobile'],
+        top_companies: ['Apple', 'Google', 'Meta', 'Uber', 'Airbnb'],
+        emerging_technologies: ['On-Device AI', 'Spatial Computing', 'Progressive Web Apps', 'App Clips/Instant Apps'],
+    },
+    'cloud-architect': {
+        keywords: ['cloud architect', 'cloud engineer', 'solutions architect', 'aws architect', 'gcp engineer', 'azure architect'],
+        required_skills: ['AWS', 'Azure', 'GCP', 'Terraform', 'Networking', 'Security', 'Microservices', 'Containers', 'Serverless', 'Cost Optimization', 'IAM', 'Load Balancing'],
+        trending_skills: ['Multi-Cloud Strategy', 'FinOps', 'Green Computing', 'AI Infrastructure', 'Service Mesh', 'WASM at Edge'],
+        ats_keywords: ['AWS', 'Azure', 'GCP', 'Terraform', 'Architecture', 'Scalability', 'High Availability', 'Disaster Recovery'],
+        salary: { min: 130000, max: 200000, avg: 165000 },
+        certifications: ['AWS Solutions Architect Professional', 'Google Cloud Professional Architect', 'Azure Solutions Architect Expert'],
+        high_impact_keywords: ['Cloud-Native Architecture', 'Infrastructure Automation', 'Cost Optimization', 'Well-Architected'],
+        technical_skills: ['AWS', 'GCP', 'Azure', 'Terraform', 'Kubernetes', 'Networking'],
+        future_opportunities: ['VP of Cloud Infrastructure', 'CTO', 'Distinguished Engineer'],
+        top_companies: ['AWS', 'Google Cloud', 'Microsoft Azure', 'Snowflake', 'Databricks'],
+        emerging_technologies: ['AI-Optimized Infrastructure', 'Confidential Computing', 'Sovereign Cloud', 'Green Cloud'],
+    },
+};
+
+/**
+ * Match a role string to the best-fit profile using keyword matching.
+ */
+function matchRoleProfile(role: string): RoleProfile {
+    const lowerRole = role.toLowerCase().trim();
+
+    for (const profile of Object.values(ROLE_PROFILES)) {
+        if (profile.keywords.some(kw => lowerRole.includes(kw) || kw.includes(lowerRole))) {
+            return profile;
+        }
+    }
+
+    // Default fallback: fullstack (most generic software engineering profile)
+    return ROLE_PROFILES['fullstack'];
+}
+
 function getMockSkillsForRole(role: string): JobMarketData[] {
+    const profile = matchRoleProfile(role);
     return [
         {
             job_id: 'mock_001',
             job_role: role,
             industry: 'Technology',
-            required_skills: ['JavaScript', 'React', 'Node.js', 'TypeScript', 'AWS'],
-            trending_skills: ['Next.js', 'AI Integration', 'GraphQL', 'Docker'],
-            average_salary: 120000,
-            salary_min: 90000,
-            salary_max: 150000,
+            required_skills: profile.required_skills,
+            trending_skills: profile.trending_skills,
+            average_salary: profile.salary.avg,
+            salary_min: profile.salary.min,
+            salary_max: profile.salary.max,
             region: 'United States',
             experience_level: 'Mid-Level',
             demand_score: 8.5,
-            ats_keywords: ['React', 'Node.js', 'TypeScript', 'AWS', 'CI/CD'],
-            job_description: 'Mock job description',
+            ats_keywords: profile.ats_keywords,
+            job_description: `Role-specific job profile for ${role}`,
             company_size: 'Enterprise',
             remote_friendly: true,
         },
     ];
 }
 
-function getMockTrendingSkills(industry: string): { skill: string; demand_score: number; frequency: number }[] {
+function getMockTrendingSkills(_industry: string): { skill: string; demand_score: number; frequency: number }[] {
+    // Return cross-industry trending skills
     return [
         { skill: 'AI/ML', demand_score: 9.5, frequency: 150 },
         { skill: 'Cloud Computing', demand_score: 9.2, frequency: 200 },
-        { skill: 'TypeScript', demand_score: 8.8, frequency: 180 },
-        { skill: 'Docker', demand_score: 8.5, frequency: 140 },
-        { skill: 'Kubernetes', demand_score: 8.3, frequency: 120 },
+        { skill: 'Generative AI', demand_score: 9.0, frequency: 170 },
+        { skill: 'Cybersecurity', demand_score: 8.8, frequency: 160 },
+        { skill: 'Data Engineering', demand_score: 8.5, frequency: 140 },
     ];
 }
 
 function getMockResumeKeywords(role: string): ResumeKeywords {
+    const profile = matchRoleProfile(role);
     return {
         keyword_id: 'mock_kw_001',
         role,
         industry: 'Technology',
-        high_impact_keywords: ['Full Stack Development', 'Cloud Architecture', 'System Design'],
-        ats_keywords: ['React', 'Node.js', 'TypeScript', 'AWS', 'MongoDB'],
-        soft_skills: ['Problem Solving', 'Team Collaboration', 'Communication'],
-        technical_skills: ['JavaScript', 'TypeScript', 'React', 'Node.js'],
-        action_verbs: ['Developed', 'Architected', 'Implemented', 'Optimized', 'Led'],
-        certifications: ['AWS Certified Developer', 'Azure Fundamentals'],
+        high_impact_keywords: profile.high_impact_keywords,
+        ats_keywords: profile.ats_keywords,
+        soft_skills: ['Problem Solving', 'Team Collaboration', 'Communication', 'Critical Thinking'],
+        technical_skills: profile.technical_skills,
+        action_verbs: ['Developed', 'Architected', 'Implemented', 'Optimized', 'Led', 'Designed', 'Analyzed', 'Delivered'],
+        certifications: profile.certifications,
         keyword_weight: 0.95,
         effectiveness_score: 9.1,
     };
 }
 
 function getMockCareerInsights(domain: string): CareerInsights {
+    const profile = matchRoleProfile(domain);
     return {
         insight_id: 'mock_ins_001',
         domain,
-        future_opportunities: ['Cloud Architect', 'Engineering Manager', 'Technical Lead'],
-        certifications: ['AWS Solutions Architect', 'Kubernetes Administrator'],
+        future_opportunities: profile.future_opportunities,
+        certifications: profile.certifications,
         demand_score: 8.7,
         growth_rate: 15.5,
         avg_career_progression_years: 3,
-        top_companies: ['Google', 'Meta', 'Amazon', 'Microsoft'],
-        emerging_technologies: ['AI Integration', 'Edge Computing', 'WebAssembly'],
-        skill_gap_analysis: 'High demand for cloud and AI skills',
+        top_companies: profile.top_companies,
+        emerging_technologies: profile.emerging_technologies,
+        skill_gap_analysis: `High demand for specialized skills in ${domain}`,
         salary_growth_potential: 25.5,
         job_openings_count: 45000,
-        geographic_hotspots: ['San Francisco', 'Seattle', 'New York', 'Austin'],
+        geographic_hotspots: ['San Francisco', 'Seattle', 'New York', 'Austin', 'Bangalore'],
     };
 }

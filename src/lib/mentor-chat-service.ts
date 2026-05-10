@@ -321,13 +321,11 @@ export async function bookMentorshipSession(
 }
 
 /**
- * Get AI-powered chat summary using Gemini
+ * Get AI-powered chat summary via server-side API
  */
 export async function getChatSummary(messages: ChatMessage[]): Promise<string> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-
-    if (!apiKey || messages.length === 0) {
+    if (messages.length === 0) {
       return 'No summary available';
     }
 
@@ -335,25 +333,18 @@ export async function getChatSummary(messages: ChatMessage[]): Promise<string> {
       .map((msg) => `${msg.senderName}: ${msg.message}`)
       .join('\n');
 
-    const prompt = `Summarize this mentorship chat conversation in 2-3 sentences. Focus on key topics discussed and action items:\n\n${chatText}`;
+    const response = await fetch('/api/ai/chat-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatText }),
+    });
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.5,
-            maxOutputTokens: 200,
-          },
-        }),
-      }
-    );
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
 
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'Summary unavailable';
+    return data.summary || 'Summary unavailable';
   } catch (error) {
     console.error('Error generating chat summary:', error);
     return 'Summary unavailable';

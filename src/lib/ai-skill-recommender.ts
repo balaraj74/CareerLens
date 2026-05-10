@@ -56,35 +56,19 @@ export async function generateSkillRecommendations(
   };
 
   try {
-    // Check if API key is available
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (apiKey) {
-      // Call Gemini API for skill recommendations
-      const recommendations = await callGeminiForSkills(userContext);
-      return recommendations;
-    } else {
-      console.log('Gemini API key not configured, using curated skills');
-      // Use fallback if no API key
-      return generateFallbackSkillRecommendations(userContext);
-    }
+    const recommendations = await callGeminiForSkills(userContext);
+    return recommendations;
   } catch (error) {
-    console.error('Error generating skill recommendations:', error);
-    // Fallback to rule-based recommendations
+    console.error('Error generating skill recommendations with AI, falling back:', error);
     return generateFallbackSkillRecommendations(userContext);
   }
 }
 
 /**
- * Call Gemini API to get personalized skill recommendations
+ * Call Vertex AI via Genkit to get personalized skill recommendations
  */
 async function callGeminiForSkills(userContext: any): Promise<SkillRecommendation[]> {
-  // Note: You'll need to set up Gemini API key in environment variables
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  
-  if (!apiKey) {
-    console.warn('Gemini API key not configured');
-    throw new Error('Gemini API key not found');
-  }
+  const { callGemini } = await import('@/ai/genkit');
 
   const prompt = `
 You are a career development AI assistant. Analyze the following user profile and recommend the next 5 most important skills they should learn.
@@ -120,59 +104,25 @@ Focus on skills that:
 Return ONLY the JSON array, no additional text.
 `;
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
+  const text = await callGemini(prompt, {
+    temperature: 0.7,
+    maxOutputTokens: 2048,
+  });
 
-    if (!response.ok) {
-      throw new Error('Gemini API request failed');
-    }
-
-    const data = await response.json();
-    const text = data.candidates[0]?.content?.parts[0]?.text || '';
-    
-    // Extract JSON from response (remove markdown code blocks if present)
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in response');
-    }
-
-    const skillsData = JSON.parse(jsonMatch[0]);
-    
-    // Transform to our format and add additional data
-    return skillsData.map((skill: any, index: number) => ({
-      id: `skill-${Date.now()}-${index}`,
-      ...skill,
-      skillMatch: calculateSkillMatch(skill, userContext),
-      learningResources: generateLearningResources(skill.name),
-      icon: getCategoryIcon(skill.category),
-    }));
-  } catch (error) {
-    console.error('Error calling Gemini API:', error);
-    throw error;
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) {
+    throw new Error('No JSON found in AI response');
   }
+
+  const skillsData = JSON.parse(jsonMatch[0]);
+
+  return skillsData.map((skill: any, index: number) => ({
+    id: `skill-${Date.now()}-${index}`,
+    ...skill,
+    skillMatch: calculateSkillMatch(skill, userContext),
+    learningResources: generateLearningResources(skill.name),
+    icon: getCategoryIcon(skill.category),
+  }));
 }
 
 /**

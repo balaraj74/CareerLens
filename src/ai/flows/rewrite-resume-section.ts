@@ -23,7 +23,7 @@ const RewriteResponseSchema = z.object({
 
 const rewritePrompt = ai.definePrompt({
   name: 'rewriteResumeSection',
-  model: 'googleai/gemini-2.0-flash-exp',
+  model: 'vertexai/gemini-2.5-flash',
   input: {
     schema: z.object({
       text: z.string(),
@@ -151,7 +151,7 @@ export async function rewriteBulletPoints(
 ): Promise<string[]> {
   const bulletPrompt = ai.definePrompt({
     name: 'rewriteBulletPoints',
-    model: 'googleai/gemini-2.0-flash-exp',
+    model: 'vertexai/gemini-2.5-flash',
     input: {
       schema: z.object({
         bullets: z.array(z.string()),
@@ -217,7 +217,7 @@ export async function generateProfessionalSummary(
 ): Promise<string> {
   const summaryPrompt = ai.definePrompt({
     name: 'generateProfessionalSummary',
-    model: 'googleai/gemini-2.0-flash-exp',
+    model: 'vertexai/gemini-2.5-flash',
     input: {
       schema: z.object({
         role: z.string().optional(),
@@ -281,7 +281,7 @@ export async function optimizeForATS(
 }> {
   const atsPrompt = ai.definePrompt({
     name: 'optimizeForATS',
-    model: 'googleai/gemini-2.0-flash-exp',
+    model: 'vertexai/gemini-2.5-flash',
     input: {
       schema: z.object({
         text: z.string(),
