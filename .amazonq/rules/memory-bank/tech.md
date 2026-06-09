@@ -1,405 +1,195 @@
 # CareerLens Technology Stack
 
 ## Programming Languages
-
-### Primary Languages
-- **TypeScript 5.0** - Main development language for type safety
-- **JavaScript (ES2020)** - Runtime target and legacy support
-- **CSS** - Styling via Tailwind CSS utility classes
-
-### Language Configuration
-- **Target**: ES2020 for modern JavaScript features
-- **Module System**: ESNext with bundler resolution
-- **JSX**: Preserve mode for Next.js transformation
-- **Strict Mode**: Enabled for type safety
+- **TypeScript 5**: Primary language for type-safe development (strict mode enabled)
+- **JavaScript (ES2020)**: Node.js runtime, Cloud Functions
+- **Python**: Skills directory utilities, data processing scripts
+- **CSS**: Tailwind CSS 3.4.1 utility classes, custom glassmorphism styles
 
 ## Core Framework
-
-### Next.js 15.3.3
-- **Type**: React meta-framework
-- **Router**: App Router (file-based routing)
-- **Rendering**: Server Components (RSC) + Client Components
-- **Features**:
-  - Server-side rendering (SSR)
-  - Static site generation (SSG)
-  - API routes
-  - Image optimization
-  - Font optimization
-  - Automatic code splitting
+### Next.js 15.5.7
+- **App Router**: Modern React Server Components architecture
+- **Features Used**:
+  - Server-Side Rendering (SSR) for SEO-optimized pages
+  - Static Site Generation (SSG) for performance
+  - API Routes as serverless functions (`/app/api/*`)
+  - Image Optimization (automatic WebP conversion, lazy loading)
+  - Font Optimization (Google Fonts)
+  - Code Splitting (dynamic imports, route-based splitting)
+  - Turbopack bundler for fast builds
+- **Configuration**: `next.config.ts`
+  - Standalone output for containerization
+  - 10MB body size limit for resume uploads
+  - Server external packages: genkit, firebase-admin, pdf-parse
+  - Path aliases: `@/*` → `./src/*`
 
 ### React 18.3.1
-- **UI Library**: Component-based architecture
-- **Features**:
-  - Concurrent rendering
-  - Automatic batching
-  - Suspense for data fetching
-  - Server Components support
+- **Features**: React Server Components, Suspense, Concurrent Rendering
+- **State Management**: React Hooks (useState, useEffect, useContext, useMemo)
+- **Custom Hooks**: `use-auth.tsx`, `use-toast.ts`, `use-background-jobs.ts`
 
-## AI & Machine Learning
-
-### Google Gemini AI
-- **Model**: Gemini 2.5 Flash Lite
-- **SDK**: @google/generative-ai ^0.16.0
-- **Use Cases**:
-  - Career recommendations
-  - Skill gap analysis
-  - Project generation
-  - Interview preparation
-  - Document analysis
-  - Content summarization
-
-### Genkit 1.21.0
-- **Purpose**: AI workflow orchestration
-- **Packages**:
-  - `genkit` - Core framework
-  - `@genkit-ai/google-genai` - Gemini integration
-  - `@genkit-ai/next` - Next.js integration
-  - `genkit-cli` - Development tools
-- **Features**:
-  - Flow definitions
-  - Schema validation (Zod)
-  - Prompt management
-  - Streaming responses
-
-## Backend Services
+## Backend Infrastructure
 
 ### Firebase 11.9.1
-Complete backend-as-a-service platform:
+- **Firebase Auth**: Google OAuth 2.0, email/password authentication
+- **Cloud Firestore**: NoSQL database (8 collections, real-time listeners)
+- **Cloud Storage**: File uploads (resumes, profile photos)
+- **Cloud Functions**: Background jobs (Node.js 20 runtime)
+- **App Hosting**: Next.js deployment (2 vCPUs, 2GB RAM, 0-10 auto-scaling)
+- **Cloud Messaging (FCM)**: Push notifications for calendar reminders
 
-#### Firebase Authentication
-- Google OAuth 2.0
-- Email/Password authentication
-- Session management
-- Protected routes
+### Google Cloud Platform
+- **Vertex AI**: AI/ML platform for model management
+- **Gemini API**: 
+  - Gemini 1.5 Pro (complex reasoning, long context)
+  - Gemini 2.5 Flash (fast responses, chat)
+- **Genkit 1.21.0**: AI workflow orchestration framework
+- **Google APIs**:
+  - Maps JavaScript API
+  - Places API (library search)
+  - Custom Search API (course/mentor discovery)
+  - YouTube Data API v3 (educational content)
+  - Calendar API (event sync)
+- **BigQuery**: Analytics and data warehousing (planned)
+- **Cloud Run**: Serverless containers (Dockerfile ready)
 
-#### Cloud Firestore
-- NoSQL document database
-- Real-time synchronization
-- Offline support
-- Collections:
-  - users, profiles, resumes, interviews
-  - activities, eventReminders, fcmTokens
-  - cache, colleges
+## UI/UX Libraries
 
-#### Firebase Cloud Functions
-- **Runtime**: Node.js 18+
-- **Packages**:
-  - `firebase-functions` ^5.1.1
-  - `firebase-admin` ^12.3.0
-  - `firebase-functions-test` ^3.3.0
-- **Functions**: 7 scheduled/triggered functions
+### Component Libraries
+- **shadcn/ui**: 40+ accessible components (Accordion, Alert, Badge, Button, Card, Dialog, Dropdown, Popover, Select, Tabs, Toast, Tooltip, etc.)
+- **Radix UI**: Unstyled primitives (17+ packages including react-accordion, react-dialog, react-dropdown-menu, react-popover, react-tabs)
 
-#### Firebase Hosting
-- Static asset hosting
-- CDN distribution
-- Custom domain support
-- SSL certificates
+### Styling & Animation
+- **Tailwind CSS 3.4.1**: Utility-first CSS framework
+  - Custom neon color palette: Cyan (#00E5FF), Purple (#A57CFF), Emerald (#00FFC6)
+  - Glassmorphism utilities (backdrop-blur, background opacity)
+  - Dark mode optimized
+- **Framer Motion 11.18.2**: Advanced animations (page transitions, mesh wave background)
+- **class-variance-authority 0.7.1**: Component variant management
+- **clsx 2.1.1**: Conditional CSS classes
+- **tailwind-merge 3.0.1**: Tailwind class merging
+- **tailwindcss-animate 1.0.7**: Animation utilities
 
-#### Firebase App Hosting
-- Next.js deployment on Cloud Run
-- Auto-scaling (0-3 instances)
-- 1 CPU, 1024 MiB memory
-- Standalone output mode
+### Data Visualization
+- **React Flow 11.11.4**: Interactive node-based career graph editor
+- **Recharts 2.15.1**: Chart library (planned)
+- **dagre 0.8.5**: Graph layout algorithm
 
-#### Firebase Cloud Messaging (FCM)
-- Push notifications
-- Event reminders
-- Cross-platform support
+## Form & Validation
+- **React Hook Form 7.54.2**: Performant form handling
+- **Zod 3.24.2**: TypeScript-first schema validation
+- **@hookform/resolvers 4.1.3**: Form validation integration
 
-## Google Cloud Services
+## External API Integrations
+- **@react-google-maps/api 2.19.3**: Google Maps React wrapper
+- **googleapis 140.0.1**: Google APIs Node.js client (Calendar, YouTube, Search)
+- **Reddit JSON API**: Server-side proxy for college reviews
+- **Internet Archive API**: 20M+ eBooks search and retrieval
+- **NewsAPI.org**: Industry news articles (100 requests/day free tier)
 
-### APIs Used
-- **Vertex AI / Gemini API**: Generative AI
-- **Google Calendar API**: Event management (googleapis ^140.0.1)
-- **Google Maps API**: Library finder (@react-google-maps/api ^2.19.3)
-- **Google Custom Search API**: Content discovery
-- **YouTube Data API**: Video recommendations
+## AI & Machine Learning
+- **@genkit-ai/google-genai 1.21.0**: Google Generative AI integration
+- **@genkit-ai/next 1.21.0**: Next.js integration for Genkit
+- **@google-cloud/vertexai 1.10.0**: Vertex AI SDK
+- **@google/generative-ai 0.24.1**: Gemini API client
 
-### Infrastructure
-- **Cloud Run**: App hosting runtime
-- **Cloud Functions**: Serverless functions
-- **Cloud Storage**: File storage (planned)
-- **BigQuery**: Analytics (planned)
-- **Looker Studio**: Dashboards (planned)
-
-## UI Framework & Styling
-
-### Tailwind CSS 3.4.1
-- **Utility-first CSS framework**
-- **Plugins**:
-  - `tailwindcss-animate` ^1.0.7 - Animation utilities
-- **Configuration**: Custom theme with purple/pink gradients
-- **PostCSS**: ^8 for processing
-
-### Component Library - shadcn/ui
-Radix UI primitives with Tailwind styling:
-- `@radix-ui/react-accordion` ^1.2.3
-- `@radix-ui/react-alert-dialog` ^1.1.6
-- `@radix-ui/react-avatar` ^1.1.3
-- `@radix-ui/react-checkbox` ^1.1.4
-- `@radix-ui/react-collapsible` ^1.1.11
-- `@radix-ui/react-dialog` ^1.1.6
-- `@radix-ui/react-dropdown-menu` ^2.1.6
-- `@radix-ui/react-label` ^2.1.2
-- `@radix-ui/react-menubar` ^1.1.6
-- `@radix-ui/react-popover` ^1.1.6
-- `@radix-ui/react-progress` ^1.1.2
-- `@radix-ui/react-radio-group` ^1.2.3
-- `@radix-ui/react-scroll-area` ^1.2.3
-- `@radix-ui/react-select` ^2.1.6
-- `@radix-ui/react-separator` ^1.1.2
-- `@radix-ui/react-slider` ^1.2.3
-- `@radix-ui/react-slot` ^1.2.3
-- `@radix-ui/react-switch` ^1.1.3
-- `@radix-ui/react-tabs` ^1.1.3
-- `@radix-ui/react-toast` ^1.2.6
-- `@radix-ui/react-tooltip` ^1.1.8
-
-### Animation & Motion
-- **Framer Motion** ^11.18.2
-  - Declarative animations
-  - Gesture support
-  - Layout animations
-  - Variants system
-
-### Icons
-- **Lucide React** ^0.475.0
-  - 1000+ consistent icons
-  - Tree-shakeable
-  - TypeScript support
-
-## Form Management
-
-### React Hook Form 7.54.2
-- **Features**:
-  - Performant form validation
-  - Minimal re-renders
-  - Easy integration with UI libraries
-- **Validation**: @hookform/resolvers ^4.1.3
-- **Schema**: Zod ^3.24.2 for type-safe validation
-
-## Data Visualization
-
-### Recharts 2.15.1
-- **Purpose**: Charts and graphs
-- **Components**:
-  - Line charts (career progress)
-  - Bar charts (skill levels)
-  - Radar charts (skill assessment)
-  - Heatmaps (activity calendar)
-  - Network graphs (skill relationships)
+## Utilities & Libraries
+- **date-fns 3.6.0**: Date manipulation (calendar, scheduling)
+- **lucide-react 0.475.0**: Icon library (1000+ icons)
+- **embla-carousel-react 8.6.0**: Carousel component
+- **react-use-measure 2.1.7**: Element dimension measurement
+- **file-saver 2.0.5**: Client-side file saving
 
 ## Document Processing
+- **pdf-parse 2.4.5**: PDF resume parsing
+- **mammoth 1.11.0**: DOCX to HTML conversion
+- **jspdf 3.0.4**: PDF generation
+- **jspdf-autotable 5.0.2**: Table generation for PDFs
+- **html2canvas 1.4.1**: HTML to canvas rendering
 
-### PDF Handling
-- **jsPDF** ^3.0.3 - PDF generation
-- **jspdf-autotable** ^5.0.2 - Table generation
-- **pdf-parse** ^2.4.5 - PDF parsing
-- **file-saver** ^2.0.5 - File downloads
+## Job Queue & Background Processing
+- **bullmq 5.64.1**: Redis-based job queue (background jobs, data refresh)
+- **ioredis 5.8.2**: Redis client for BullMQ
 
-### Document Parsing
-- **mammoth** ^1.11.0 - DOCX to HTML conversion
-
-## Utility Libraries
-
-### Date & Time
-- **date-fns** ^3.6.0
-  - Date manipulation
-  - Formatting
-  - Timezone support
-- **react-day-picker** ^8.10.1 - Calendar picker
-
-### Styling Utilities
-- **clsx** ^2.1.1 - Conditional classNames
-- **tailwind-merge** ^3.0.1 - Merge Tailwind classes
-- **class-variance-authority** ^0.7.1 - Component variants
-
-### UI Utilities
-- **react-use-measure** ^2.1.7 - Element measurements
-- **embla-carousel-react** ^8.6.0 - Carousel component
-
-### Voice Recognition
-- **react-speech-recognition** ^3.10.0
-  - Speech-to-text
-  - Interview voice input
-- **regenerator-runtime** ^0.14.1 - Async/await polyfill
-
-## External APIs
-
-### Reddit API
-- **Endpoint**: reddit.com/r/{subreddit}/search.json
-- **Method**: Server-side proxy to bypass CORS
-- **Features**: College reviews, sentiment analysis
-
-### Internet Archive API
-- **Endpoint**: archive.org/advancedsearch.php
-- **Dataset**: 20M+ books
-- **Features**: Advanced search, multiple formats
-
-### Google APIs
-- **Custom Search**: Content discovery
-- **Calendar**: Event management
-- **Maps**: Location services
-- **YouTube**: Video recommendations
+## Voice & Speech
+- **react-speech-recognition 3.10.0**: Speech-to-text for interview prep (planned)
+- **regenerator-runtime 0.14.1**: Async/await polyfill
 
 ## Development Tools
+- **TypeScript 5**: Type checking with strict mode
+- **ESLint 9.39.1**: Code linting
+  - @next/eslint-plugin-next 16.0.2: Next.js-specific rules
+- **genkit-cli 1.21.0**: Genkit development CLI
+- **firebase-functions-test 3.3.0**: Cloud Functions testing
+- **PostCSS 8**: CSS transformations
+- **patch-package 8.0.0**: NPM package patching
 
-### Build Tools
-- **Next.js Compiler**: Built-in SWC compiler
-- **Webpack**: Module bundler (configured via Next.js)
-- **PostCSS**: CSS processing
-- **TypeScript Compiler**: Type checking
+## Build & Deployment
+- **Build System**: Turbopack (Next.js 15 default bundler)
+- **Package Manager**: npm (package-lock.json present)
+- **Deployment**: Firebase App Hosting
+  - Automatic GitHub integration (main branch)
+  - CDN distribution (150+ global locations)
+  - HTTPS by default (automatic SSL)
+- **Docker**: Dockerfiles for socket server and worker (docker-compose.yml)
 
-### Development Scripts
-```json
-{
-  "dev": "next dev",                    // Development server
-  "genkit:dev": "genkit start -- tsx src/ai/dev.ts",  // AI dev server
-  "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",  // AI watch mode
-  "build": "next build",                // Production build
-  "start": "next start",                // Production server
-  "lint": "next lint",                  // ESLint
-  "typecheck": "tsc --noEmit"          // Type checking
-}
+## Development Commands
+
+### Core Development
+```bash
+npm run dev              # Start Next.js dev server (localhost:3000)
+npm run build            # Production build (standalone output)
+npm run start            # Start production server
+npm run lint             # Run ESLint
+npm run typecheck        # TypeScript type checking (no emit)
 ```
 
-### Code Quality
-- **ESLint**: Linting (next lint)
-- **TypeScript**: Static type checking
-- **Prettier**: Code formatting (optional)
-
-### Package Management
-- **npm**: Primary package manager
-- **patch-package** ^8.0.0 - Patch node_modules
-
-## Testing Tools
-
-### Firebase Testing
-- **firebase-functions-test** ^3.3.0
-  - Unit test Cloud Functions
-  - Mock Firebase services
-
-## Configuration Files
-
-### TypeScript Configuration
-```json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "strict": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "jsx": "preserve",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  }
-}
+### Genkit AI Development
+```bash
+npm run genkit:dev       # Start Genkit dev server with tsx
+npm run genkit:watch     # Start Genkit with auto-reload
 ```
 
-### Next.js Configuration
-- **Output**: Standalone (for Docker/Cloud Run)
-- **TypeScript**: Build errors ignored (rapid development)
-- **ESLint**: Build warnings ignored
-- **Images**: Remote patterns for external images
-- **Webpack**: Custom alias resolution
+### Deployment & Testing
+```bash
+./deploy.sh              # Deploy to Firebase App Hosting
+./test-apis.sh           # Test API connectivity
+./setup-secrets.sh       # Configure Firebase secrets
+```
 
-### Firebase Configuration
-- **Project ID**: careerlens-1
-- **Hosting**: Static + App Hosting
-- **Functions**: us-central1 region
-- **Firestore**: Multi-region
+### Firebase Functions
+```bash
+cd functions
+npm install              # Install Cloud Functions dependencies
+npm run build            # Compile TypeScript to JavaScript
+```
 
 ## Environment Variables
+Required in `.env.local`:
+- Firebase config (API keys, project ID, etc.)
+- Google Maps API key
+- Google Custom Search API key + Engine ID
+- Google Calendar API credentials
+- YouTube Data API key
+- NewsAPI key
+- Gemini API key
 
-### Required Variables
-```bash
-# Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-NEXT_PUBLIC_FIREBASE_PROJECT_ID
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-NEXT_PUBLIC_FIREBASE_APP_ID
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-
-# Google AI
-GOOGLE_GENAI_API_KEY
-GEMINI_API_KEY
-
-# Google APIs
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-NEXT_PUBLIC_GOOGLE_CLIENT_ID
-NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY
-NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID
-NEXT_PUBLIC_YOUTUBE_API_KEY
-
-# Environment
-NODE_ENV
-```
-
-## Deployment Configuration
-
-### Firebase App Hosting (apphosting.yaml)
-```yaml
-runConfig:
-  minInstances: 0
-  maxInstances: 3
-  cpu: 1
-  memoryMiB: 1024
-```
-
-### Build Output
-- **Directory**: .next/
-- **Mode**: Standalone
-- **Size**: ~300KB (optimized)
-
-## Performance Optimizations
-
-### Next.js Optimizations
-- Automatic code splitting
-- Image optimization
-- Font optimization
-- Tree shaking
-- Minification
-
-### Bundle Size
-- First Load JS: ~300KB
-- Lighthouse Score: 95+
-- First Contentful Paint: < 1.5s
-
-### Caching Strategy
-- Static assets: CDN caching
-- API responses: 5-minute cache
-- LocalStorage: Bookmarks, search history
-- Firestore: Real-time listeners
+## Performance Targets
+- Lighthouse Score: 95+ (achieved)
+- First Contentful Paint (FCP): < 1.5s
+- Largest Contentful Paint (LCP): < 2.5s
+- Time to Interactive (TTI): < 3.5s
+- API Response Time: < 500ms (cached), < 2s (uncached)
 
 ## Browser Support
 - Modern browsers (Chrome, Firefox, Safari, Edge)
-- ES2020+ features required
-- No IE11 support
+- ES2020+ JavaScript features
+- WebP image format
+- CSS Grid and Flexbox
 
-## Node.js Requirements
-- **Version**: 18+ (LTS)
-- **Package Manager**: npm or yarn
-- **Runtime**: Node.js for Cloud Functions
-
-## Security
-
-### Authentication
-- Firebase Auth with secure tokens
-- httpOnly cookies for sessions
-- OAuth 2.0 for Google sign-in
-
-### API Security
-- Firestore security rules
-- API route authentication
-- Rate limiting on write operations
-- CORS configuration for API routes
-
-### Data Protection
-- User data isolation
-- Encrypted connections (HTTPS)
-- Environment variable protection
-- No credentials in code
+## Code Quality Standards
+- TypeScript strict mode enabled
+- ESLint with Next.js recommended rules
+- No build errors tolerated in production
+- Type safety enforced across codebase
+- Component-driven architecture with React

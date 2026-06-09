@@ -1,106 +1,71 @@
 # CareerLens Product Overview
 
 ## Purpose
-CareerLens is an AI-powered career development platform that democratizes access to personalized career coaching, learning paths, and intelligent job search tools. Built for the Google GenAI Hackathon 2025, it bridges the gap between education and employment using Google Cloud's Generative AI.
+CareerLens is an AI-powered career development platform that empowers students and professionals with intelligent career insights, personalized learning paths, and real-time industry data. The platform bridges the gap between education and employment by leveraging Google Cloud's Generative AI and comprehensive data aggregation.
 
 ## Core Value Proposition
-- **Personalized AI Career Guidance**: Gemini 2.5 Flash-powered recommendations tailored to individual skills, goals, and interests
-- **Real-Time Industry Insights**: Live data aggregation from Reddit, Google Search, and 5+ educational platforms
-- **Comprehensive Learning Ecosystem**: 20M+ free books, 12,000+ courses, 42 college recommendations
-- **End-to-End Career Tools**: From skill gap analysis to resume building to interview preparation
+Students struggle to find relevant courses, mentors, and career guidance tailored to their unique goals. CareerLens solves this by providing:
+- AI-driven career path recommendations
+- Personalized skill gap analysis with actionable learning paths
+- Live industry insights and trends
+- 20M+ educational resources (eBooks, courses, certifications)
+- Real-time college reviews and recommendations
+- Intelligent resume optimization and interview preparation
 
 ## Key Features
 
-### AI-Powered Career Services
-- **AI Skills Recommender**: Personalized skill development paths with relevance scoring
-- **AI Project Generator**: Context-aware project recommendations matching skill levels
-- **AI Interview Preparation**: Role-specific mock interviews with real-time feedback
-- **AI Learning Helper**: PDF document analysis with 4 modes (Quick Points, Deep Dive, Mind Map, Exam Mode)
-- **AI Career Calendar**: Google Calendar integration with Gemini-powered event suggestions
+### Career Management
+- **Career Navigator**: AI-powered career path recommendations with Gemini 2.5 Flash integration
+- **Career Graph Visualization**: Interactive node-based career mapping with React Flow, GitHub-style 365-day activity heatmap
+- **Career Updates Feed**: Latest industry news, personalized content, bookmarking capabilities
+- **AI Career Insights**: Comprehensive career analysis with Gemini 1.5 Pro (salary insights, job market demand, long-term planning)
+
+### AI-Powered Tools
+- **AI Skills Recommender** (620 lines): Personalized skill development paths with real-time demand analysis
+- **AI Resume Optimizer**: ATS-friendly resume generation, scoring, job-specific tailoring (PDF/DOCX support)
+- **AI Interview Preparation**: Mock interviews with conversational AI, role-specific questions, performance feedback
+- **AI Project Generator** (580 lines): Context-aware project recommendations with implementation guides
+- **AI Chat Assistant (Copilot)**: Real-time career guidance, technical problem-solving, code review
+
+### Education & Learning
+- **College Recommendations**: 42-college database (IITs, NITs, IIITs, BITS) with advanced filtering, Reddit reviews integration
+- **eBooks Library**: 20M+ books from Internet Archive with bookmark management, reading progress tracking
+- **Course Discovery**: NPTEL integration (12,000+ courses), Coursera, AWS Educate, Google Cloud Skills Boost
+- **Certification Hub** (450 lines): 25+ curated certifications with progress tracking
+- **Learning Roadmaps**: Technology-specific paths with skill progression tracking
 
 ### Resource Discovery
-- **Free Course Discovery**: Real-time web scraping from NPTEL (12,000+ courses), Coursera, AWS Educate, Google Cloud Skills Boost, YouTube
-- **eBooks Library**: 20M+ books from Internet Archive with advanced filtering (15 genres, 10 languages, 6 formats)
-- **College Recommendations**: 42 colleges database covering JEE, KCET, COMEDK, NEET, CET, GATE with AI-powered ranking
-- **Mentor Discovery**: Industry mentor matching with Google Search integration
-- **Library Finder**: Nearby study spaces via Google Maps
+- **Library Finder**: Google Maps API integration with real-time location tracking, Haversine distance calculation
+- **News Feed**: NewsAPI integration with category filtering, article caching (5-min TTL)
+- **Mentor Discovery**: Google Custom Search integration for LinkedIn profile search
 
-### Career Development Tools
-- **Interactive Resume Builder**: ATS-friendly templates with AI content suggestions and JSON-based generation
-- **Career Graph & Analytics**: GitHub-style 365-day activity heatmap, skill network visualization, AI readiness scores
-- **Personalized Learning Roadmap**: Step-by-step paths with time estimates and difficulty levels
-- **Skill Gap Analysis**: Identify missing skills with prioritized learning recommendations
-- **Progress Tracking**: Visual journey tracking with achievement badges and milestones
+### Productivity Tools
+- **AI Calendar**: Google Calendar API sync with Gemini-powered event suggestions, Firebase Cloud Messaging reminders
+- **English Language Helper**: AI-powered grammar correction, pronunciation guidance, IELTS/TOEFL prep
 
-### Community & Reviews
-- **Reddit Reviews Integration**: Live student reviews with sentiment analysis and topic extraction
-- **AI Summarization**: Auto-summarize reviews and articles with credibility scoring
-- **Bookmark System**: Save favorite books and resources with localStorage persistence
-- **Search History**: Track last 20 searches with AI-powered recommendations
+### Profile & Gamification
+- **Intelligent Profile Management**: Multi-tab editor (6 sections), 3D visual dashboard, achievement tracking, real-time Firebase sync
+- **Skill Gap Analyzer**: Current skills vs. target role comparison with timeline estimation
 
-### Productivity Features
-- **Task Management**: Google Calendar sync with smart scheduling and conflict detection
-- **Event Reminders**: Firebase Cloud Messaging push notifications
-- **Learning Streaks**: Track productivity with streak counters and scores
-- **Today's Tasks Widget**: Interactive task completion tracking
+### Community Features
+- **College Reviews**: Real-time Reddit discussions with server-side CORS bypass proxy, sentiment analysis, topic extraction
 
 ## Target Users
+- **Students**: Career exploration, college selection, skill development
+- **Professionals**: Career transitions, upskilling, industry insights
+- **Job Seekers**: Resume optimization, interview preparation, job market analysis
 
-### Primary Audience
-- **Students**: College students seeking career guidance, course recommendations, and interview preparation
-- **Recent Graduates**: Job seekers needing resume optimization, skill development, and mentor connections
-- **Career Switchers**: Professionals exploring new career paths with personalized roadmaps
+## Use Cases
+1. **Career Planning**: Students discover career paths aligned with their interests and receive personalized roadmaps
+2. **College Selection**: Prospective students filter 42 colleges by location, fees, placements with authentic Reddit reviews
+3. **Skill Development**: Professionals identify skill gaps and access 20M+ learning resources
+4. **Interview Preparation**: Job seekers practice with AI mock interviews and optimize resumes for ATS
+5. **Learning Resource Discovery**: Users find nearby libraries, online courses, and certifications
+6. **Industry Monitoring**: Professionals stay updated with AI-curated news and career trends
 
-### Use Cases
-1. **Career Exploration**: Discover career paths aligned with skills and interests
-2. **Skill Development**: Identify gaps and access curated learning resources
-3. **College Selection**: Research colleges with authentic student reviews and AI-powered matching
-4. **Interview Preparation**: Practice with AI interviewer and role-specific questions
-5. **Resource Discovery**: Find free courses, books, and educational content
-6. **Mentor Connection**: Discover industry professionals for guidance
-7. **Resume Optimization**: Build ATS-friendly resumes with AI suggestions
-8. **Learning Management**: Track progress with calendar integration and analytics
-
-## Unique Selling Points
-
-### Fully Google Cloud Integrated
-- Leverages Gemini 2.5 Flash for lightning-fast AI responses
-- Built on Firebase (Authentication, Firestore, Cloud Functions, App Hosting)
-- Integrated with Google Calendar, Google Maps, YouTube API
-- Ready for BigQuery analytics and Looker Studio dashboards
-
-### Real-Time AI Insights
-- Live data aggregation from Reddit, Google Search, 5+ course platforms
-- AI-powered summarization in seconds
-- Instant course recommendations based on profile
-- Background Cloud Functions refresh data every 24 hours
-- No stale data - always latest industry insights
-
-### Personalization at Scale
-- Every recommendation uniquely tailored to user profile
-- Context-aware AI understands career goals and adapts
-- Multi-dimensional matching: skills, interests, experience, location
-- Continuous learning from user interactions and feedback
-
-## Technology Highlights
-- **Next.js 15.3.3** with React 18 and TypeScript 5
-- **Gemini 2.5 Flash Lite** for fast AI responses
-- **Firebase 11.9.1** (Auth, Firestore, Cloud Functions, Hosting)
-- **Genkit 1.21.0** for AI workflow orchestration
-- **Modern UI**: Tailwind CSS, Framer Motion, shadcn/ui components
-- **Glassmorphic Design**: Purple/pink gradient theme with smooth animations
-
-## Performance
-- Lighthouse Score: 95+
-- First Contentful Paint: < 1.5s
-- Bundle Size: < 300KB
-- Global CDN Distribution via Firebase App Hosting
-
-## Future Roadmap
-- AI Chat Mentor with conversational guidance
-- AI Interview Simulator with speech-to-text and video analysis
-- AI-Driven Course Planner with Google Calendar sync
-- BigQuery Analytics Dashboard for platform-wide trends
-- Looker Studio Dashboards for visual analytics
-- Mobile App (React Native iOS/Android)
-- Blockchain Certifications with NFT badges
+## Technical Highlights
+- **Premium Glassmorphism UI**: Neon color scheme (Cyan #00E5FF, Purple #A57CFF, Emerald #00FFC6)
+- **Real-time Features**: Firestore listeners, live data updates, push notifications (FCM)
+- **Performance Optimization**: SSR/SSG, edge functions, CDN distribution, 5-min caching
+- **Security**: Firebase Auth (Google OAuth 2.0), Firestore security rules, HTTPS-only, API rate limiting
+- **Deployed**: Firebase App Hosting at careerlens-1.web.app

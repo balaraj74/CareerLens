@@ -1,317 +1,184 @@
 # CareerLens Project Structure
 
-## Architecture Overview
-
-```
-Client Layer (Next.js 15 App Router)
-      ↓
-Server Actions & API Routes (Type-safe)
-      ↓
-Genkit AI Flows (Orchestration)
-      ↓
-Google Gemini API (AI Processing)
-      ↓
-Firebase Services (Backend)
-      ↓
-External APIs (Reddit, Internet Archive, etc.)
-```
+## Repository Overview
+CareerLens is a Next.js 15 monorepo with Firebase backend, organized into source code, documentation, Firebase functions, and reusable skills/patterns.
 
 ## Directory Structure
 
-### Root Level
+### `/src` - Main Application Source
 ```
-CareerLens/
-├── src/                    # Application source code
-├── functions/              # Firebase Cloud Functions
-├── docs/                   # Comprehensive documentation
-├── scripts/                # Deployment and verification scripts
-├── .amazonq/               # Amazon Q rules and memory bank
-├── .firebase/              # Firebase configuration cache
-├── .github/                # GitHub Actions workflows
-├── .next/                  # Next.js build output
-├── apphosting.yaml         # Firebase App Hosting config
-├── firebase.json           # Firebase project config
-├── firestore.rules         # Firestore security rules
-├── next.config.ts          # Next.js configuration
-├── tsconfig.json           # TypeScript configuration
-└── package.json            # Dependencies and scripts
+src/
+├── ai/                    # Genkit AI workflows and schemas
+│   ├── flows/            # AI flow definitions (rewrite-resume-section, etc.)
+│   ├── schemas/          # Zod validation schemas for AI inputs/outputs
+│   ├── dev.ts            # Genkit development server
+│   └── genkit.ts         # Genkit configuration (Gemini 1.5 Pro, 2.5 Flash)
+│
+├── app/                   # Next.js 15 App Router pages
+│   ├── api/              # API routes (college-recommendations, reddit-search, news, ebooks, etc.)
+│   ├── ai-career-hub/    # AI career insights hub
+│   ├── ai-interviewer/   # AI mock interview feature
+│   ├── calendar/         # AI-powered calendar with Google Calendar sync
+│   ├── career-graph/     # Interactive career visualization (React Flow)
+│   ├── career-navigator/ # AI career path recommendations
+│   ├── career-updates/   # Industry news feed
+│   ├── colleges/         # College recommendations (42 colleges)
+│   ├── community/        # Reddit reviews integration
+│   ├── ebooks/           # Internet Archive eBooks library (20M+)
+│   ├── english-helper/   # AI language learning assistant
+│   ├── interview-prep/   # Interview preparation tools
+│   ├── learning-helper/  # Learning resource discovery
+│   ├── library-finder/   # Google Maps library search
+│   ├── mentors/          # Mentor discovery feature
+│   ├── news/             # NewsAPI integration
+│   ├── profile/          # User profile management (gamified)
+│   ├── recommendations/  # Course recommendations
+│   ├── resume/           # AI resume builder and optimizer
+│   ├── roadmap/          # Learning roadmaps
+│   ├── skill-gap/        # Skill gap analyzer
+│   ├── globals.css       # Global styles (Tailwind, glassmorphism)
+│   ├── layout.tsx        # Root layout with Firebase provider
+│   └── page.tsx          # Dashboard homepage
+│
+├── components/            # React components
+│   ├── ui/               # shadcn/ui components (40+ components: button, card, dialog, etc.)
+│   ├── ai-interviewer/   # AI interview components
+│   ├── auth/             # Authentication components
+│   ├── calendar/         # Calendar widgets
+│   ├── career-graph/     # Career graph visualization components
+│   ├── community/        # Community/Reddit components
+│   ├── dashboard/        # Dashboard widgets
+│   ├── interview-prep/   # Interview prep components
+│   ├── learning-helper/  # Learning helper components
+│   ├── library-finder/   # Library finder map components
+│   ├── profile/          # Profile editor components
+│   ├── resume/           # Resume builder components
+│   └── [shared components] # nav.tsx, splash-screen.tsx, etc.
+│
+├── hooks/                 # Custom React hooks
+│   ├── use-auth.tsx      # Firebase authentication hook
+│   ├── use-background-jobs.ts # Background job management
+│   └── use-toast.ts      # Toast notification hook
+│
+├── lib/                   # Core libraries and services
+│   ├── services/         # Service layer (reddit-api-service, resource-hub-service, etc.)
+│   ├── queue/            # BullMQ job queue implementation
+│   ├── bigquery/         # BigQuery analytics integration
+│   ├── types/            # TypeScript type definitions
+│   ├── firebase.ts       # Firebase client SDK initialization
+│   ├── firebase-admin.ts # Firebase Admin SDK (server-side)
+│   ├── firebase-provider.tsx # Firebase context provider
+│   ├── actions.ts        # Server actions
+│   ├── ai-*.ts           # AI service files (calendar, project generator, skill recommender, etc.)
+│   ├── calendar-service.ts   # Calendar business logic
+│   ├── google-calendar-service.ts # Google Calendar API integration
+│   ├── google-search-service.ts   # Google Custom Search API
+│   ├── resume-parser.ts  # Resume parsing logic
+│   ├── web-scraper-service.ts     # Course scraping service
+│   └── utils.ts          # Utility functions
+│
+├── scripts/               # Utility scripts
+│   ├── list-models.ts    # List available Gemini models
+│   └── test-gemini.ts    # Test Gemini API connectivity
+│
+└── types/                 # Global TypeScript types
+    └── modules.d.ts      # Module declarations
 ```
 
-### Source Directory (`src/`)
-
-#### AI Layer (`src/ai/`)
-- **flows/**: Genkit AI workflow definitions
-- **schemas/**: Zod schemas for AI input/output validation
-- **genkit.ts**: Genkit initialization and configuration
-- **dev.ts**: Development server for AI flows
-
-#### Application Layer (`src/app/`)
-Next.js 15 App Router structure with route-based organization:
-
-**Core Pages:**
-- `page.tsx` - Landing page
-- `layout.tsx` - Root layout with providers
-- `globals.css` - Global styles and Tailwind imports
-
-**Feature Routes:**
-- `ai-career-hub/` - AI skills recommender, project generator, certifications
-- `ai-interviewer/` - Mock interview with conversational AI
-- `calendar/` - AI calendar with Google Calendar integration
-- `career-graph/` - Analytics dashboard with heatmap and skill graph
-- `colleges/` - College recommendations with Reddit reviews
-- `community/` - Community reviews and discussions
-- `ebooks/` - Internet Archive book search (20M+ books)
-- `interview-prep/` - Interview preparation resources
-- `learning-helper/` - PDF analysis with AI (4 modes)
-- `library-finder/` - Google Maps library locator
-- `mentors/` - Mentor discovery and matching
-- `profile/` - User profile management (6 tabs)
-- `recommendations/` - Career path recommendations
-- `resources/` - Course discovery hub
-- `resume/` - Resume builder and parser
-- `roadmap/` - Personalized learning roadmap
-- `skill-gap/` - Skill gap analysis
-- `login/` & `signup/` - Authentication pages
-
-**API Routes (`src/app/api/`):**
-- `reddit-search/` - Server-side Reddit API proxy (CORS bypass)
-- `college-recommendations/` - College search endpoint (42 colleges)
-- `parse-resume/` - Resume parsing service
-
-#### Components Layer (`src/components/`)
-
-**Feature Components:**
-- `ai-interviewer/` - Interview UI components
-- `auth/` - Login/signup forms
-- `calendar/` - Calendar widgets and event forms
-- `career-graph/` - Heatmap, skill graph, analytics charts
-- `community/` - College cards, review displays
-- `dashboard/` - Dynamic dashboard with gamification
-- `interview-prep/` - Interview question cards
-- `learning-helper/` - PDF viewer and analysis modes
-- `library-finder/` - Map integration
-- `profile/` - Profile editor tabs
-- `recommendations/` - Recommendation cards
-- `resume/` - Resume templates and editor
-- `roadmap/` - Learning path visualization
-- `skill-gap/` - Gap analysis charts
-
-**UI Components (`src/components/ui/`):**
-Reusable shadcn/ui components:
-- Buttons, Cards, Dialogs, Dropdowns
-- Forms (Input, Select, Checkbox, Radio)
-- Navigation (Tabs, Accordion, Collapsible)
-- Feedback (Toast, Alert, Progress)
-- Data Display (Avatar, Badge, Separator)
-- Layout (ScrollArea, Sheet, Popover)
-
-**Layout Components:**
-- `nav.tsx` - Desktop navigation
-- `nav-mobile.tsx` - Mobile navigation
-- `modern-bottom-nav.tsx` - Bottom navigation bar
-- `app-layout.tsx` - Main layout wrapper
-- `splash-screen.tsx` - Loading screen
-
-#### Library Layer (`src/lib/`)
-
-**Services (`src/lib/services/`):**
-Business logic organized by domain:
-
-- `reddit-service.ts` (358 lines) - Reddit API client with mock data
-- `internet-archive-service.ts` (180 lines) - Book search API
-- `bookmark-service.ts` (100 lines) - LocalStorage bookmark management
-- `google-search-service.ts` (516 lines) - Google Custom Search integration
-- `web-scraper-service.ts` (612 lines) - Multi-platform course scraping
-- `ai-summarizer-service.ts` (501 lines) - AI-powered summarization
-- `community-service.ts` (410 lines) - Community features
-- `resource-hub-service.ts` (382 lines) - Resource aggregation
-- `mentor-chat-service.ts` (475 lines) - Mentor matching
-- `fetch-career-data.ts` - Career data aggregation
-
-**Core Services:**
-- `firebase.ts` - Firebase initialization
-- `firebase-provider.tsx` - Firebase context provider
-- `enhanced-profile-service.ts` (566 lines) - Profile management with XP/achievements
-- `profile-service.ts` - Basic profile operations
-- `calendar-service.ts` - Calendar logic
-- `google-calendar-service.ts` (485 lines) - Google Calendar API integration
-- `ai-calendar-suggestions.ts` (398 lines) - AI event recommendations
-- `career-graph-service.ts` - Career analytics
-- `fcm-service.ts` - Firebase Cloud Messaging
-- `notifications.ts` - Notification handling
-
-**AI Services:**
-- `ai-skill-recommender.ts` (620 lines) - Skill recommendations
-- `ai-project-generator.ts` (580 lines) - Project suggestions
-- `certification-recommender.ts` (450 lines) - Certification recommendations
-
-**Resume Services:**
-- `resume-parser.ts` - Client-side resume parsing
-- `resume-parser-server.ts` - Server-side parsing
-- `resume-pdf-generator.ts` - PDF generation
-
-**Utilities:**
-- `types.ts` - TypeScript type definitions
-- `calendar-types.ts` - Calendar-specific types
-- `utils.ts` - Helper functions
-- `actions.ts` - Server actions
-- `placeholder-images.json` - Image placeholders
-
-#### Hooks (`src/hooks/`)
-- `use-auth.tsx` - Authentication hook with Firebase Auth
-- `use-toast.ts` - Toast notification hook
-
-### Cloud Functions (`functions/`)
-
-**Structure:**
+### `/functions` - Firebase Cloud Functions
 ```
 functions/
-├── src/                    # TypeScript source
-│   ├── services/           # Service layer
-│   │   └── learning-service.ts
-│   ├── fetchCareerIntelligence.ts
-│   ├── fetchMentors.ts
-│   ├── fetchResources.ts
-│   ├── fetchReviews.ts
-│   ├── notifyUsers.ts
-│   ├── summarizeData.ts
-│   └── index.ts            # Function exports
-├── lib/                    # Compiled JavaScript
-├── event-reminders.ts      # Calendar reminder function
-├── package.json            # Function dependencies
-└── tsconfig.json           # TypeScript config
+├── src/                   # TypeScript source for Cloud Functions
+├── lib/                   # Compiled JavaScript output
+├── index.js              # Main Cloud Functions entry point
+├── event-reminders.ts    # Calendar reminder Cloud Function
+├── package.json          # Cloud Functions dependencies (Node.js 20)
+└── tsconfig.json         # TypeScript config for functions
 ```
 
-**Functions:**
-1. `fetchCareerIntelligence` - Aggregate career data (scheduled)
-2. `fetchMentors` - Scrape mentor profiles (scheduled)
-3. `fetchResources` - Update course catalog (scheduled)
-4. `fetchReviews` - Collect community reviews (scheduled)
-5. `notifyUsers` - Send push notifications (triggered)
-6. `summarizeData` - AI summarization (triggered)
-7. `eventReminders` - Calendar reminders (scheduled)
+### `/docs` - Comprehensive Documentation
+- 80+ markdown files covering features, deployment, APIs, architecture
+- Key docs: README.md, QUICK_START.md, API-SETUP-GUIDE.md, GCP_SETUP_GUIDE.md
 
-### Documentation (`docs/`)
+### `/skills` - Reusable Development Skills
+- 600+ skill directories with patterns, templates, and best practices
+- Categories: Azure, AWS, backend, frontend, security, testing, AI/ML, etc.
+- Notable: `docx/`, `notebooklm/`, `app-store-optimization/`
 
-**Setup Guides:**
-- `QUICK_START.md` - Getting started guide
-- `DATABASE-SETUP.md` - Firestore setup
-- `DEPLOYMENT-CHECKLIST.md` - Deployment steps
-- `TESTING-GUIDE.md` - Testing instructions
+### `/apps` - Monorepo Applications
+```
+apps/
+└── mobile/               # React Native/Expo mobile app (planned)
+```
 
-**Feature Documentation:**
-- `COLLEGE-RECOMMENDATIONS-FEATURE.md` - College system
-- `EBOOKS-FEATURE.md` - eBooks library
-- `REDDIT-INTEGRATION-COMPLETE.md` - Reddit API
-- `ai-calendar-setup.md` - Calendar integration
-- `career-graph-feature.md` - Analytics dashboard
-- `CAREER-INTELLIGENCE-HUB.md` - Intelligence features
+### `/scripts` - Automation Scripts
+- `check-firestore.js`: Firestore connection verification
+- `create-secrets.sh`: Firebase secret setup
+- `deploy-*.sh`: Deployment automation scripts
+- `setup-bigquery.sh`: BigQuery configuration
 
-**Technical Docs:**
-- `FIREBASE-PERMISSIONS-FIX.md` - Security rules
-- `CLOUD-FUNCTIONS-DEPLOYMENT.md` - Function deployment
-- `REAL_TIME_DATA_SYSTEM.md` - Data aggregation
-- `REDDIT-API-LIMITATIONS.md` - API constraints
+### `/tests` - Test Suites
+```
+tests/
+├── integration/          # Integration tests
+└── job-manager.test.ts  # Background job tests
+```
+
+### Root Configuration Files
+- `next.config.ts`: Next.js configuration (standalone output, image domains, webpack aliases)
+- `tsconfig.json`: TypeScript config (ES2020, bundler resolution, path aliases)
+- `tailwind.config.ts`: Tailwind CSS config (glassmorphism utilities, neon colors)
+- `firebase.json`: Firebase project configuration (hosting, Firestore rules)
+- `firestore.rules`: Firestore security rules for 8 collections
+- `apphosting.yaml`: Firebase App Hosting config (2 vCPUs, 2GB RAM, auto-scaling 0-10)
+- `package.json`: Dependencies (Next.js 15.5.7, React 18, Firebase 11.9.1, Genkit 1.21.0)
 
 ## Architectural Patterns
 
-### Component Architecture
-- **Atomic Design**: UI components built from atoms to organisms
-- **Feature-Based**: Components organized by feature domain
-- **Composition**: Reusable components with props and children
-- **Server/Client Split**: RSC for data fetching, client components for interactivity
+### Multi-Layer Architecture
+1. **Presentation Layer**: React components, Next.js pages (19+ pages)
+2. **Application Layer**: API routes (10+ routes), server actions
+3. **Service Layer**: Business logic in `/lib/services` (14 services)
+4. **Infrastructure Layer**: Firebase (Auth, Firestore, Storage, Hosting, Functions)
+5. **Integration Layer**: External APIs (Google, Reddit, Internet Archive, NewsAPI)
+
+### Key Design Patterns
+- **API Proxy Pattern**: CORS bypass for Reddit, NewsAPI (server-side proxies in `/app/api`)
+- **Service Layer Pattern**: Separation of concerns (calendar-service.ts, profile-service.ts, etc.)
+- **Repository Pattern**: Firestore data access abstraction
+- **Observer Pattern**: Firestore real-time listeners for live updates
+- **Singleton Pattern**: Firebase initialization (firebase.ts, firebase-admin.ts)
+- **Factory Pattern**: AI service creation (genkit.ts)
 
 ### Data Flow
-1. **User Action** → Component event handler
-2. **Service Call** → Business logic in `src/lib/services/`
-3. **API Request** → Firebase/External API
-4. **State Update** → React state or Firebase real-time listener
-5. **UI Render** → Component re-renders with new data
+1. User Action → Client Component (React)
+2. Client → API Route (Next.js server-side)
+3. API Route → Service Layer (business logic)
+4. Service → External APIs / Firestore / Gemini AI
+5. Response → API Route → Client → UI Update
 
-### State Management
-- **Local State**: React useState for component-level state
-- **Context**: Firebase context for auth, user profile
-- **Server State**: Next.js server components for initial data
-- **Real-time**: Firestore listeners for live updates
-- **Cache**: LocalStorage for bookmarks, search history
+### Core Component Relationships
+- **Authentication**: `use-auth.tsx` ↔ `firebase.ts` ↔ Firebase Auth
+- **AI Features**: Components ↔ `/app/api/ai/*` ↔ `genkit.ts` ↔ Gemini API
+- **College Finder**: `colleges/page.tsx` ↔ `/app/api/college-recommendations` ↔ `community-service.ts` ↔ `/app/api/reddit-search`
+- **Calendar**: `calendar/page.tsx` ↔ `/app/api/calendar/*` ↔ `google-calendar-service.ts` ↔ Google Calendar API
+- **eBooks**: `ebooks/page.tsx` ↔ `/app/api/ebooks/archive/*` ↔ Internet Archive API
 
-### Authentication Flow
-1. User signs in via Google OAuth or email/password
-2. Firebase Auth creates session token
-3. Token stored in browser (httpOnly cookie)
-4. Protected routes check auth state
-5. User data synced to Firestore
+## Firestore Collections
+- `users`: User accounts
+- `profiles`: User profile data (6 sections)
+- `reviews`: College reviews
+- `colleges`: 42 colleges database
+- `cache`: API response caching (5-min TTL)
+- `activities`: User activity tracking
+- `eventReminders`: Calendar reminders
+- `fcmTokens`: Push notification tokens
 
-### AI Integration Pattern
-1. User input → Zod schema validation
-2. Genkit flow invocation with context
-3. Gemini API call with structured prompts
-4. Response parsing and formatting
-5. Result caching in Firestore (optional)
-6. UI update with AI-generated content
-
-## Key Integration Points
-
-### Firebase Services
-- **Authentication**: Google OAuth, email/password
-- **Firestore Collections**: users, profiles, resumes, interviews, activities, eventReminders, fcmTokens, cache, colleges
-- **Cloud Functions**: 7 scheduled/triggered functions
-- **App Hosting**: Next.js deployment on Cloud Run
-- **Cloud Messaging**: Push notifications
-
-### External APIs
-- **Reddit JSON API**: College reviews (server-side proxy)
-- **Internet Archive API**: 20M+ book search
-- **Google Custom Search API**: Content discovery
-- **Google Calendar API**: Event management
-- **Google Maps API**: Library finder
-- **YouTube Data API**: Video recommendations
-- **NPTEL/Coursera APIs**: Course scraping
-
-### AI Services
-- **Gemini 2.5 Flash Lite**: Primary AI model
-- **Genkit 1.21.0**: AI workflow orchestration
-- **Use Cases**: Career recommendations, skill analysis, project generation, interview prep, document analysis, summarization
-
-## Configuration Files
-
-### Next.js (`next.config.ts`)
-- TypeScript/ESLint build error ignoring (for rapid development)
-- Image optimization for external domains
-- Standalone output for Firebase App Hosting
-- Webpack alias for `@/` imports
-
-### TypeScript (`tsconfig.json`)
-- Target: ES2020
-- Strict mode enabled
-- Path aliases: `@/*` → `./src/*`
-- Incremental compilation
-- Excludes: node_modules, functions
-
-### Firebase (`firebase.json`)
-- Hosting configuration
-- Firestore rules and indexes
-- Cloud Functions settings
-- Emulator configuration
-
-### App Hosting (`apphosting.yaml`)
-- Cloud Run configuration
-- Auto-scaling: 0-3 instances
-- Resources: 1 CPU, 1024 MiB memory
-- Environment: Node.js 18+
-
-## Deployment Architecture
-
-### Production Environment
-- **Hosting**: Firebase App Hosting (Cloud Run)
-- **URL**: careerlens--careerlens-1.us-central1.hosted.app
-- **Database**: Firestore (multi-region)
-- **Functions**: Cloud Functions (us-central1)
-- **CDN**: Global Firebase CDN
-- **CI/CD**: GitHub Actions → Firebase deploy
-
-### Development Environment
-- **Local Server**: `npm run dev` (localhost:3000)
-- **AI Dev Server**: `npm run genkit:dev` (Genkit UI)
-- **Emulators**: Firebase emulators for local testing
-- **Hot Reload**: Next.js Fast Refresh
+## Technology Stack Summary
+- **Frontend**: Next.js 15.5.7 (App Router), React 18, TypeScript 5
+- **Styling**: Tailwind CSS 3.4.1, Framer Motion, shadcn/ui (40+ components)
+- **Backend**: Firebase (Auth, Firestore, Storage, Hosting, Functions)
+- **AI**: Genkit 1.21.0, Gemini 1.5 Pro, Gemini 2.5 Flash
+- **APIs**: Google Maps, Calendar, Custom Search, YouTube; Reddit, Internet Archive, NewsAPI
+- **Build**: Turbopack (Next.js 15), TypeScript, PostCSS
+- **Deployment**: Firebase App Hosting (CDN, auto-scaling)

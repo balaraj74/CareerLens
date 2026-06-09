@@ -62,6 +62,12 @@ const SkillGapAnalysisSchema = z.object({
         salaryOutlook: z.string(),
         jobOpenings: z.string(),
     }),
+
+    radarData: z.array(z.object({
+        category: z.string(),
+        currentScore: z.number().min(0).max(100),
+        targetScore: z.number().min(0).max(100),
+    })).describe('5 key skill categories with current and target competency scores for a radar chart'),
 });
 
 export type SkillGapAnalysisResult = z.infer<typeof SkillGapAnalysisSchema>;
@@ -134,6 +140,9 @@ Each phase should list specific skills and learning resources relevant to "${tar
 
 ### 8. Market Context
 Current demand, competition level, salary range, and approximate job openings for "${targetRole}" in ${industry}.
+
+### 9. Radar Chart Data
+Identify exactly 5 core competency categories for "${targetRole}" (e.g., "Architecture", "System Design", "UI/UX"). For each, estimate the candidate's current score (0-100) based on their skills, and the target score required for the role (0-100).
 
 ---
 

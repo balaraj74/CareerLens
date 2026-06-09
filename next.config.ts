@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
     'firebase-admin',
     'pdf-parse',
   ],
-  output: 'standalone',
+  // output: 'standalone',
   distDir: '.next',
   webpack: (config) => {
     config.resolve.alias = {

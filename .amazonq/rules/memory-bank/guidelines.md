@@ -2,481 +2,272 @@
 
 ## Code Quality Standards
 
-### TypeScript Configuration
-- **Strict Mode**: Enabled for type safety across all files
-- **Target**: ES2020 for modern JavaScript features
-- **Module System**: ESNext with bundler resolution
-- **Path Aliases**: Use `@/*` for imports from `src/` directory
-- **Type Definitions**: All functions, components, and variables must have explicit types
-- **No Implicit Any**: Avoid `any` type; use proper type definitions or `unknown`
+### TypeScript Conventions
+- **Strict Mode Enabled**: All TypeScript files use strict type checking
+- **Explicit Return Types**: Functions declare return types explicitly (e.g., `Promise<{ originalText: string; ... }>`)
+- **Type-First Approach**: Use `type` for unions (`type RewriteTone = 'formal' | 'impact-driven' | ...`) and `interface` for objects
+- **Optional Parameters**: Use TypeScript optional syntax (`targetRole?: string`) rather than default values when appropriate
+- **Schema Validation**: Use Zod schemas for runtime validation (all API inputs/outputs validated)
+
+### Python Conventions
+- **Type Hints**: All function parameters and returns have type hints (`def add_notebook(url: str, ...) -> Dict[str, Any]`)
+- **Docstrings**: Triple-quoted docstrings for all public functions following Google style
+- **Private Methods**: Prefix with single underscore (`_load_library`, `_save_library`)
+- **Path Handling**: Use `pathlib.Path` instead of string concatenation for file paths
+- **Error Handling**: Explicit exception raising with descriptive messages (`raise ValueError(f"...")`)
+
+### Naming Conventions
+- **TypeScript**: camelCase for functions/variables (`rewriteResumeSection`, `bulletPoints`), PascalCase for types/interfaces
+- **Python**: snake_case for functions/variables (`add_notebook`, `notebook_id`), PascalCase for classes
+- **Constants**: UPPER_SNAKE_CASE with descriptive names (`MIN_EFFECT_SIZES`, `CONFIDENCE_LEVELS`)
+- **Boolean Variables**: Prefix with `is_`, `has_`, `should_` (e.g., `is_significant_95`, `has_author`)
+- **DOM Variables**: Suffix DOM elements with `_elem`, `_node` (e.g., `ins_elem`, `parent_node`)
 
 ### File Organization
-- **Component Files**: Use `.tsx` extension for React components
-- **Service Files**: Use `.ts` extension for business logic
-- **Naming Convention**: 
-  - Components: PascalCase (e.g., `DynamicDashboard.tsx`)
-  - Services: kebab-case (e.g., `learning-service.ts`)
-  - Hooks: kebab-case with `use-` prefix (e.g., `use-toast.ts`)
-  - API Routes: kebab-case (e.g., `college-recommendations/route.ts`)
+- **Single Responsibility**: Each file focuses on one domain (e.g., `route.ts` for API endpoints, `document.py` for Word document operations)
+- **Exports**: Export functions explicitly at the end or use named exports inline
+- **Module-Level Constants**: Define constants at module top (e.g., `TEMPLATE_DIR`, `MIN_EFFECT_SIZES`)
+- **Grouped Imports**: Standard library → Third-party → Local imports, separated by blank lines
 
-### Import Organization
-1. External dependencies (React, Next.js, third-party libraries)
-2. Internal components from `@/components`
-3. Hooks from `@/hooks`
-4. Services from `@/lib/services`
-5. Types from `@/lib/types`
-6. Utilities from `@/lib`
+## Architectural Patterns
 
-Example:
-```typescript
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
-import { fetchEnhancedProfile } from '@/lib/enhanced-profile-service';
-import type { EnhancedUserProfile } from '@/lib/types';
-```
+### Server Actions ('use server')
+- All AI flows and server-side functions marked with `'use server'` directive at top
+- Prevents accidental client-side execution of sensitive operations
+- Used consistently in `/src/ai/flows/` directory
 
-## React & Next.js Patterns
+### API Route Structure
+- **Pattern**: POST endpoints accept JSON body, validate with TypeScript types
+- **Logging**: Console.log with emoji prefixes (`✅`, `❌`, `🔍`, `📊`) for readability
+- **Error Handling**: Try-catch with detailed error logging, return structured error responses
+- **Mock Data Pattern**: Large mock datasets defined in-function (e.g., `getMockColleges()`) with filtering/scoring logic
+- **Integration Pattern**: API routes call other API routes server-side to bypass CORS (e.g., `/api/college-recommendations` → `/api/reddit-search`)
 
-### Component Structure
-- **Client Components**: Use `'use client'` directive at the top for interactive components
-- **Server Components**: Default for data fetching and static content
-- **Component Props**: Define explicit TypeScript interfaces for all props
-- **State Management**: Use React hooks (useState, useEffect, useRef)
-- **Context Usage**: Firebase context for auth and database access
+### Service Layer Pattern
+- Business logic separated into service files (`/lib/services/`)
+- Services handle external API calls, data transformations, caching
+- API routes orchestrate service calls and handle HTTP concerns
 
-### Component Pattern (5/5 files follow this):
-```typescript
-'use client';
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+### XML Document Manipulation Pattern (Python)
+- **DOM Editing**: Use `defusedxml.minidom` for safe XML parsing/manipulation
+- **Attribute Injection**: Automatically inject required attributes (RSIDs, author, date) via `_inject_attributes_to_nodes()`
+- **Method Chaining**: XML editor methods return nodes for further manipulation
+- **Validation**: Validate documents against XSD schemas before saving
+- **Temporary Directories**: Use `tempfile.mkdtemp()` for safe working directories, cleanup in `__del__`
 
-interface ComponentProps {
-  // Explicit prop types
-}
+### Class-Based State Management (Python)
+- **Initialization**: `__init__` sets up dependencies, loads state from disk
+- **Lazy Loading**: Use cached properties or manual caching (`_editors` dict) for expensive operations
+- **Persistence**: Explicit `_save_*()` and `_load_*()` methods for serialization
+- **Public vs Private**: Public methods for user API, private methods (leading `_`) for internal logic
 
-export function ComponentName({ prop }: ComponentProps) {
-  const [state, setState] = useState<Type>(initialValue);
-  
-  useEffect(() => {
-    // Side effects
-  }, [dependencies]);
-  
-  return (
-    // JSX
-  );
-}
-```
+## Testing & Validation
 
-### API Route Pattern (1/5 files):
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
+### Statistical Calculations
+- **Confidence Intervals**: Use standard z-scores (0.80 → 0.84, 0.95 → 1.645, 0.975 → 1.96)
+- **Sample Size**: Calculate with proper alpha/beta error rates, provide duration estimates
+- **Approximations**: Document when using approximations (e.g., standard normal CDF approximation)
+- **Unit Conversions**: Consistent units (rates as 0-1, percentages as 0-100, clearly documented)
 
-export async function POST(request: NextRequest) {
-  try {
-    const data = await request.json();
-    
-    // Validation
-    if (!data.required_field) {
-      return NextResponse.json(
-        { error: 'Missing required field' },
-        { status: 400 }
-      );
-    }
-    
-    // Business logic
-    const result = await processData(data);
-    
-    return NextResponse.json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    return NextResponse.json(
-      { error: 'Internal error', details: error.message },
-      { status: 500 }
-    );
+### Data Validation
+- **Zod Schemas**: Define schemas for all structured data (API inputs, AI outputs)
+- **Runtime Checks**: Validate user inputs before processing (e.g., check `exam_type`, `score`, `branch_preferences`)
+- **Type Guards**: Use TypeScript type guards or Zod `.parse()` for runtime validation
+- **Early Returns**: Return errors early for invalid inputs before expensive operations
+
+### Error Handling
+- **Graceful Degradation**: Return partial results on non-critical failures (e.g., return recommendations without reviews if Reddit API fails)
+- **Specific Exceptions**: Use specific exception types (`ValueError`, `KeyError`) rather than generic `Exception`
+- **User-Friendly Messages**: Convert technical errors to user-facing messages (e.g., "Failed to generate recommendations" instead of stack traces)
+- **Logging Context**: Include relevant context in error logs (test_id, user inputs, external API responses)
+
+## External API Integration
+
+### CORS Bypass Pattern
+- **Server-Side Proxy**: Create `/api/*` routes that proxy external APIs to avoid CORS
+- **Internal Fetch**: Use `fetch('http://localhost:3000/api/...')` or `process.env.NEXT_PUBLIC_API_URL` within server routes
+- **Error Handling**: Gracefully handle proxy failures, return original data if enrichment fails
+
+### Caching Strategy
+- **5-Minute TTL**: Cache API responses in Firestore with 5-minute expiration
+- **Cache Key Design**: Use deterministic keys (e.g., `reddit_${collegeName}`)
+- **Cache Checking**: Always check cache before making external API calls
+- **Cache Invalidation**: Respect TTL, provide manual invalidation if needed
+
+### Rate Limiting
+- **Debouncing**: 500ms debounce on user-triggered API calls (search inputs)
+- **Request Throttling**: Limit concurrent external API calls (use `Promise.all` for parallel, but controlled)
+- **Retry Logic**: Implement exponential backoff for transient failures (not yet implemented, but recommended)
+
+## AI Integration (Genkit)
+
+### Prompt Engineering
+- **Structured Prompts**: Use Handlebars templates with clear sections (Task, Guidelines, Requirements, Return)
+- **Schema-Driven**: Define input/output schemas with Zod for type-safe AI interactions
+- **Few-Shot Examples**: Include examples in prompts to guide AI behavior (e.g., tone examples in resume rewrite)
+- **Constraints**: Explicitly list requirements (factual accuracy, length constraints, keyword density)
+- **Output Format**: Specify exact return format (JSON structure, array of strings, etc.)
+
+### Model Selection
+- **Gemini 2.5 Flash**: Fast responses for conversational AI, bullet point rewriting, summaries
+- **Gemini 1.5 Pro**: Complex reasoning, long context (career analysis, resume optimization)
+- **Model Configuration**: Set in `ai.definePrompt({ model: 'vertexai/gemini-2.5-flash' })`
+
+### Error Handling
+- **Fallback Values**: Return safe defaults on AI failure (e.g., `return bulletPoints` if rewrite fails)
+- **Validation**: Validate AI output against schema before returning (Zod schema parsing)
+- **User Feedback**: Convert AI errors to user-friendly messages ("Failed to rewrite resume section. Please try again.")
+
+## Data Structures
+
+### Nested Object Patterns
+- **Cutoffs Structure**: Nested objects with exam types as keys, branch-specific cutoffs as values
+  ```typescript
+  cutoffs: {
+    JEE: { 'Computer Science': 150, 'Mechanical': 800 },
+    KCET: { 'Computer Science': 500, ... }
   }
-}
-```
+  ```
+- **Recommendation Objects**: Structured with nested metadata (college, match_score, review_summary, etc.)
+- **Sentiment Distribution**: Objects with fixed keys (`positive`, `negative`, `neutral`, `mixed`)
 
-## Animation & UI Patterns
+### Array Manipulation
+- **Filtering**: Use `.filter()` with predicate functions for complex conditions
+- **Mapping**: Transform arrays with `.map()`, always return new array (immutability)
+- **Sorting**: Use `.sort()` with custom comparators, multi-level sorting (admission chance → match score)
+- **Slicing**: Limit results with `.slice(0, maxResults)` after sorting
 
-### Framer Motion Usage (2/5 files use extensively)
-- **Initial State**: Always define `initial` prop for enter animations
-- **Animate State**: Use `animate` prop for target animation state
-- **Transitions**: Specify `transition` with duration, delay, and easing
-- **Stagger Children**: Use `staggerChildren` in parent variants for sequential animations
-- **Hover Effects**: Use `whileHover` for interactive feedback
-- **Tap Effects**: Use `whileTap` for button press feedback
-
-Example Pattern:
-```typescript
-<motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.2, duration: 0.5 }}
-  whileHover={{ scale: 1.05 }}
-  whileTap={{ scale: 0.95 }}
->
-  {content}
-</motion.div>
-```
-
-### Infinite Animations (2/5 files):
-```typescript
-<motion.div
-  animate={{
-    scale: [1, 1.2, 1],
-    opacity: [0.3, 0.5, 0.3],
-  }}
-  transition={{ duration: 8, repeat: Infinity }}
-/>
-```
-
-### Conditional Styling Pattern (5/5 files):
-```typescript
-className={`base-classes ${
-  isDarkMode
-    ? 'dark-mode-classes'
-    : 'light-mode-classes'
-}`}
-```
-
-## State Management Patterns
-
-### Local State (5/5 files):
-- Use `useState` for component-level state
-- Initialize with proper TypeScript types
-- Use functional updates when state depends on previous value
-
-### Effect Hooks (4/5 files):
-- Always specify dependency arrays
-- Clean up side effects in return function
-- Use separate effects for different concerns
-
-Example:
-```typescript
-useEffect(() => {
-  const timer = setInterval(() => {
-    // Logic
-  }, 1000);
-  
-  return () => clearInterval(timer);
-}, [dependency]);
-```
-
-### Ref Usage (2/5 files):
-- Use `useRef` for DOM references and mutable values
-- Type refs explicitly: `useRef<HTMLCanvasElement>(null)`
-- Access current value: `ref.current`
-
-## Data Fetching Patterns
-
-### Async/Await Pattern (5/5 files):
-```typescript
-const loadData = async () => {
-  if (!user || !db) return;
-  
-  try {
-    setLoading(true);
-    const data = await fetchData(db, user.uid);
-    setData(data);
-  } catch (error) {
-    console.error('Error:', error);
-    toast({
-      title: 'Error',
-      description: 'Failed to load data',
-      variant: 'destructive',
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
-### Error Handling (5/5 files):
-- Always wrap async operations in try-catch
-- Log errors to console with descriptive messages
-- Show user-friendly error messages via toast notifications
-- Use `finally` block for cleanup (e.g., setLoading(false))
-
-### Loading States (3/5 files):
-```typescript
-if (loading) {
-  return (
-    <div className="flex items-center justify-center">
-      <Loader2 className="w-12 h-12 animate-spin" />
-      <p>Loading message...</p>
-    </div>
-  );
-}
-```
-
-## Firebase Integration Patterns
-
-### Authentication Check (3/5 files):
-```typescript
-const { user } = useAuth();
-const { db } = useFirebase();
-
-if (!user || !db) return;
-```
-
-### Firestore Operations:
-- Use `setDoc` with `{ merge: true }` instead of `updateDoc` to avoid "No document to update" errors
-- Always check for user authentication before database operations
-- Use proper error handling for all Firebase operations
-
-## Service Layer Patterns
-
-### Service Function Structure (2/5 files):
-```typescript
-export async function serviceName(params: Type): Promise<ReturnType> {
-  try {
-    // Business logic
-    const result = await externalAPI();
-    return processedResult;
-  } catch (error) {
-    console.error('Service error:', error);
-    return fallbackValue;
-  }
-}
-```
-
-### Mock Data Pattern (2/5 files):
-- Provide comprehensive mock data for development and fallback
-- Structure mock data to match production API responses
-- Use TypeScript interfaces to ensure mock data consistency
-
-## Canvas & Graphics Patterns (1/5 files)
-
-### Canvas Setup:
-```typescript
-const canvasRef = useRef<HTMLCanvasElement>(null);
-
-useEffect(() => {
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-  
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  
-  // Resize handler
-  const resizeCanvas = () => {
-    canvas.width = container.width;
-    canvas.height = container.height;
-  };
-  
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-  
-  return () => {
-    window.removeEventListener('resize', resizeCanvas);
-  };
-}, [dependencies]);
-```
-
-### Animation Loop:
-```typescript
-let animationId: number;
-
-const animate = () => {
-  // Update logic
-  render();
-  animationId = requestAnimationFrame(animate);
-};
-
-animate();
-
-return () => {
-  cancelAnimationFrame(animationId);
-};
-```
-
-## Custom Hooks Pattern (1/5 files)
-
-### Hook Structure:
-```typescript
-export function useCustomHook() {
-  const [state, setState] = React.useState<State>(initialState);
-  
-  React.useEffect(() => {
-    // Setup
-    return () => {
-      // Cleanup
-    };
-  }, []);
-  
-  return {
-    state,
-    actions: {
-      action1: () => {},
-      action2: () => {},
-    },
-  };
-}
-```
-
-### Reducer Pattern (1/5 files):
-```typescript
-const reducer = (state: State, action: Action): State => {
-  switch (action.type) {
-    case 'ACTION_TYPE':
-      return { ...state, updated: true };
-    default:
-      return state;
-  }
-};
-
-function dispatch(action: Action) {
-  memoryState = reducer(memoryState, action);
-  listeners.forEach(listener => listener(memoryState));
-}
-```
-
-## UI Component Patterns
-
-### Conditional Rendering (5/5 files):
-```typescript
-{condition && <Component />}
-{condition ? <ComponentA /> : <ComponentB />}
-```
-
-### List Rendering (5/5 files):
-```typescript
-{items.map((item, index) => (
-  <motion.div
-    key={item.id}
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay: index * 0.1 }}
-  >
-    {item.content}
-  </motion.div>
-))}
-```
-
-### Button Patterns:
-```typescript
-<Button
-  asChild
-  variant="outline"
-  size="sm"
-  className="custom-classes"
->
-  <Link href="/path">
-    <Icon className="w-4 h-4 mr-2" />
-    Button Text
-  </Link>
-</Button>
-```
-
-## Styling Conventions
-
-### Tailwind CSS Usage (5/5 files):
-- Use utility classes for all styling
-- Combine classes with template literals for conditional styling
-- Use `backdrop-blur-xl` for glassmorphic effects
-- Use gradient classes: `bg-gradient-to-br from-color to-color`
-- Responsive classes: `md:`, `lg:` prefixes
-
-### Color Scheme (5/5 files):
-- Dark mode: `bg-slate-900`, `text-white`, `border-blue-500/30`
-- Light mode: `bg-white`, `text-slate-900`, `border-blue-300`
-- Accent colors: blue, purple, cyan, emerald, pink
-- Opacity modifiers: `/20`, `/30`, `/40`, `/50` for transparency
-
-### Spacing Pattern:
-- Use consistent spacing: `gap-2`, `gap-4`, `gap-6`, `gap-8`
-- Padding: `p-3`, `p-4`, `p-6`, `p-8`
-- Margin: `mb-2`, `mb-4`, `mb-6`
-
-## Performance Optimizations
-
-### Memoization:
-- Use `React.memo` for expensive components
-- Use `useMemo` for expensive calculations
-- Use `useCallback` for function references passed to children
-
-### Lazy Loading:
-- Use dynamic imports for large components
-- Implement code splitting at route level
-- Load heavy libraries only when needed
-
-### Animation Performance:
-- Use `transform` and `opacity` for animations (GPU-accelerated)
-- Avoid animating `width`, `height`, `top`, `left`
-- Use `will-change` CSS property sparingly
-
-## Testing Considerations
-
-### Console Logging (5/5 files):
-- Use descriptive log messages with emojis for visibility
-- Log important state changes and API calls
-- Include error details in error logs
-- Use `console.error` for errors, `console.log` for info
-
-Example:
-```typescript
-console.log('✅ Generated recommendations:', count);
-console.error('❌ Error in API:', error);
-```
+### ID Generation
+- **Hex IDs**: Random 8-character hex for Word document IDs (`_generate_hex_id()`)
+- **RSID Generation**: 8-character uppercase hex for Word revision IDs
+- **Timestamp-Based**: Use Unix timestamps for unique test IDs (`${test_type}_${timestamp}`)
+- **Deterministic**: Derive IDs from names for predictable lookups (`name.lower().replace(' ', '-')`)
 
 ## Documentation Standards
 
-### Function Documentation:
-```typescript
-/**
- * Brief description of function purpose
- * 
- * @param param1 - Description of parameter
- * @param param2 - Description of parameter
- * @returns Description of return value
- */
-export async function functionName(param1: Type, param2: Type): Promise<ReturnType> {
-  // Implementation
-}
-```
+### Function Documentation
+- **Purpose**: First line describes what the function does
+- **Parameters**: List each parameter with type and description
+- **Returns**: Describe return value structure
+- **Examples**: Include usage examples for complex functions
+- **Raises/Throws**: Document exceptions that can be thrown
 
-### Interface Documentation:
-```typescript
-/**
- * Description of interface purpose
- */
-export interface InterfaceName {
-  /** Description of property */
-  property: Type;
-}
-```
+### Code Comments
+- **Inline Comments**: Explain non-obvious logic, not obvious code
+- **Section Comments**: Use `// ===== SECTION =====` for major sections in long files
+- **TODO/FIXME**: Use `// TODO:` for planned features, `// FIXME:` for known issues
+- **Algorithm Explanations**: Document complex algorithms (e.g., Haversine formula, statistical calculations)
 
-## Common Patterns Summary
+### README Patterns
+- **Comprehensive**: Include purpose, features, tech stack, setup instructions
+- **Emoji Usage**: Use emojis for visual hierarchy (🚀, 📚, 🔥, ✨)
+- **Code Examples**: Include actual code snippets, not just descriptions
+- **Architecture Diagrams**: Use ASCII art for architecture overviews
+- **Version Numbers**: Document exact versions for all dependencies
 
-### Frequency Analysis:
-- **5/5 files**: TypeScript with explicit types, conditional styling, error handling, async/await
-- **4/5 files**: useEffect with cleanup, loading states
-- **3/5 files**: Firebase integration, toast notifications
-- **2/5 files**: Framer Motion animations, mock data patterns, canvas operations
-- **1/5 files**: Custom hooks, reducer pattern, force-directed graphs
+## Security Best Practices
 
-### Best Practices:
-1. Always use TypeScript with strict mode
-2. Implement proper error handling with user feedback
-3. Use loading states for async operations
-4. Clean up side effects in useEffect
-5. Validate data before processing
-6. Use path aliases for imports
-7. Follow consistent naming conventions
-8. Implement responsive design with Tailwind
-9. Use Framer Motion for smooth animations
-10. Provide fallback data for better UX
+### Input Sanitization
+- **HTML Escaping**: Use `html.escape()` (Python) or built-in escaping for user inputs
+- **XML Injection Prevention**: Escape XML entities when building XML strings
+- **SQL Injection**: Use parameterized queries (not string concatenation) - though this project uses NoSQL
+- **Path Traversal**: Validate file paths, use `Path.resolve()` to prevent `../` attacks
 
-### Anti-Patterns to Avoid:
-- Using `any` type without justification
-- Missing error handling in async operations
-- Forgetting cleanup in useEffect
-- Hardcoding values that should be configurable
-- Missing loading states for async operations
-- Not validating user input
-- Inconsistent naming conventions
-- Missing TypeScript types for props and state
+### API Key Management
+- **Environment Variables**: All API keys in `.env.local`, never hardcoded
+- **No Client Exposure**: Never send API keys to client-side code
+- **Key Rotation**: Document process for rotating compromised keys
+- **Scoped Permissions**: Use least-privilege API keys (read-only when possible)
+
+### Authentication Patterns
+- **Server-Side Verification**: Always verify auth tokens on server, never trust client
+- **Firebase Auth**: Use Firebase Admin SDK for server-side auth verification
+- **Protected Routes**: Check authentication before processing sensitive operations
+- **Session Management**: Use Firebase session cookies for persistent authentication
+
+## Performance Optimization
+
+### Data Loading
+- **Lazy Loading**: Load XML editors on-demand with caching (`__getitem__` pattern)
+- **Parallel Processing**: Use `Promise.all()` for independent async operations (Reddit reviews for multiple colleges)
+- **Early Exits**: Return immediately on validation failures to avoid unnecessary computation
+- **Pagination**: Limit results with `maxResults` variables based on context (exam type, score ranges)
+
+### Algorithm Efficiency
+- **Pre-computation**: Calculate once and reuse (e.g., `next_comment_id` calculated once at initialization)
+- **Efficient Sorting**: Multi-criteria sort in single pass, not multiple sorts
+- **Set Operations**: Use `set()` for uniqueness checks, faster than list iteration
+- **Dictionary Lookups**: Use dict/object lookups (O(1)) instead of array searches (O(n))
+
+### Memory Management
+- **Stream Processing**: Process large datasets in chunks, not all at once
+- **Resource Cleanup**: Explicitly clean up resources (`__del__`, `shutil.rmtree()`)
+- **Avoid Duplication**: Reference existing data instead of copying (use views/references)
+
+## Common Patterns
+
+### Frequency Analysis
+- Count occurrences in collections using dictionaries
+- Pattern: `for item in items: counts[item] = counts.get(item, 0) + 1`
+- Used for sentiment distribution, topic ratings, review analysis
+
+### Configuration Dictionaries
+- Define mappings/configs as module-level dictionaries
+- Pattern: `CONFIDENCE_LEVELS = {'high': 0.95, 'standard': 0.90, ...}`
+- Use `.get(key, default)` for safe access with fallbacks
+
+### Builder Pattern
+- Construct complex objects step-by-step
+- Pattern: Create empty dict, populate fields conditionally, validate before return
+- Used for recommendation objects, test designs, report generation
+
+### Factory Methods
+- Static methods that return instances (`@staticmethod`)
+- Pattern: `@staticmethod def suggest_paragraph(xml_content: str) -> str:`
+- Used for XML transformations, test designs
+
+### Decorator Usage
+- Use decorators for cross-cutting concerns
+- `'use server'`: Server-side execution
+- `@staticmethod`: Class methods without instance state
+- Future: `@cache`, `@retry` for performance/reliability
+
+## Testing Strategy
+
+### Unit Testing
+- Test individual functions with known inputs/outputs
+- Mock external dependencies (APIs, file system, database)
+- Test edge cases (empty inputs, null values, boundary conditions)
+- Pattern: `/tests/*.test.ts` for TypeScript, `test_*.py` for Python
+
+### Integration Testing
+- Test API routes end-to-end
+- Verify database writes/reads
+- Test external API integrations with test data
+- Pattern: `/tests/integration/` directory
+
+### Validation Testing
+- XSD schema validation for XML documents
+- Zod schema validation for TypeScript data structures
+- Redlining validation for Word document tracked changes
+- Run before deployment to catch schema violations
+
+## Deployment
+
+### Environment Configuration
+- Separate configs for development/staging/production
+- Use environment variables for all environment-specific values
+- Document required environment variables in README
+- Provide example `.env.example` file
+
+### Build Process
+- TypeScript compilation: `tsc --noEmit` for type checking
+- Next.js build: `next build` generates standalone output
+- Python packaging: No build needed, interpret at runtime
+- Validate before deployment: Run linters, type checks, tests
+
+### Firebase Deployment
+- App Hosting: Automatic builds from GitHub (main branch)
+- Cloud Functions: Deploy with `firebase deploy --only functions`
+- Firestore Rules: Deploy with `firebase deploy --only firestore:rules`
+- Verify deployment: Check Cloud Console for errors
